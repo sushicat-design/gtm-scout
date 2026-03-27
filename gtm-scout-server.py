@@ -486,7 +486,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         for _ in range(10):
             payload = json.dumps({
-                'model': 'claude-haiku-4-5-20251001',
+                'model': 'claude-sonnet-4-20250514',
                 'max_tokens': 1500,
                 'system': system,
                 'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}],
