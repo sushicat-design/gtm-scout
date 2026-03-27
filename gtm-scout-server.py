@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# v4
+#v5
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -10,18 +10,49 @@ def find_port():
     return 8765
 
 PORT = int(os.environ.get('PORT', find_port()))
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gtm_data.json')
+# Persistent storage via JSONBin.io (free, survives Railway deploys)
+JSONBIN_BIN_ID = os.environ.get('JSONBIN_BIN_ID', '')
+JSONBIN_API_KEY = os.environ.get('JSONBIN_API_KEY', '')
 
 def load_db():
+    # Try JSONBin first (persistent across deploys)
+    if JSONBIN_BIN_ID and JSONBIN_API_KEY:
+        try:
+            req = urllib.request.Request(
+                'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest',
+                headers={'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false'},
+                method='GET'
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+                if isinstance(data, list): return data
+        except: pass
+    # Fallback to local file
     try:
-        if os.path.exists(DB_FILE):
-            with open(DB_FILE, 'r') as f: return json.load(f)
+        db_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gtm_data.json')
+        if os.path.exists(db_file):
+            with open(db_file, 'r') as f: return json.load(f)
     except: pass
     return []
 
 def save_db(data):
+    # Save to JSONBin (persistent)
+    if JSONBIN_BIN_ID and JSONBIN_API_KEY:
+        try:
+            payload = json.dumps(data).encode('utf-8')
+            req = urllib.request.Request(
+                'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID,
+                data=payload,
+                headers={'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY},
+                method='PUT'
+            )
+            urllib.request.urlopen(req, timeout=10)
+            return
+        except: pass
+    # Fallback to local file
     try:
-        with open(DB_FILE, 'w') as f: json.dump(data, f)
+        db_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gtm_data.json')
+        with open(db_file, 'w') as f: json.dump(data, f)
     except: pass
 
 CSS = """
@@ -456,6 +487,97 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</body>\n</html>\n")
 
 
+PIN_HTML = '''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GTM Scout</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07090f;color:#dde4f0;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.box{background:#0e1119;border:1px solid #1d2333;padding:40px;width:320px;text-align:center}
+.logo{width:36px;height:36px;background:#00e676;color:#000;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+h2{font-size:16px;font-weight:700;margin-bottom:6px;letter-spacing:-0.02em}
+p{font-size:10px;color:#4a5570;margin-bottom:24px;text-transform:uppercase;letter-spacing:.1em}
+.dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid #1d2333;background:transparent;transition:background 0.15s}
+.dot.filled{background:#00e676;border-color:#00e676}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.key{background:#141824;border:1px solid #1d2333;color:#dde4f0;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;padding:14px;cursor:pointer;transition:background 0.1s}
+.key:hover{background:#1d2333}
+.key:active{background:#252d3f}
+.key.del{color:#4a5570;font-size:12px}
+#err{color:#ff5252;font-size:11px;min-height:16px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">G</div>
+  <h2>GTM Scout</h2>
+  <p>Enter PIN to continue</p>
+  <div class="dots" id="dots">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+  </div>
+  <div class="numpad">
+    <button class="key" onclick="press(1)">1</button>
+    <button class="key" onclick="press(2)">2</button>
+    <button class="key" onclick="press(3)">3</button>
+    <button class="key" onclick="press(4)">4</button>
+    <button class="key" onclick="press(5)">5</button>
+    <button class="key" onclick="press(6)">6</button>
+    <button class="key" onclick="press(7)">7</button>
+    <button class="key" onclick="press(8)">8</button>
+    <button class="key" onclick="press(9)">9</button>
+    <button class="key" onclick="press(0)" style="grid-column:2">0</button>
+    <button class="key del" onclick="del()">⌫</button>
+  </div>
+  <div id="err"></div>
+</div>
+<script>
+var entered = '';
+var correct = '__PIN__';
+function press(n) {
+  if (entered.length >= 4) return;
+  entered += n;
+  update();
+  if (entered.length === 4) {
+    setTimeout(check, 150);
+  }
+}
+function del() {
+  entered = entered.slice(0,-1);
+  update();
+  document.getElementById('err').textContent = '';
+}
+function update() {
+  for (var i=0;i<4;i++) {
+    document.getElementById('d'+i).classList.toggle('filled', i < entered.length);
+  }
+}
+function check() {
+  if (entered === correct) {
+    window.location.href = '/app';
+  } else {
+    entered = '';
+    update();
+    document.getElementById('err').textContent = 'Incorrect PIN';
+    for(var i=0;i<4;i++) document.getElementById('d'+i).style.borderColor='#ff5252';
+    setTimeout(function(){for(var i=0;i<4;i++) document.getElementById('d'+i).style.borderColor='';},800);
+  }
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key >= '0' && e.key <= '9') press(parseInt(e.key));
+  if (e.key === 'Backspace') del();
+});
+</script>
+</body>
+</html>'''
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
@@ -468,6 +590,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        # Serve PIN page if PIN is set
+        app_pin = os.environ.get('APP_PIN', '')
+        if app_pin and self.path == '/':
+            content = PIN_HTML.replace('__PIN__', app_pin).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return
+        if self.path not in ('/', '/app', ''):
+            self.send_response(404); self.end_headers(); return
         content = HTML.encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
