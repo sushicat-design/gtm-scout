@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v6
+#v7
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -15,6 +15,7 @@ JSONBIN_BIN_ID = os.environ.get('JSONBIN_BIN_ID', '')
 JSONBIN_API_KEY = os.environ.get('JSONBIN_API_KEY', '')
 
 def load_db():
+    # Try JSONBin first
     if JSONBIN_BIN_ID and JSONBIN_API_KEY:
         try:
             req = urllib.request.Request(
@@ -25,7 +26,7 @@ def load_db():
             with urllib.request.urlopen(req, timeout=15) as resp:
                 raw = resp.read()
                 data = json.loads(raw)
-                if isinstance(data, list): 
+                if isinstance(data, list):
                     print('[DB] Loaded', len(data), 'records from JSONBin')
                     return data
                 print('[DB] JSONBin returned non-list:', type(data), str(raw)[:100])
@@ -33,9 +34,29 @@ def load_db():
             print('[DB] JSONBin load error:', e)
     else:
         print('[DB] No JSONBin credentials - BIN_ID:', bool(JSONBIN_BIN_ID), 'API_KEY:', bool(JSONBIN_API_KEY))
+    # Fallback to local file
+    try:
+        db_file = '/tmp/scout_db.json'
+        if os.path.exists(db_file):
+            with open(db_file) as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                print('[DB] Loaded', len(data), 'records from local file')
+                return data
+    except Exception as e:
+        print('[DB] Local load error:', e)
     return []
 
 def save_db(data):
+    # Always save to local file first as immediate backup
+    try:
+        db_file = '/tmp/scout_db.json'
+        with open(db_file, 'w') as f:
+            json.dump(data, f)
+        print('[DB] Saved', len(data), 'records to local file')
+    except Exception as e:
+        print('[DB] Local save error:', e)
+    # Then try JSONBin
     if JSONBIN_BIN_ID and JSONBIN_API_KEY:
         try:
             payload = json.dumps(data).encode('utf-8')
@@ -47,11 +68,10 @@ def save_db(data):
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
                 print('[DB] Saved', len(data), 'records to JSONBin, status:', resp.status)
-            return
         except Exception as e:
             print('[DB] JSONBin save error:', e)
     else:
-        print('[DB] Cannot save - no JSONBin credentials')
+        print('[DB] No JSONBin credentials - BIN_ID:', bool(JSONBIN_BIN_ID), 'API_KEY:', bool(JSONBIN_API_KEY))
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -399,7 +419,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<meta charset='UTF-8'>\n"
   "<title>Scout</title>\n"
   "<link href='https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500&display=swap' rel='stylesheet'>\n"
-  "<link rel='icon' href='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%2300e676%22/%3E%3Ctext x=%2250%22 y=%2272%22 text-anchor=%22middle%22 font-family=%22Arial Black%22 font-size=%2256%22 font-weight=%22900%22 fill=%22%23000%22%3ES%3C/text%3E%3C/svg%3E'>\\n"
+  "<link rel='icon' type='image/png' href='data:image/png;base64,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'>\n"
   "<style>" + CSS + "</style>\n"
   "</head>\n<body>\n"
 
@@ -512,7 +532,7 @@ p{font-size:10px;color:#4a5570;margin-bottom:24px;text-transform:uppercase;lette
 </head>
 <body>
 <div class="box">
-  <div class="logo">G</div>
+  <div class="logo">S</div>
   <h2>Scout</h2>
   <p>Enter PIN to continue</p>
   <div class="dots" id="dots">
