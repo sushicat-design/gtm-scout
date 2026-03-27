@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v5
+#v6
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -15,7 +15,6 @@ JSONBIN_BIN_ID = os.environ.get('JSONBIN_BIN_ID', '')
 JSONBIN_API_KEY = os.environ.get('JSONBIN_API_KEY', '')
 
 def load_db():
-    # Try JSONBin first (persistent across deploys)
     if JSONBIN_BIN_ID and JSONBIN_API_KEY:
         try:
             req = urllib.request.Request(
@@ -23,20 +22,20 @@ def load_db():
                 headers={'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false'},
                 method='GET'
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read())
-                if isinstance(data, list): return data
-        except: pass
-    # Fallback to local file
-    try:
-        db_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gtm_data.json')
-        if os.path.exists(db_file):
-            with open(db_file, 'r') as f: return json.load(f)
-    except: pass
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                raw = resp.read()
+                data = json.loads(raw)
+                if isinstance(data, list): 
+                    print('[DB] Loaded', len(data), 'records from JSONBin')
+                    return data
+                print('[DB] JSONBin returned non-list:', type(data), str(raw)[:100])
+        except Exception as e:
+            print('[DB] JSONBin load error:', e)
+    else:
+        print('[DB] No JSONBin credentials - BIN_ID:', bool(JSONBIN_BIN_ID), 'API_KEY:', bool(JSONBIN_API_KEY))
     return []
 
 def save_db(data):
-    # Save to JSONBin (persistent)
     if JSONBIN_BIN_ID and JSONBIN_API_KEY:
         try:
             payload = json.dumps(data).encode('utf-8')
@@ -46,14 +45,13 @@ def save_db(data):
                 headers={'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY},
                 method='PUT'
             )
-            urllib.request.urlopen(req, timeout=10)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                print('[DB] Saved', len(data), 'records to JSONBin, status:', resp.status)
             return
-        except: pass
-    # Fallback to local file
-    try:
-        db_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gtm_data.json')
-        with open(db_file, 'w') as f: json.dump(data, f)
-    except: pass
+        except Exception as e:
+            print('[DB] JSONBin save error:', e)
+    else:
+        print('[DB] Cannot save - no JSONBin credentials')
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -399,16 +397,16 @@ document.addEventListener('DOMContentLoaded',function(){
 
 HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<meta charset='UTF-8'>\n"
-  "<title>GTM Scout</title>\n"
+  "<title>Scout</title>\n"
   "<link href='https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@300;400;500&display=swap' rel='stylesheet'>\n"
-  "<link rel='icon' href=\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>\">\n"
+  "<link rel='icon' href='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2218%22 fill=%22%2300e676%22/%3E%3Ctext x=%2250%22 y=%2272%22 text-anchor=%22middle%22 font-size=%2258%22 font-weight=%22900%22 fill=%22%23000%22%3ES%3C/text%3E%3C/svg%3E'>\\n"
   "<style>" + CSS + "</style>\n"
   "</head>\n<body>\n"
 
   "<div class='topbar'>"
     "<div class='topbar-left'>"
       "<div class='logo-mark'>G</div>"
-      "<span class='logo-text' style=\"font-family:'Syne',sans-serif\">GTM Scout</span>"
+      "<span class='logo-text' style=\"font-family:'Syne',sans-serif\">Scout</span>"
     "</div>"
     "<div class='stats'>"
       "<div><div class='stat-n' id='stt'>0</div><div class='stat-l'>Total</div></div>"
@@ -492,7 +490,7 @@ PIN_HTML = '''<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GTM Scout</title>
+<title>Scout</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -515,7 +513,7 @@ p{font-size:10px;color:#4a5570;margin-bottom:24px;text-transform:uppercase;lette
 <body>
 <div class="box">
   <div class="logo">G</div>
-  <h2>GTM Scout</h2>
+  <h2>Scout</h2>
   <p>Enter PIN to continue</p>
   <div class="dots" id="dots">
     <div class="dot" id="d0"></div>
@@ -582,6 +580,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
     def do_GET(self):
+        if self.path == '/dbtest':
+            result = {'bin_id': bool(JSONBIN_BIN_ID), 'api_key': bool(JSONBIN_API_KEY), 'records': 0, 'error': None}
+            try:
+                req = urllib.request.Request(
+                    'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest',
+                    headers={'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false'},
+                    method='GET'
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read())
+                    result['records'] = len(data) if isinstance(data, list) else -1
+                    result['type'] = str(type(data))
+                    result['preview'] = str(data)[:200] if not isinstance(data, list) else 'list ok'
+            except Exception as e:
+                result['error'] = str(e)
+            out = json.dumps(result).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+            return
         if self.path == '/db':
             data = json.dumps(load_db()).encode('utf-8')
             self.send_response(200)
@@ -747,7 +767,7 @@ def monday_autofetch():
 if __name__ == '__main__':
     server = http.server.HTTPServer(('0.0.0.0', PORT), Handler)
     monday_autofetch()
-    print('\n  GTM Scout running at http://localhost:' + str(PORT))
+    print('\n  Scout running at http://localhost:' + str(PORT))
     print('  Monday auto-fetch: enabled (8am UTC)')
     print('  Press Ctrl+C to stop.\n')
     try:
