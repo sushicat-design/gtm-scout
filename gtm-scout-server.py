@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# v2
-
 import http.server, json, urllib.request, urllib.error, threading, time, sys, os
 
 import os
@@ -86,11 +84,20 @@ body { background:var(--bg);color:var(--tx);font-family:monospace;font-size:13px
     </div>
     <div id="ldg">Searching the web for <span id="lname"></span>... <span id="ltimer">0s</span></div>
     <div id="err"></div>
-    <button class="btog" id="btog">+ Bulk mode</button>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btog" id="btog">+ Bulk research</button>
+      <button class="btog" id="itog" style="color:var(--blu)">+ Import JSON</button>
+    </div>
     <div class="barea" id="barea">
       <div style="font-size:9px;color:var(--tx3);text-transform:uppercase;margin-bottom:6px">One company per line</div>
       <textarea id="bi" placeholder="Privy&#10;Alchemy&#10;EigenLayer"></textarea>
       <div style="margin-top:8px"><button id="brb" style="background:var(--grn);color:#000;border:none;font-weight:bold;font-size:12px;padding:8px 18px;cursor:pointer;">Research All</button></div>
+    </div>
+    <div class="barea" id="iarea">
+      <div style="font-size:9px;color:var(--blu);text-transform:uppercase;margin-bottom:6px">Paste JSON array or single company JSON</div>
+      <textarea id="ii" placeholder='[{"company":"Privy","gtm_label":"Hot Lead",...}, {...}]' style="border-color:rgba(68,138,255,0.3)"></textarea>
+      <div id="ierr" style="color:var(--red);font-size:11px;margin-top:4px;display:none"></div>
+      <div style="margin-top:8px"><button id="iib" style="background:var(--blu);color:#fff;border:none;font-weight:bold;font-size:12px;padding:8px 18px;cursor:pointer;">Import</button></div>
     </div>
   </div>
   <div class="tb" id="tb">
@@ -116,7 +123,28 @@ window.onload=function(){
   document.getElementById('brb').onclick=bulk;
   document.getElementById('csvbtn').onclick=doCSV;
   document.getElementById('clrbtn').onclick=function(){if(confirm('Clear all saved companies?')){DB=[];save();renderAll();}};
-  document.getElementById('btog').onclick=function(){var a=document.getElementById('barea');var o=a.classList.toggle('open');document.getElementById('btog').textContent=o?'- Bulk mode':'+ Bulk mode';};
+  document.getElementById('btog').onclick=function(){var a=document.getElementById('barea');var o=a.classList.toggle('open');document.getElementById('btog').textContent=o?'- Bulk research':'+ Bulk research';document.getElementById('iarea').classList.remove('open');document.getElementById('itog').textContent='+ Import JSON';};
+  document.getElementById('itog').onclick=function(){var a=document.getElementById('iarea');var o=a.classList.toggle('open');document.getElementById('itog').textContent=o?'- Import JSON':'+ Import JSON';document.getElementById('barea').classList.remove('open');document.getElementById('btog').textContent='+ Bulk research';};
+  document.getElementById('iib').onclick=function(){
+    var raw=document.getElementById('ii').value.trim();
+    var err=document.getElementById('ierr');
+    err.style.display='none';
+    try{
+      var clean=raw.replace(/```json/g,'').replace(/```/g,'').trim();
+      var start=clean.indexOf('[')>=0&&(clean.indexOf('[')<clean.indexOf('{')||clean.indexOf('{')<0)?clean.indexOf('['):clean.indexOf('{');
+      var parsed;
+      if(clean.trimStart().startsWith('[')){parsed=JSON.parse(clean);}
+      else{var s=clean.indexOf('{'),e=clean.lastIndexOf('}');parsed=[JSON.parse(clean.slice(s,e+1))];}
+      if(!Array.isArray(parsed))parsed=[parsed];
+      var added=0;
+      parsed.forEach(function(r){if(r&&r.company){r._id='id'+Date.now()+Math.random();r._open=true;DB.unshift(r);added++;}});
+      if(!added)throw new Error('No valid company objects found');
+      save();renderAll();
+      document.getElementById('ii').value='';
+      document.getElementById('iarea').classList.remove('open');
+      document.getElementById('itog').textContent='+ Import JSON';
+    }catch(e){err.textContent='Error: '+e.message;err.style.display='block';}
+  };
   document.querySelectorAll('.fb').forEach(function(b){b.onclick=function(){fil=b.getAttribute('data-f');document.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});b.classList.add('on');renderCards();};});
 };
 function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)return;document.getElementById('ci').value='';run(v);}
