@@ -9,6 +9,7 @@ HTML = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>GTM Scout</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root { --bg:#07090f;--sur:#0e1119;--sur2:#141824;--bor:#1d2333;--bor2:#252d3f;--grn:#00e676;--amb:#ffb300;--red:#ff5252;--blu:#448aff;--tx:#dde4f0;--tx2:#8492aa;--tx3:#4a5570; }
@@ -93,9 +94,9 @@ body { background:var(--bg);color:var(--tx);font-family:monospace;font-size:13px
       <textarea id="bi" placeholder="Privy&#10;Alchemy&#10;EigenLayer"></textarea>
       <div style="margin-top:8px"><button id="brb" style="background:var(--grn);color:#000;border:none;font-weight:bold;font-size:12px;padding:8px 18px;cursor:pointer;">Research All</button></div>
     </div>
-    <div class="barea" id="iarea">
+    <div class="barea" id="iarea" style="border-color:rgba(68,138,255,0.3)">
       <div style="font-size:9px;color:var(--blu);text-transform:uppercase;margin-bottom:6px">Paste JSON array or single company JSON</div>
-      <textarea id="ii" placeholder='[{"company":"Privy","gtm_label":"Hot Lead",...}, {...}]' style="border-color:rgba(68,138,255,0.3)"></textarea>
+      <textarea id="ii" placeholder='[{"company":"Privy","gtm_label":"Hot Lead",...}]'  style="border-color:rgba(68,138,255,0.3)"></textarea>
       <div id="ierr" style="color:var(--red);font-size:11px;margin-top:4px;display:none"></div>
       <div style="margin-top:8px"><button id="iib" style="background:var(--blu);color:#fff;border:none;font-weight:bold;font-size:12px;padding:8px 18px;cursor:pointer;">Import</button></div>
     </div>
@@ -123,8 +124,20 @@ window.onload=function(){
   document.getElementById('brb').onclick=bulk;
   document.getElementById('csvbtn').onclick=doCSV;
   document.getElementById('clrbtn').onclick=function(){if(confirm('Clear all saved companies?')){DB=[];save();renderAll();}};
-  document.getElementById('btog').onclick=function(){var a=document.getElementById('barea');var o=a.classList.toggle('open');document.getElementById('btog').textContent=o?'- Bulk research':'+ Bulk research';document.getElementById('iarea').classList.remove('open');document.getElementById('itog').textContent='+ Import JSON';};
-  document.getElementById('itog').onclick=function(){var a=document.getElementById('iarea');var o=a.classList.toggle('open');document.getElementById('itog').textContent=o?'- Import JSON':'+ Import JSON';document.getElementById('barea').classList.remove('open');document.getElementById('btog').textContent='+ Bulk research';};
+  function togglePanel(showId, hideId, showBtn, hideBtn, openTxt, closeTxt, hideTxt) {
+    var show = document.getElementById(showId);
+    var hide = document.getElementById(hideId);
+    var isOpen = show.classList.toggle('open');
+    showBtn.textContent = isOpen ? closeTxt : openTxt;
+    hide.classList.remove('open');
+    hideBtn.textContent = hideTxt;
+  }
+  document.getElementById('btog').onclick = function() {
+    togglePanel('barea','iarea',this,document.getElementById('itog'),'+ Bulk research','- Bulk research','+ Import JSON');
+  };
+  document.getElementById('itog').onclick = function() {
+    togglePanel('iarea','barea',this,document.getElementById('btog'),'+ Import JSON','- Import JSON','+ Bulk research');
+  };
   document.getElementById('iib').onclick=function(){
     var raw=document.getElementById('ii').value.trim();
     var err=document.getElementById('ierr');
