@@ -241,7 +241,7 @@ function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)retur
 
 function bulk(){
   if(busy)return;
-  var names=document.getElementById('bi').value.trim().split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+  var names=document.getElementById('bi').value.trim().split('\n').map(function(s){return s.trim();}).filter(Boolean);
   if(!names.length)return;
   document.getElementById('bi').value='';
   var i=0;function next(){if(i>=names.length)return;run(names[i++],next);}next();
