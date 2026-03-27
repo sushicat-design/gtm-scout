@@ -151,7 +151,7 @@ JS = """
 var DB = [], busy = false, fil = 'all', ti = null;
 var activeSources = ['techcrunch','blockworks','theblock'];
 
-var SYS = 'Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, gtm_readiness_score (integer 0-100), gtm_label (exactly "Hot Lead" if 80+, "Warm Lead" if 50-79, "Cold Lead" if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker. Use null for unknown.';
+var SYS = 'Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings, especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly "Hot Lead" if 80+, "Warm Lead" if 50-79, "Cold Lead" if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to "not_contacted"). Use null for unknown.';
 var FETCH_SYS = 'You are a funding news analyst. Search the web for startup funding announcements from the last 14 days. Focus on AI, web3, crypto, blockchain, DeFi, fintech. Return ONLY a valid JSON array, no markdown. Each item: {"company":"Name","sector":"AI/Web3/etc","funding":"$XM","stage":"Seed/Series A/etc","source":"publication"}. Max 15 companies. Only include real recent raises.';
 
 function load() {
@@ -265,8 +265,9 @@ function renderCards(){
     var card=document.createElement('div');card.className='card';
     var top=document.createElement('div');top.className='ctop';
     var metaHtml=[r.sector,r.funding_amount,r.stage].filter(function(v){return v&&v!=='Unknown';}).map(function(v){return '<span>'+v+'</span>';}).join('');
+    var remoteBadge = r.hiring_remote ? '<span style="font-size:9px;color:var(--blu);border:1px solid rgba(68,138,255,0.3);padding:1px 6px;margin-left:4px;font-weight:600">hiring remotely</span>' : '';
     top.innerHTML='<div class="dot" style="background:'+c+'"></div>'+
-      '<div class="cinfo"><div class="cname-row"><span class="cname">'+(r.company||'')+'</span>'+(site?'<a class="visit-link" href="'+site+'" target="_blank">visit</a>':'')+
+      '<div class="cinfo"><div class="cname-row"><span class="cname">'+(r.company||'')+'</span>'+(site?'<a class="visit-link" href="'+site+'" target="_blank">visit</a>':'')+remoteBadge+
       '</div><div class="cmeta">'+metaHtml+'</div></div>'+
       '<div class="score-area"><span class="clbl" style="color:'+c+';border-color:'+c+'">'+(r.gtm_label||'')+'</span><span class="cscore" style="color:'+c+'">'+n+'</span></div>';
     top.onclick=function(){r._open=!r._open;save();renderCards();};
@@ -312,6 +313,25 @@ function renderCards(){
       if(site){var sb=document.createElement('button');sb.className='abtn';sb.textContent='Visit Site';(function(u){sb.onclick=function(){window.open(u,'_blank');};})(site);acts.appendChild(sb);}
       var liu=su(s.linkedin);if(liu){var lb=document.createElement('button');lb.className='abtn';lb.textContent='LinkedIn';(function(u){lb.onclick=function(){window.open(u,'_blank');};})(liu);acts.appendChild(lb);}
       if(s.twitter&&s.twitter!=='null'){var twb=document.createElement('button');twb.className='abtn';twb.textContent='Twitter';(function(h){twb.onclick=function(){window.open('https://twitter.com/'+h.replace('@',''),'_blank');};})(s.twitter);acts.appendChild(twb);}
+      // Status button
+      var statusColors = {'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--blu)','closed':'var(--grn)'};
+      var statusLabels = {'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed ✓'};
+      var statusBtn = document.createElement('button');
+      statusBtn.className='abtn';
+      var curStatus = r.outreach_status || 'not_contacted';
+      statusBtn.textContent = statusLabels[curStatus] || 'Not Contacted';
+      statusBtn.style.color = statusColors[curStatus] || 'var(--tx3)';
+      statusBtn.style.borderColor = statusColors[curStatus] || 'var(--bor2)';
+      (function(rec){
+        statusBtn.onclick = function(){
+          var order = ['not_contacted','contacted','in_talks','closed'];
+          var cur = rec.outreach_status || 'not_contacted';
+          var next = order[(order.indexOf(cur)+1)%order.length];
+          rec.outreach_status = next;
+          save(); renderCards();
+        };
+      })(r);
+      acts.appendChild(statusBtn);
       var rm=document.createElement('button');rm.className='abtn ghost';rm.textContent='Remove';
       (function(cid){rm.onclick=function(){DB=DB.filter(function(x){return x._id!==cid;});save();renderAll();};})(id);
       acts.appendChild(rm);card.appendChild(acts);
@@ -530,9 +550,70 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def monday_autofetch():
+    """Runs every Monday at 8am UTC, auto-fetches leads and saves to DB"""
+    import threading, datetime
+    def schedule():
+        while True:
+            now = datetime.datetime.utcnow()
+            # Check if it's Monday (weekday 0) and 8am UTC
+            if now.weekday() == 0 and now.hour == 8 and now.minute == 0:
+                print('  [Auto-fetch] Running Monday morning lead fetch...')
+                try:
+                    key = os.environ.get('ANTHROPIC_API_KEY','')
+                    if not key:
+                        time.sleep(60); continue
+                    FETCH_SYS = 'You are a funding news analyst. Search the web for startup funding announcements from the last 7 days. Focus on AI, web3, crypto, blockchain, DeFi, fintech. Return ONLY a valid JSON array, no markdown. Each item: {"company":"Name","sector":"AI/Web3/etc","funding":"$XM","stage":"Seed/Series A/etc","source":"publication"}. Max 15 companies. Only include real recent raises.'
+                    messages = [{'role':'user','content':'Search TechCrunch, Blockworks, and The Block for startup funding announcements from the last 7 days. Return a JSON array of recently funded companies.'}]
+                    final_text = ''
+                    for _ in range(10):
+                        payload = json.dumps({'model':'claude-sonnet-4-20250514','max_tokens':1500,'system':FETCH_SYS,'tools':[{'type':'web_search_20250305','name':'web_search'}],'messages':messages}).encode('utf-8')
+                        req = urllib.request.Request('https://api.anthropic.com/v1/messages',data=payload,headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},method='POST')
+                        with urllib.request.urlopen(req,timeout=90) as resp:
+                            data = json.loads(resp.read())
+                        content = data.get('content',[])
+                        stop_reason = data.get('stop_reason','')
+                        for block in content:
+                            if block.get('type')=='text': final_text=block.get('text','')
+                        if stop_reason=='end_turn': break
+                        elif stop_reason=='tool_use':
+                            messages.append({'role':'assistant','content':content})
+                            messages.append({'role':'user','content':[{'type':'tool_result','tool_use_id':b['id'],'content':[{'type':'text','text':'ok'}]} for b in content if b.get('type')=='tool_use']})
+                        else: break
+                    # Parse and save companies
+                    t = final_text.replace('```json','').replace('```','').strip()
+                    a,b2 = t.find('['),t.rfind(']')
+                    if a>=0 and b2>=0:
+                        companies = json.loads(t[a:b2+1])
+                        db = load_db()
+                        existing = set(r.get('company','').lower() for r in db)
+                        added = 0
+                        for co in companies:
+                            if co.get('company') and co['company'].lower() not in existing:
+                                co['_id'] = 'auto_'+str(int(time.time()))+'_'+co['company'].replace(' ','_')
+                                co['_open'] = False
+                                co['outreach_status'] = 'not_contacted'
+                                co['gtm_label'] = 'Warm Lead'
+                                co['gtm_readiness_score'] = 60
+                                co['auto_fetched'] = True
+                                db.insert(0, co)
+                                existing.add(co['company'].lower())
+                                added += 1
+                        if added:
+                            save_db(db)
+                            print(f'  [Auto-fetch] Added {added} new companies to DB')
+                except Exception as e:
+                    print(f'  [Auto-fetch] Error: {e}')
+                time.sleep(60)  # sleep 1 min after running to avoid double-trigger
+            else:
+                time.sleep(30)  # check every 30 seconds
+    threading.Thread(target=schedule, daemon=True).start()
+
 if __name__ == '__main__':
     server = http.server.HTTPServer(('0.0.0.0', PORT), Handler)
+    monday_autofetch()
     print('\n  GTM Scout running at http://localhost:' + str(PORT))
+    print('  Monday auto-fetch: enabled (8am UTC)')
     print('  Press Ctrl+C to stop.\n')
     try:
         server.serve_forever()
