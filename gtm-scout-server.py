@@ -128,10 +128,16 @@ var ti = null;
 var SYS = 'Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, gtm_readiness_score (integer 0-100), gtm_label (exactly "Hot Lead" if 80+, "Warm Lead" if 50-79, "Cold Lead" if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker. Use null for unknown.';
 
 function load() {
-  try { var s = localStorage.getItem('gtm_db'); if (s) DB = JSON.parse(s); } catch(e) { DB = []; }
+  fetch('/db').then(function(r) { return r.json(); }).then(function(data) {
+    if (Array.isArray(data)) { DB = data; renderAll(); }
+  }).catch(function() { DB = []; });
 }
 function save() {
-  try { localStorage.setItem('gtm_db', JSON.stringify(DB)); } catch(e) {}
+  fetch('/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(DB)
+  }).catch(function() {});
 }
 
 function showPanel(id) {
@@ -451,10 +457,35 @@ HTML += "<script>" + JS + "</script>\n"
 HTML += "</body>\n</html>\n"
 
 
+# Server-side database
+DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gtm_data.json')
+
+def load_db():
+    try:
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, 'r') as f:
+                return json.load(f)
+    except: pass
+    return []
+
+def save_db(data):
+    try:
+        with open(DB_FILE, 'w') as f:
+            json.dump(data, f)
+    except: pass
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
     def do_GET(self):
+        if self.path == '/db':
+            data = json.dumps(load_db()).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         content = HTML.encode('utf-8')
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
@@ -463,6 +494,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def do_POST(self):
+        if self.path == '/save':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                data = json.loads(self.rfile.read(length))
+                save_db(data)
+                self.respond({'ok': True})
+            except Exception as e:
+                self.respond({'error': str(e)})
+            return
         if self.path != '/api':
             self.send_response(404); self.end_headers(); return
         length = int(self.headers.get('Content-Length', 0))
