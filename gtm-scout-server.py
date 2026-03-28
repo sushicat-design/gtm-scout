@@ -579,7 +579,9 @@ function update() {
 }
 function check() {
   if (entered === correct) {
-    window.location.href = '/app';
+    document.querySelector('h2').textContent = 'Hi Ivan 👋';
+    document.querySelector('p').textContent = 'Loading...';
+    setTimeout(function(){ window.location.href = '/app'; }, 800);
   } else {
     entered = '';
     update();
