@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v9
+#v10
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -579,9 +579,7 @@ function update() {
 }
 function check() {
   if (entered === correct) {
-    document.querySelector('h2').textContent = 'Hi Ivan 👋';
-    document.querySelector('p').textContent = 'Loading...';
-    setTimeout(function(){ window.location.href = '/app'; }, 800);
+    window.location.href = '/app';
   } else {
     entered = '';
     update();
