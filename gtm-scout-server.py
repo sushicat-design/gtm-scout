@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v10
+#v11
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -201,7 +201,7 @@ JS = """
 var DB = [], busy = false, fil = 'all', ti = null;
 var activeSources = ['techcrunch','blockworks','theblock'];
 
-var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly Hot Lead if 80+, Warm Lead if 50-79, Cold Lead if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to not_contacted). Use null for unknown.";
+var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly Hot Lead if 80+, Warm Lead if 50-79, Cold Lead if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to not_contacted), best_contact_title (the exact title of the best person to reach out to for fractional CMO services - prefer CMO, VP Marketing, Head of Growth, Head of Marketing, Co-founder if no marketing hire, or CEO as last resort), best_contact_name (their name if known, else null). Use null for unknown.";
 var FETCH_SYS = "You are a funding news analyst. Search the web for startup funding announcements from the last 14 days. Focus on AI, web3, crypto, blockchain, DeFi, fintech. Return ONLY a valid JSON array, no markdown. Each item: {company:Name,sector:AI/Web3/etc,funding:$XM,stage:Seed/Series A/etc,source:publication}. Max 15 companies. Only include real recent raises.";
 
 function load() {
@@ -291,7 +291,13 @@ function run(company,callback){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
     var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON returned');
-    var res=JSON.parse(t.slice(a,b+1));res._id='id'+Date.now();res._open=true;DB.unshift(res);save();renderAll();
+    var res=JSON.parse(t.slice(a,b+1));
+    if(!res.company)throw new Error('Missing company data');
+    res._open=true;
+    // Update existing or add new
+    var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
+    if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
+    save();renderAll();
   }).catch(function(e){var el=document.getElementById('err');el.textContent='Error: '+e.message;el.style.display='block';})
   .finally(function(){clearInterval(ti);document.getElementById('ldg').style.display='none';document.getElementById('rb').disabled=false;document.getElementById('ci').disabled=false;busy=false;if(callback)setTimeout(callback,400);});
 }
@@ -352,7 +358,10 @@ function renderCards(){
       });sigs+='</div>';
       right.innerHTML=sigs+'<div class="sec">Why They Fit</div><div class="atext" style="margin-bottom:12px">'+(r.why_fit||'—')+'</div>'+
         '<div class="sec">Risks</div><div class="atext" style="color:var(--amb);margin-bottom:12px">'+(r.risks||'—')+'</div>'+
-        '<div class="sec">Reach Out To</div><div class="atext" style="color:var(--blu);margin-bottom:12px">'+(r.decision_maker||'—')+'</div>'+
+        '<div class="sec">Reach Out To</div><div class="atext" style="color:var(--blu);margin-bottom:12px">'+
+        (r.best_contact_name&&r.best_contact_title ? r.best_contact_name+' — '+r.best_contact_title :
+         r.best_contact_title ? r.best_contact_title :
+         r.decision_maker||'—')+'</div>'+
         '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'—')+'</div></div>';
 
       body.appendChild(left);body.appendChild(right);card.appendChild(body);
