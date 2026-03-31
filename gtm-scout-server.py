@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v11
+#v12
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -208,7 +208,17 @@ function load() {
   fetch('/db').then(function(r){return r.json();}).then(function(d){if(Array.isArray(d)){DB=d;renderAll();}}).catch(function(){DB=[];});
 }
 function save() {
-  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(DB)}).catch(function(){});
+  var ind = document.getElementById('save-ind');
+  if(ind) { ind.textContent = 'saving...'; ind.style.color = 'var(--tx3)'; }
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(DB)})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(ind) { ind.textContent = d.ok ? 'saved ✓' : 'save error'; ind.style.color = d.ok ? 'var(--grn)' : 'var(--red)'; }
+    setTimeout(function(){ if(ind) ind.textContent = ''; }, 3000);
+  })
+  .catch(function(e){
+    if(ind) { ind.textContent = 'save failed'; ind.style.color = 'var(--red)'; }
+  });
 }
 
 function showPanel(id) {
@@ -439,7 +449,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "</div>"
     "<div class='stats'>"
       "<div><div class='stat-n' id='stt'>0</div><div class='stat-l'>Total</div></div>"
-      "<div><div class='stat-n' id='sth'>0</div><div class='stat-l'>Hot Leads</div></div>"
+      "<div><div class='stat-n' id='sth'>0</div><div class='stat-l'>Hot Leads</div></div><div style='font-size:10px;color:var(--tx3)'><span id='save-ind'></span></div>"
     "</div>"
   "</div>\n"
 
