@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v12
+#v13
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -199,7 +199,7 @@ body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace
 
 JS = """
 var DB = [], busy = false, fil = 'all', ti = null;
-var activeSources = ['techcrunch','blockworks','theblock'];
+var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedinjobs'];
 
 var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly Hot Lead if 80+, Warm Lead if 50-79, Cold Lead if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to not_contacted), best_contact_title (the exact title of the best person to reach out to for fractional CMO services - prefer CMO, VP Marketing, Head of Growth, Head of Marketing, Co-founder if no marketing hire, or CEO as last resort), best_contact_name (their name if known, else null). Use null for unknown.";
 var FETCH_SYS = "You are a funding news analyst. Search the web for startup funding announcements from the last 14 days. Focus on AI, web3, crypto, blockchain, DeFi, fintech. Return ONLY a valid JSON array, no markdown. Each item: {company:Name,sector:AI/Web3/etc,funding:$XM,stage:Seed/Series A/etc,source:publication}. Max 15 companies. Only include real recent raises.";
@@ -236,8 +236,14 @@ function fetchLeads() {
   var errEl=document.getElementById('fetch-err');
   var res=document.getElementById('fetch-results');
   btn.disabled=true; errEl.style.display='none'; res.style.display='none'; ldg.style.display='flex';
-  var srcNames=activeSources.map(function(s){return s==='techcrunch'?'TechCrunch':s==='blockworks'?'Blockworks':s==='theblock'?'The Block':'crypto-fundraising.info';}).join(', ');
-  var prompt='Search '+srcNames+' and other tech/crypto news for startup funding announcements from the last 14 days. Focus on AI, web3, crypto, fintech. Return a JSON array of recently funded companies.';
+  var srcNames=activeSources.map(function(s){
+    return s==='techcrunch'?'TechCrunch':s==='blockworks'?'Blockworks':s==='theblock'?'The Block':
+           s==='producthunt'?'Product Hunt':s==='linkedinjobs'?'LinkedIn Jobs':'crypto-fundraising.info';
+  }).join(', ');
+  var extraInstructions = '';
+  if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
+  if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
+  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -315,12 +321,61 @@ function run(company,callback){
 function sc(n){return n>=80?'var(--grn)':n>=50?'var(--amb)':'var(--tx3)';}
 function su(v){if(!v||v==='null'||v==='undefined')return '';return String(v).indexOf('http')===0?v:'https://'+v;}
 
+function renderPipeline(){
+  var cont=document.getElementById('cards');cont.innerHTML='';
+  var stages=['not_contacted','contacted','in_talks','closed'];
+  var labels={'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed ✓'};
+  var colors={'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--blu)','closed':'var(--grn)'};
+  var wrap=document.createElement('div');
+  wrap.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:start';
+  stages.forEach(function(stage){
+    var col=document.createElement('div');
+    col.style.cssText='background:var(--sur);border:1px solid var(--bor);padding:10px';
+    var header=document.createElement('div');
+    header.style.cssText='font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:'+colors[stage]+';margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bor)';
+    var stageItems=DB.filter(function(r){return (r.outreach_status||'not_contacted')===stage;});
+    header.textContent=labels[stage]+' ('+stageItems.length+')';
+    col.appendChild(header);
+    stageItems.forEach(function(r){
+      var item=document.createElement('div');
+      item.style.cssText='background:var(--bg);border:1px solid var(--bor);padding:8px;margin-bottom:4px;cursor:pointer';
+      item.innerHTML='<div style="font-size:11px;font-weight:700;margin-bottom:2px">'+(r.company||'')+'</div>'+
+        '<div style="font-size:9px;color:var(--tx3)">'+(r.sector||'')+'</div>'+
+        (r._followup?'<div style="font-size:9px;color:var(--amb);margin-top:3px">📅 '+r._followup+'</div>':'')+
+        (r._notes?'<div style="font-size:9px;color:var(--tx3);margin-top:3px;font-style:italic">'+r._notes.slice(0,60)+(r._notes.length>60?'...':'')+'</div>':'')+
+        '<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">'+
+        (r.website?'<a href="'+(r.website.indexOf('http')===0?r.website:'https://'+r.website)+'" target="_blank" style="font-size:9px;color:var(--blu);border:1px solid var(--bor);padding:1px 5px;text-decoration:none">visit</a>':'')+
+        '</div>';
+      // Click to advance stage
+      (function(rec){
+        item.onclick=function(){
+          var order=['not_contacted','contacted','in_talks','closed'];
+          var cur=rec.outreach_status||'not_contacted';
+          rec.outreach_status=order[(order.indexOf(cur)+1)%order.length];
+          save();if(viewMode==='pipeline')renderPipeline();else renderCards();
+        };
+      })(r);
+      col.appendChild(item);
+    });
+    wrap.appendChild(col);
+  });
+  cont.appendChild(wrap);
+}
+
+var viewMode='list';
+function setView(mode){
+  viewMode=mode;
+  document.getElementById('view-list').classList.toggle('on',mode==='list');
+  document.getElementById('view-pipeline').classList.toggle('on',mode==='pipeline');
+  if(mode==='pipeline')renderPipeline();else renderCards();
+}
+
 function renderAll(){
   document.getElementById('stt').textContent=DB.length;
   document.getElementById('sth').textContent=DB.filter(function(r){return r.gtm_label==='Hot Lead';}).length;
   document.getElementById('empty').style.display=DB.length?'none':'block';
   document.getElementById('tb').style.display=DB.length?'flex':'none';
-  renderCards();
+  if(viewMode==='pipeline')renderPipeline();else renderCards();
 }
 
 function renderCards(){
@@ -372,10 +427,30 @@ function renderCards(){
         (r.best_contact_name&&r.best_contact_title ? r.best_contact_name+' — '+r.best_contact_title :
          r.best_contact_title ? r.best_contact_title :
          r.decision_maker||'—')+'</div>'+
-        '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'—')+'</div></div>';
+        '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'—')+'</div></div>'+
+        '<div style="margin-top:8px"><div class="sec" style="margin-top:8px">Notes</div>'+
+        '<textarea id="note'+id+'" style="width:100%;background:var(--bg);border:1px solid var(--bor2);color:var(--tx);font-family:JetBrains Mono,monospace;font-size:11px;padding:8px;min-height:60px;resize:vertical;outline:none;line-height:1.6" placeholder="Add notes...">'+(r._notes||'')+'</textarea></div>';
 
       body.appendChild(left);body.appendChild(right);card.appendChild(body);
+    // Wire notes auto-save
+    setTimeout(function(){
+      var noteEl = document.getElementById('note'+id);
+      if(noteEl){
+        noteEl.addEventListener('input', function(){
+          r._notes = noteEl.value;
+          clearTimeout(noteEl._t);
+          noteEl._t = setTimeout(function(){ save(); }, 800);
+        });
+      }
+    }, 0);
       var acts=document.createElement('div');acts.className='cact';
+      // LinkedIn search for best contact
+      var contactName = r.best_contact_name || '';
+      var contactTitle = r.best_contact_title || r.decision_maker || '';
+      var liQuery = encodeURIComponent((contactName + ' ' + contactTitle + ' ' + (r.company||'')).trim());
+      var lib2=document.createElement('button');lib2.className='abtn';lib2.textContent='Find on LinkedIn';
+      lib2.onclick=function(){window.open('https://www.linkedin.com/search/results/people/?keywords='+liQuery,'_blank');};
+      acts.appendChild(lib2);
       var cp=document.createElement('button');cp.className='abtn g';cp.textContent='Copy Pitch';
       (function(cid){cp.onclick=function(){var el=document.getElementById('pt'+cid);if(el)navigator.clipboard.writeText(el.textContent);cp.textContent='Copied!';setTimeout(function(){cp.textContent='Copy Pitch';},1800);};})(id);
       acts.appendChild(cp);
@@ -401,7 +476,38 @@ function renderCards(){
         };
       })(r);
       acts.appendChild(statusBtn);
+      // Follow-up date
+      var followupWrap = document.createElement('div');
+      followupWrap.style.cssText='display:flex;align-items:center;gap:4px;margin-left:4px';
+      var followupLabel = document.createElement('span');
+      followupLabel.style.cssText='font-size:9px;color:var(--tx3);text-transform:uppercase';
+      followupLabel.textContent='Follow-up:';
+      var followupInput = document.createElement('input');
+      followupInput.type='date';
+      followupInput.style.cssText='background:var(--bg);border:1px solid var(--bor2);color:var(--tx2);font-family:JetBrains Mono,monospace;font-size:10px;padding:3px 6px;outline:none;cursor:pointer';
+      followupInput.value = r._followup || '';
+      (function(rec){ followupInput.onchange = function(){ rec._followup = followupInput.value; save(); }; })(r);
+      followupWrap.appendChild(followupLabel);
+      followupWrap.appendChild(followupInput);
+      acts.appendChild(followupWrap);
       var rm=document.createElement('button');rm.className='abtn ghost';rm.textContent='Remove';
+      // Re-research button
+      var rr=document.createElement('button');rr.className='abtn';rr.textContent='↺ Re-research';
+      (function(rec){rr.onclick=function(){
+        rr.textContent='Researching...';rr.disabled=true;
+        fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:rec.company,system:SYS})})
+        .then(function(r){return r.json();}).then(function(d){
+          if(d.error)throw new Error(d.error);
+          var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+          var a=t.indexOf('{'),b=t.lastIndexOf('}');
+          var fresh=JSON.parse(t.slice(a,b+1));
+          fresh._id=rec._id;fresh._open=true;fresh._notes=rec._notes;fresh._followup=rec._followup;fresh.outreach_status=rec.outreach_status;
+          var idx=DB.findIndex(function(x){return x._id===rec._id;});
+          if(idx>=0)DB[idx]=fresh;
+          save();renderAll();
+        }).catch(function(e){rr.textContent='↺ Re-research';rr.disabled=false;});
+      };})(r);
+      acts.appendChild(rr);
       (function(cid){rm.onclick=function(){DB=DB.filter(function(x){return x._id!==cid;});save();renderAll();};})(id);
       acts.appendChild(rm);card.appendChild(acts);
     }
@@ -465,6 +571,8 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div class='src-pill on' data-src='blockworks'>Blockworks</div>"
       "<div class='src-pill on' data-src='theblock'>The Block</div>"
       "<div class='src-pill' data-src='cryptofunding'>crypto-fundraising.info</div>"
+      "<div class='src-pill on' data-src='producthunt'>ProductHunt</div>"
+      "<div class='src-pill on' data-src='linkedinjobs'>LinkedIn Jobs</div>"
     "</div>"
     "<div id='fetch-ldg'><div class='spinner'></div><span id='fetch-msg'>Searching funding news...</span></div>"
     "<div id='fetch-err'></div>"
@@ -504,6 +612,9 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
 
   "<div class='toolbar' id='tb'>"
     "<button class='fb on' data-f='all'>All</button>"
+    "<div style='width:1px;background:var(--bor);margin:0 4px'></div>"
+    "<button class='fb on' id='view-list' onclick='setView(\"list\")'>List</button>"
+    "<button class='fb' id='view-pipeline' onclick='setView(\"pipeline\")'>Pipeline</button>"
     "<button class='fb' data-f='hot'>Hot</button>"
     "<button class='fb' data-f='warm'>Warm</button>"
     "<button class='fb' data-f='cold'>Cold</button>"
