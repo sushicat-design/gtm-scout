@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v13
+#v14
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -10,37 +10,42 @@ def find_port():
     return 8765
 
 PORT = int(os.environ.get('PORT', find_port()))
-# Persistent storage via JSONBin.io (free, survives Railway deploys)
-JSONBIN_BIN_ID = os.environ.get('JSONBIN_BIN_ID', '')
-JSONBIN_API_KEY = os.environ.get('JSONBIN_API_KEY', '')
+# Persistent storage via GitHub Gist (free, survives Railway deploys)
+GIST_ID = os.environ.get('GIST_ID', '')
+GIST_TOKEN = os.environ.get('GIST_TOKEN', '')
 
 def load_db():
-    # Try JSONBin first
-    if JSONBIN_BIN_ID and JSONBIN_API_KEY:
+    # Try GitHub Gist first
+    if GIST_ID and GIST_TOKEN:
         try:
             req = urllib.request.Request(
-                'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest',
-                headers={'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false'},
+                'https://api.github.com/gists/' + GIST_ID,
+                headers={
+                    'Authorization': 'token ' + GIST_TOKEN,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'User-Agent': 'Scout-App'
+                },
                 method='GET'
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
-                raw = resp.read()
-                data = json.loads(raw)
-                if isinstance(data, list):
-                    print('[DB] Loaded', len(data), 'records from JSONBin')
+                gist_data = json.loads(resp.read())
+                content = gist_data['files']['scout_db.json']['content']
+                data = json.loads(content)
+                if isinstance(data, list) and len(data) > 0 and 'init' not in str(data[0]):
+                    print('[DB] Loaded', len(data), 'records from GitHub Gist')
                     return data
-                print('[DB] JSONBin returned non-list:', type(data), str(raw)[:100])
+                print('[DB] Gist has placeholder data, returning empty')
         except Exception as e:
-            print('[DB] JSONBin load error:', e)
+            print('[DB] Gist load error:', e)
     else:
-        print('[DB] No JSONBin credentials - BIN_ID:', bool(JSONBIN_BIN_ID), 'API_KEY:', bool(JSONBIN_API_KEY))
+        print('[DB] No Gist credentials - GIST_ID:', bool(GIST_ID), 'GIST_TOKEN:', bool(GIST_TOKEN))
     # Fallback to local file
     try:
         db_file = '/tmp/scout_db.json'
         if os.path.exists(db_file):
             with open(db_file) as f:
                 data = json.load(f)
-            if isinstance(data, list):
+            if isinstance(data, list) and len(data) > 0:
                 print('[DB] Loaded', len(data), 'records from local file')
                 return data
     except Exception as e:
@@ -48,7 +53,7 @@ def load_db():
     return []
 
 def save_db(data):
-    # Always save to local file first as immediate backup
+    # Always save to local file first
     try:
         db_file = '/tmp/scout_db.json'
         with open(db_file, 'w') as f:
@@ -56,22 +61,33 @@ def save_db(data):
         print('[DB] Saved', len(data), 'records to local file')
     except Exception as e:
         print('[DB] Local save error:', e)
-    # Then try JSONBin
-    if JSONBIN_BIN_ID and JSONBIN_API_KEY:
+    # Save to GitHub Gist
+    if GIST_ID and GIST_TOKEN:
         try:
-            payload = json.dumps(data).encode('utf-8')
+            payload = json.dumps({
+                'files': {
+                    'scout_db.json': {
+                        'content': json.dumps(data)
+                    }
+                }
+            }).encode('utf-8')
             req = urllib.request.Request(
-                'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID,
+                'https://api.github.com/gists/' + GIST_ID,
                 data=payload,
-                headers={'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY},
-                method='PUT'
+                headers={
+                    'Authorization': 'token ' + GIST_TOKEN,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Scout-App'
+                },
+                method='PATCH'
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
-                print('[DB] Saved', len(data), 'records to JSONBin, status:', resp.status)
+                print('[DB] Saved', len(data), 'records to GitHub Gist, status:', resp.status)
         except Exception as e:
-            print('[DB] JSONBin save error:', e)
+            print('[DB] Gist save error:', e)
     else:
-        print('[DB] No JSONBin credentials - BIN_ID:', bool(JSONBIN_BIN_ID), 'API_KEY:', bool(JSONBIN_API_KEY))
+        print('[DB] No Gist credentials')
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -731,18 +747,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/dbtest':
-            result = {'bin_id': bool(JSONBIN_BIN_ID), 'api_key': bool(JSONBIN_API_KEY), 'records': 0, 'error': None}
+            result = {'gist_id': bool(GIST_ID), 'gist_token': bool(GIST_TOKEN), 'records': 0, 'error': None}
             try:
                 req = urllib.request.Request(
-                    'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest',
-                    headers={'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false'},
+                    'https://api.github.com/gists/' + GIST_ID,
+                    headers={'Authorization': 'token ' + GIST_TOKEN, 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'Scout-App'},
                     method='GET'
                 )
                 with urllib.request.urlopen(req, timeout=15) as resp:
-                    data = json.loads(resp.read())
+                    gist_data = json.loads(resp.read())
+                    content = gist_data['files']['scout_db.json']['content']
+                    data = json.loads(content)
                     result['records'] = len(data) if isinstance(data, list) else -1
-                    result['type'] = str(type(data))
-                    result['preview'] = str(data)[:200] if not isinstance(data, list) else 'list ok'
+                    result['preview'] = 'gist ok'
             except Exception as e:
                 result['error'] = str(e)
             out = json.dumps(result).encode('utf-8')
