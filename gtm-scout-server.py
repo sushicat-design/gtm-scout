@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v19
+#v20
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -157,6 +157,23 @@ body{background:var(--bg);color:var(--tx);font-family:'Nunito',sans-serif;font-s
 #bi:focus,#ii:focus{border-color:var(--pip)}
 .sub-btn{background:var(--pip);color:#fff;border:none;font-weight:700;font-size:12px;padding:8px 18px;cursor:pointer;margin-top:8px;font-family:'Nunito',sans-serif;border-radius:var(--r-sm)}
 #ierr{display:none;color:var(--red);font-size:12px;margin-top:6px}
+
+
+/* ── FETCH MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;align-items:flex-start;justify-content:center;padding-top:100px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.modal-title{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--tx3);margin-bottom:18px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:var(--r-sm)}
+.modal-close:hover{color:var(--tx);background:var(--bor)}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid var(--bor)}
+.modal-btn{font-size:12px;padding:8px 18px;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;transition:all .2s}
+.modal-btn.primary{background:var(--pip);color:#fff;border:none}
+.modal-btn.primary:hover{opacity:.88}
+.modal-btn.primary:disabled{opacity:.35;cursor:not-allowed}
+.modal-btn.secondary{background:none;border:1px solid var(--bor2);color:var(--tx2)}
+.modal-btn.secondary:hover{border-color:var(--pip);color:var(--pip)}
 
 /* ── FETCH PANEL on search page ── */
 .fetch-panel{background:var(--pip-dim);border:1px solid var(--pip-bor);padding:20px;margin-top:32px;border-radius:var(--r)}
@@ -505,6 +522,7 @@ function updateCount(){var n=document.querySelectorAll('#fetch-list input:checke
 
 
 function researchSelected(){
+  closeFetchModal();
   var cbs=document.querySelectorAll('#fetch-list input:checked');
   var names=[];
   cbs.forEach(function(cb){
@@ -1047,6 +1065,15 @@ function phRenderJobs(){
   });
 }
 // ── DOM READY ─────────────────────────────────────────────────────────────────
+function openFetchModal(){
+  document.getElementById('fetch-modal').classList.add('open');
+  document.getElementById('fetch-results').style.display='none';
+  document.getElementById('fetch-err').style.display='none';
+}
+function closeFetchModal(){
+  document.getElementById('fetch-modal').classList.remove('open');
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   load();
 
@@ -1140,6 +1167,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div class='search-box'>"
       "<input id='ci' type='text' placeholder='Company name, e.g. Privy, Alchemy, Listen Labs...'>"
       "<button id='rb'>Research →</button>"
+      "<button id='fetch-modal-btn' onclick='openFetchModal()' style='background:none;border:1px solid var(--pip-bor);color:var(--pip);font-weight:700;font-size:12px;padding:12px 16px;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;border-radius:var(--r);transition:all .2s'>⚡ Fetch Leads</button>"
     "</div>"
     "<div id='ldg'><div class='spinner'></div><span>Researching <b id='lname'></b>... <span id='ltimer'>0s</span></span></div>"
     "<div id='err'></div>"
@@ -1159,12 +1187,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<button class='sub-btn' id='iib'>Import</button>"
     "</div>"
 
-    "<div class='fetch-panel'>"
-      "<div class='fetch-top'>"
-        "<div><div class='fetch-title'>Fetch New Leads</div><div class='fetch-sub'>Pull recently funded companies — they go to your Inbox for review</div></div>"
-        "<button id='fetch-btn'>Fetch Leads →</button>"
-      "</div>"
-      "<div class='src-pills'>"
+          "<div class='src-pills'>"
         "<div class='src-pill on' data-src='techcrunch'>TechCrunch</div>"
         "<div class='src-pill on' data-src='blockworks'>Blockworks</div>"
         "<div class='src-pill on' data-src='theblock'>The Block</div>"
@@ -1235,6 +1258,37 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div id='ph-saved-section' style='display:none'>"
       "<div class='ph-saved-list'><h3>Saved Jobs</h3></div>"
       "<div class='ph-grid' id='ph-saved-grid'></div>"
+    "</div>"
+  "</div>\n"
+
+
+  "<div class='modal-overlay' id='fetch-modal' onclick='if(event.target===this)closeFetchModal()'>"
+    "<div class='modal' style='position:relative'>"
+      "<button class='modal-close' onclick='closeFetchModal()'>✕</button>"
+      "<div class='modal-title'>⚡ Fetch New Leads</div>"
+      "<div class='modal-sub'>Pull recently funded companies — researched and sent to your Inbox</div>"
+      "<div class='src-pills' style='margin-bottom:14px'>"
+        "<div class='src-pill on' data-src='techcrunch'>TechCrunch</div>"
+        "<div class='src-pill on' data-src='blockworks'>Blockworks</div>"
+        "<div class='src-pill on' data-src='theblock'>The Block</div>"
+        "<div class='src-pill' data-src='cryptofunding'>Crypto Funding</div>"
+        "<div class='src-pill on' data-src='producthunt'>ProductHunt</div>"
+        "<div class='src-pill on' data-src='linkedinjobs'>LinkedIn Jobs</div>"
+      "</div>"
+      "<div id='fetch-ldg' style='margin-top:0;padding-top:0;border-top:none'><div class='spinner'></div><span>Searching funding news...</span></div>"
+      "<div id='fetch-err'></div>"
+      "<div id='fetch-results' style='margin-top:0;padding-top:0;border-top:none'>"
+        "<div style='font-size:11px;color:var(--tx3);margin-bottom:8px'>Select to research → sent to Inbox:</div>"
+        "<div class='fetch-list' id='fetch-list'></div>"
+        "<div style='display:flex;align-items:center;gap:8px;margin-top:8px'>"
+          "<button id='res-sel-btn' class='modal-btn primary'>Research Selected →</button>"
+          "<span id='fetch-count' style='font-size:11px;color:var(--tx3)'></span>"
+        "</div>"
+      "</div>"
+      "<div class='modal-footer'>"
+        "<button class='modal-btn secondary' onclick='closeFetchModal()'>Cancel</button>"
+        "<button class='modal-btn primary' id='fetch-btn'>Search Funding News →</button>"
+      "</div>"
     "</div>"
   "</div>\n"
 
