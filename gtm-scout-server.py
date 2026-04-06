@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v18
+#v19
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -276,6 +276,45 @@ body{background:var(--bg);color:var(--tx);font-family:'Nunito',sans-serif;font-s
 .empty-title{font-size:18px;font-weight:800;color:var(--tx2);margin-bottom:10px;letter-spacing:-.03em}
 .empty p{font-size:13px;line-height:2}
 
+/* ── PIP HUNT ── */
+.ph-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.ph-header h2{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.ph-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--bor);padding-bottom:0}
+.ph-tab{padding:8px 20px;font-size:13px;font-weight:600;color:var(--tx3);cursor:pointer;border:none;background:none;font-family:'Nunito',sans-serif;border-bottom:2px solid transparent;transition:all .2s;margin-bottom:-1px}
+.ph-tab:hover{color:var(--tx2)}
+.ph-tab.active{color:var(--pip);border-bottom-color:var(--pip)}
+.ph-controls{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.ph-filter{font-size:11px;padding:5px 12px;background:none;border:1px solid var(--bor);color:var(--tx3);cursor:pointer;font-family:'Nunito',sans-serif;border-radius:var(--r-pill);transition:all .2s;font-weight:600}
+.ph-filter:hover{border-color:var(--pip);color:var(--pip)}
+.ph-filter.on{border-color:var(--pip);color:var(--pip);background:var(--pip-dim)}
+.ph-fetch-btn{background:var(--pip);color:#fff;border:none;font-weight:700;font-size:12px;padding:9px 20px;cursor:pointer;font-family:'Nunito',sans-serif;border-radius:var(--r);transition:opacity .2s;margin-left:auto}
+.ph-fetch-btn:hover{opacity:.88}
+.ph-fetch-btn:disabled{opacity:.35;cursor:not-allowed}
+.ph-status{font-size:11px;color:var(--tx3);margin-left:8px}
+.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ph-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);overflow:hidden;transition:all .2s}
+.ph-card:hover{border-color:var(--bor2);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.ph-card.saved{border-color:var(--pip-bor);background:var(--pip-dim)}
+.ph-card-header{padding:16px 18px 12px}
+.ph-card-role{font-size:14px;font-weight:800;letter-spacing:-.02em;color:var(--tx);margin-bottom:4px}
+.ph-card-company{font-size:13px;font-weight:700;color:var(--pip);margin-bottom:4px}
+.ph-card-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.ph-tag{font-size:10px;font-weight:600;padding:2px 9px;border-radius:var(--r-pill);border:1px solid var(--bor2);color:var(--tx3)}
+.ph-tag.remote{border-color:var(--pip-bor);color:var(--pip-light)}
+.ph-tag.salary{border-color:rgba(240,165,0,0.3);color:var(--amb)}
+.ph-tag.new{border-color:rgba(61,214,140,0.3);color:var(--grn)}
+.ph-card-body{padding:0 18px 14px}
+.ph-desc{font-size:12px;color:var(--tx2);line-height:1.75;margin-bottom:12px}
+.ph-apply{display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--bg);border:1px solid var(--bor);border-radius:var(--r-sm);margin-bottom:8px}
+.ph-apply-method{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);min-width:60px}
+.ph-apply-link{font-size:12px;color:var(--pip);text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph-apply-link:hover{text-decoration:underline}
+.ph-card-actions{display:flex;gap:6px;padding:10px 16px;background:var(--bg);border-top:1px solid var(--bor);flex-wrap:wrap}
+.ph-saved-list{margin-top:32px}
+.ph-saved-list h3{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px;color:var(--tx2)}
+.ph-empty{text-align:center;padding:80px 20px;color:var(--tx3)}
+.ph-empty-title{font-size:18px;font-weight:800;color:var(--tx2);margin-bottom:8px;letter-spacing:-.03em}
+
 """
 
 JS = """
@@ -352,6 +391,7 @@ function setPage(page) {
   if(page==='leads') renderLeads();
   if(page==='pipeline') renderPipelinePage();
   if(page==='inbox') renderInbox();
+  if(page==='piphunt'){phLoad();phRenderJobs();}
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -711,25 +751,30 @@ function renderInbox(){
   cont.innerHTML='';
   updateBadges();
   if(!INBOX.length){
-    cont.innerHTML='<div class="inbox-empty" style="grid-column:1/-1"><div class="inbox-empty-title">Inbox is empty</div><p style="color:var(--tx3);font-size:13px">Fetch new leads from the Search page and they will appear here for review.</p></div>';
+    cont.innerHTML='<div class="inbox-empty" style="grid-column:1/-1"><div class="inbox-empty-title">Inbox is empty</div><p style="color:var(--tx3);font-size:13px">Fetch leads from the Search page and they will appear here for review.</p></div>';
     return;
   }
-  cont.addEventListener('click', function(e){
-    var approveBtn = e.target.closest('.btn-approve');
-    var dismissBtn = e.target.closest('.btn-dismiss');
-    if(approveBtn) approveInboxCard(approveBtn.getAttribute('data-id'));
-    if(dismissBtn) dismissInboxCard(dismissBtn.getAttribute('data-id'));
-  }, {once: true});
+  // Event delegation for approve/dismiss
+  cont.addEventListener('click',function(e){
+    var a=e.target.closest('.btn-approve');
+    var d=e.target.closest('.btn-dismiss');
+    if(a)approveInboxCard(a.getAttribute('data-id'));
+    if(d)dismissInboxCard(d.getAttribute('data-id'));
+  });
   INBOX.forEach(function(r){
     var n=r.gtm_readiness_score||0,c=sc(n),id=r._id;
-    var card=document.createElement('div');card.className='inbox-card';
     var inv=[r.lead_investor,r.other_investors].filter(function(v){return v&&v!=='null';}).join(', ');
+    var card=document.createElement('div');card.className='inbox-card';
+    var whyFit=r.why_fit?'<div style="margin-bottom:8px;font-size:12px;color:var(--tx2)">'+r.why_fit+'</div>':'';
+    var pitch=r.pitch_opener?'<div style="font-size:11px;color:var(--pip-light);font-style:italic;padding:10px;background:var(--pip-dim);border-radius:8px;border:1px solid var(--pip-bor)">'+r.pitch_opener+'</div>':'';
+    var contact=(r.best_contact_title||r.decision_maker)?'<div style="margin-top:8px;font-size:11px;color:var(--pip)">Contact: '+(r.best_contact_name?r.best_contact_name+' - ':''+(r.best_contact_title||r.decision_maker||''))+'</div>':'';
+    var investors=inv?'<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Investors: '+inv+'</div>':'';
     card.innerHTML=
       '<div class="inbox-card-header">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
           '<div>'+
             '<div class="inbox-card-name">'+(r.company||'')+'</div>'+
-            '<div class="inbox-card-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+(r.hq?' · '+r.hq:'')+'</div>'+
+            '<div class="inbox-card-meta">'+(r.sector||'')+(r.stage?' - '+r.stage:'')+(r.hq?' - '+r.hq:'')+'</div>'+
           '</div>'+
           '<div style="text-align:right">'+
             '<div style="font-size:20px;font-weight:800;color:'+c+'">'+n+'</div>'+
@@ -737,20 +782,270 @@ function renderInbox(){
           '</div>'+
         '</div>'+
       '</div>'+
-      '<div class="inbox-card-body">'+
-        (r.why_fit?'<div style="margin-bottom:8px;font-size:12px;color:var(--tx2)">'+r.why_fit+'</div>':'')+
-        (r.pitch_opener?'<div style="font-size:11px;color:var(--pip-light);font-style:italic;padding:10px;background:var(--pip-dim);border-radius:8px;border:1px solid var(--pip-bor)">'+r.pitch_opener+'</div>':'')+
-        (r.best_contact_title||r.decision_maker?'<div style="margin-top:8px;font-size:11px;color:var(--pip)">Contact: '+(r.best_contact_name?r.best_contact_name+' — ':'')+( r.best_contact_title||r.decision_maker||'')+'</div>':'')+
-        (inv?'<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Investors: '+inv+'</div>':'')+
-      '</div>'+
+      '<div class="inbox-card-body">'+whyFit+pitch+contact+investors+'</div>'+
       '<div class="inbox-card-actions">'+
-        '<button class="btn-approve" data-id="'+id+'">Save to Pipeline \u2192</button>'+
+        '<button class="btn-approve" data-id="'+id+'">Save to Pipeline</button>'+
         '<button class="btn-dismiss" data-id="'+id+'">Dismiss</button>'+
       '</div>';
     cont.appendChild(card);
   });
 }
 
+// ── PIP HUNT ─────────────────────────────────────────────────────────────────
+var PH_JOBS = [];
+var PH_SAVED = [];
+var phCategory = 'cmo';
+var phFilters = {remote: false, startup: false, week: false};
+
+var PH_SYS_CMO = "You are a job search assistant. Search the web for currently open job postings for CMO, VP Marketing, Head of Marketing, VP Growth, Head of Growth, Director of Marketing roles at tech and AI startups. Focus on companies that are Series A, Series B, or recently funded. For each job found return a JSON array. Each item must have: {role, company, location, remote (bool), salary (string or null), posted (string - how long ago), apply_method (one of: 'link', 'email', 'linkedin'), apply_url (direct URL or email address), description (2 sentences max about the role), sector}. Return max 15 results. Only real current openings.";
+
+var PH_SYS_DESIGN = "You are a job search assistant. Search the web for currently open job postings for Head of Design, VP Design, Creative Director, Brand Director, Director of Brand, Head of Brand roles at tech and AI startups. Focus on companies that are Series A, Series B, or recently funded. For each job found return a JSON array. Each item must have: {role, company, location, remote (bool), salary (string or null), posted (string - how long ago), apply_method (one of: 'link', 'email', 'linkedin'), apply_url (direct URL or email address), description (2 sentences max about the role), sector}. Return max 15 results. Only real current openings.";
+
+function phSetCategory(cat){
+  phCategory = cat;
+  document.querySelectorAll('.ph-tab').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('data-cat')===cat);
+  });
+  phRenderJobs();
+}
+
+function phToggleFilter(f){
+  phFilters[f] = !phFilters[f];
+  document.querySelector('[data-filter="'+f+'"]').classList.toggle('on', phFilters[f]);
+  phRenderJobs();
+}
+
+function phFetch(){
+  var btn = document.getElementById('ph-fetch-btn');
+  var status = document.getElementById('ph-status');
+  btn.disabled = true;
+  status.textContent = 'Searching job boards...';
+  var sys = phCategory === 'cmo' ? PH_SYS_CMO : PH_SYS_DESIGN;
+  var query = phCategory === 'cmo'
+    ? 'Search job boards (LinkedIn, Greenhouse, Lever, AngelList, Wellfound, Indeed) for open CMO VP Marketing Head of Marketing roles at funded tech AI startups right now.'
+    : 'Search job boards (LinkedIn, Greenhouse, Lever, AngelList, Wellfound, Indeed) for open Head of Design VP Design Creative Director Brand Director roles at funded tech AI startups right now.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error) throw new Error(d.error);
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    if(a<0||b<0) throw new Error('No results found');
+    var jobs=JSON.parse(t.slice(a,b+1));
+    // Filter out bad results
+    var bad=['error','unable','insufficient','no results','no jobs'];
+    jobs=jobs.filter(function(j){
+      if(!j.company||!j.role) return false;
+      var lower=(j.company+j.role).toLowerCase();
+      return !bad.some(function(w){return lower.indexOf(w)>=0;});
+    });
+    // Tag with category and id
+    jobs.forEach(function(j){
+      j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
+      j._cat=phCategory;
+    });
+    // Add to top, remove dupes by company+role
+    jobs.forEach(function(j){
+      var exists=PH_JOBS.some(function(x){
+        return x.company===j.company&&x.role===j.role;
+      });
+      if(!exists) PH_JOBS.unshift(j);
+    });
+    phSave();
+    phRenderJobs();
+    status.textContent=jobs.length+' jobs found';
+    setTimeout(function(){status.textContent='';},4000);
+  })
+  .catch(function(e){
+    status.textContent='Error: '+e.message;
+    setTimeout(function(){status.textContent='';},5000);
+  })
+  .finally(function(){btn.disabled=false;});
+}
+
+function phSave(){
+  var all = DB.concat(INBOX).concat([{_ph_jobs:PH_JOBS,_ph_saved:PH_SAVED}]);
+  // Save PH data separately in gist as second file - for now just use localStorage fallback
+  try{localStorage.setItem('ph_jobs',JSON.stringify(PH_JOBS));}catch(e){}
+  try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
+}
+
+function phLoad(){
+  try{var j=localStorage.getItem('ph_jobs');if(j)PH_JOBS=JSON.parse(j);}catch(e){}
+  try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
+}
+
+function phSaveJob(id){
+  var job=PH_JOBS.find(function(j){return j._id===id;});
+  if(!job)return;
+  var already=PH_SAVED.some(function(j){return j._id===id;});
+  if(!already){PH_SAVED.unshift(job);}
+  phSave();
+  phRenderJobs();
+}
+
+function phRemoveSaved(id){
+  PH_SAVED=PH_SAVED.filter(function(j){return j._id!==id;});
+  phSave();
+  phRenderJobs();
+}
+
+function phResearchInScout(company){
+  setPage('search');
+  var ci=document.getElementById('ci');
+  if(ci){ci.value=company;ci.focus();}
+}
+
+function phCopyApply(val){
+  navigator.clipboard.writeText(val);
+}
+
+function phRenderJobs(){
+  var cont=document.getElementById('ph-jobs-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  var jobs=PH_JOBS.filter(function(j){return j._cat===phCategory;});
+  if(phFilters.remote) jobs=jobs.filter(function(j){return j.remote;});
+  if(phFilters.startup) jobs=jobs.filter(function(j){
+    var s=(j.sector||'').toLowerCase();
+    return s.indexOf('ai')>=0||s.indexOf('tech')>=0||s.indexOf('saas')>=0||s.indexOf('fintech')>=0;
+  });
+  if(phFilters.week) jobs=jobs.filter(function(j){
+    var p=(j.posted||'').toLowerCase();
+    return p.indexOf('day')>=0||p.indexOf('hour')>=0||p.indexOf('today')>=0||p.indexOf('1 week')>=0;
+  });
+
+  if(!jobs.length){
+    cont.innerHTML='<div class="ph-empty" style="grid-column:1/-1"><div class="ph-empty-title">No jobs yet</div><p>Click "Search Jobs" to find open '+(phCategory==='cmo'?'marketing leadership':'design leadership')+' roles.</p></div>';
+    return;
+  }
+
+  jobs.forEach(function(job){
+    var id=job._id;
+    var isSaved=PH_SAVED.some(function(j){return j._id===id;});
+    var card=document.createElement('div');
+    card.className='ph-card'+(isSaved?' saved':'');
+
+    var applyHtml='';
+    if(job.apply_url){
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var isLinkedIn=job.apply_method==='linkedin'||(job.apply_url||'').indexOf('linkedin')>=0;
+      var methodLabel=isEmail?'Email':isLinkedIn?'LinkedIn':'Apply';
+      var displayUrl=isEmail?job.apply_url:(job.apply_url.replace(/^https?:\/\//,'').slice(0,50)+(job.apply_url.length>55?'...':''));
+      applyHtml='<div class="ph-apply">'+
+        '<span class="ph-apply-method">'+methodLabel+'</span>'+
+        (isEmail
+          ? '<span class="ph-apply-link">'+job.apply_url+'</span>'
+          : '<a class="ph-apply-link" href="'+job.apply_url+'" target="_blank">'+displayUrl+'</a>')+
+        '</div>';
+    }
+
+    card.innerHTML=
+      '<div class="ph-card-header">'+
+        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
+        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
+        '<div class="ph-card-meta">'+
+          (job.location?'<span class="ph-tag">'+(job.location)+'</span>':'')+
+          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
+          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
+          (job.posted?'<span class="ph-tag new">'+(job.posted)+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="ph-card-body">'+
+        (job.description?'<div class="ph-desc">'+(job.description)+'</div>':'')+
+        applyHtml+
+      '</div>'+
+      '<div class="ph-card-actions" id="pha-'+id+'"></div>';
+
+    // Wire action buttons
+    var acts=card.querySelector('.ph-card-actions');
+
+    // Apply / Copy button
+    if(job.apply_url){
+      var applyBtn=document.createElement('button');
+      applyBtn.className='abtn g';
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      applyBtn.textContent=isEmail?'Copy Email':'Open Application';
+      (function(url,isEm){
+        applyBtn.onclick=function(){
+          if(isEm){navigator.clipboard.writeText(url);applyBtn.textContent='Copied!';setTimeout(function(){applyBtn.textContent='Copy Email';},1800);}
+          else{window.open(url,'_blank');}
+        };
+      })(job.apply_url, isEmail);
+      acts.appendChild(applyBtn);
+    }
+
+    // Save / unsave
+    var saveBtn=document.createElement('button');
+    saveBtn.className='abtn'+(isSaved?' g':'');
+    saveBtn.textContent=isSaved?'Saved ✓':'Save';
+    (function(jid,saved){
+      saveBtn.onclick=function(){
+        if(saved){phRemoveSaved(jid);}
+        else{phSaveJob(jid);}
+      };
+    })(id, isSaved);
+    acts.appendChild(saveBtn);
+
+    // Research company in Scout
+    var rBtn=document.createElement('button');rBtn.className='abtn';
+    rBtn.textContent='Research in Scout';
+    (function(co){rBtn.onclick=function(){phResearchInScout(co);};})(job.company);
+    acts.appendChild(rBtn);
+
+    // Remove from list
+    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';
+    rmBtn.textContent='Remove';
+    (function(jid){rmBtn.onclick=function(){
+      PH_JOBS=PH_JOBS.filter(function(j){return j._id!==jid;});
+      phSave();phRenderJobs();
+    };})(id);
+    acts.appendChild(rmBtn);
+
+    cont.appendChild(card);
+  });
+
+  // Render saved section
+  var savedCont=document.getElementById('ph-saved-grid');
+  if(!savedCont)return;
+  savedCont.innerHTML='';
+  var savedJobs=PH_SAVED.filter(function(j){return j._cat===phCategory;});
+  if(!savedJobs.length){
+    document.getElementById('ph-saved-section').style.display='none';
+    return;
+  }
+  document.getElementById('ph-saved-section').style.display='block';
+  savedJobs.forEach(function(job){
+    var id=job._id;
+    var mini=document.createElement('div');mini.className='ph-card saved';
+    mini.innerHTML=
+      '<div class="ph-card-header">'+
+        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
+        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
+        '<div class="ph-card-meta">'+
+          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
+          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="ph-card-actions"></div>';
+    var acts=mini.querySelector('.ph-card-actions');
+    if(job.apply_url){
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var ab=document.createElement('button');ab.className='abtn g';
+      ab.textContent=isEmail?'Copy Email':'Open Application';
+      (function(url,isEm){ab.onclick=function(){
+        if(isEm){navigator.clipboard.writeText(url);ab.textContent='Copied!';setTimeout(function(){ab.textContent='Copy Email';},1800);}
+        else window.open(url,'_blank');
+      };})(job.apply_url,isEmail);
+      acts.appendChild(ab);
+    }
+    var unBtn=document.createElement('button');unBtn.className='abtn ghost';unBtn.textContent='Remove';
+    (function(jid){unBtn.onclick=function(){phRemoveSaved(jid);phRenderJobs();};})(id);
+    acts.appendChild(unBtn);
+    savedCont.appendChild(mini);
+  });
+}
 // ── DOM READY ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',function(){
   load();
@@ -760,6 +1055,7 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('tab-leads').onclick=function(){setPage('leads');};
   document.getElementById('tab-pipeline').onclick=function(){setPage('pipeline');};
   document.getElementById('tab-inbox').onclick=function(){setPage('inbox');};
+  document.getElementById('tab-piphunt').onclick=function(){setPage('piphunt');};
 
   // Search page
   document.getElementById('rb').onclick=go;
@@ -831,6 +1127,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<button class='nav-tab' id='tab-leads'>Saved Leads <span class='badge' id='leads-badge'>0</span></button>"
       "<button class='nav-tab' id='tab-pipeline'>Pipeline</button>"
       "<button class='nav-tab' id='tab-inbox'>Inbox <span class='badge amber' id='inbox-badge' style='display:none'>0</span></button>"
+      "<button class='nav-tab' id='tab-piphunt'>🐾 Pip Hunt</button>"
     "</nav>"
     "<div class='topbar-right'><span class='save-ind' id='save-ind'></span></div>"
   "</div>\n"
@@ -919,6 +1216,26 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<span style='font-size:12px;color:var(--tx3)'>Review fetched leads — save to Pipeline or dismiss</span>"
     "</div>"
     "<div class='inbox-grid' id='inbox-grid'></div>"
+  "</div>\n"
+
+  "<div class='page' id='page-piphunt'>"
+    "<div class='ph-header'><h2>🐾 Pip Hunt</h2><span style='font-size:13px;color:var(--tx3)'>Find companies actively hiring marketing & design leadership</span></div>"
+    "<div class='ph-tabs'>"
+      "<button class='ph-tab active' data-cat='cmo' onclick='phSetCategory(\"cmo\")'>CMO & Marketing</button>"
+      "<button class='ph-tab' data-cat='design' onclick='phSetCategory(\"design\")'>Design & Creative</button>"
+    "</div>"
+    "<div class='ph-controls'>"
+      "<button class='ph-filter' data-filter='remote' onclick='phToggleFilter(\"remote\")'>Remote only</button>"
+      "<button class='ph-filter' data-filter='startup' onclick='phToggleFilter(\"startup\")'>AI / Tech</button>"
+      "<button class='ph-filter' data-filter='week' onclick='phToggleFilter(\"week\")'>This week</button>"
+      "<button class='ph-fetch-btn' id='ph-fetch-btn' onclick='phFetch()'>🔍 Search Jobs</button>"
+      "<span class='ph-status' id='ph-status'></span>"
+    "</div>"
+    "<div class='ph-grid' id='ph-jobs-grid'></div>"
+    "<div id='ph-saved-section' style='display:none'>"
+      "<div class='ph-saved-list'><h3>Saved Jobs</h3></div>"
+      "<div class='ph-grid' id='ph-saved-grid'></div>"
+    "</div>"
   "</div>\n"
 
   "<script>" + JS + "</script>\n"
