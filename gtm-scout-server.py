@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v21
+#v22
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -331,6 +331,20 @@ body{background:var(--bg);color:var(--tx);font-family:'Nunito',sans-serif;font-s
 .ph-saved-list h3{font-size:16px;font-weight:800;letter-spacing:-.02em;margin-bottom:14px;color:var(--tx2)}
 .ph-empty{text-align:center;padding:80px 20px;color:var(--tx3)}
 .ph-empty-title{font-size:18px;font-weight:800;color:var(--tx2);margin-bottom:8px;letter-spacing:-.03em}
+
+/* ── FETCH HERO ── */
+.fetch-hero{text-align:center;margin-top:60px;padding:48px 32px;border:1px solid var(--bor);border-radius:var(--r);background:var(--pip-dim);max-width:600px;margin-left:auto;margin-right:auto}
+.fetch-hero-title{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:10px;color:var(--tx)}
+.fetch-hero-sub{font-size:14px;color:var(--tx3);margin-bottom:28px;line-height:1.6}
+.fetch-hero-btn{background:var(--pip);color:#fff;border:none;font-weight:800;font-size:16px;padding:16px 48px;cursor:pointer;font-family:'Nunito',sans-serif;border-radius:var(--r);transition:all .2s;letter-spacing:-.01em}
+.fetch-hero-btn:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 8px 24px rgba(45,157,232,0.3)}
+.fetch-hero-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+/* Bigger search hero */
+.search-hero h1{font-size:48px;font-weight:800;letter-spacing:-.04em;margin-bottom:12px;line-height:1.1}
+.search-hero p{font-size:16px;color:var(--tx3);line-height:1.6}
+.search-box{max-width:680px}
+#ci{font-size:15px;padding:14px 20px}
+#rb{font-size:14px;padding:14px 28px}
 
 """
 
@@ -840,11 +854,8 @@ function phFetch(){
   btn.disabled = true;
   status.textContent = 'Searching job boards...';
   var sys = phCategory === 'cmo' ? PH_SYS_CMO : PH_SYS_DESIGN;
-  var query = phCategory === 'cmo'
-    ? 'Find 5 currently open jobs for CMO VP Marketing Head of Marketing at tech AI startups. Search LinkedIn Jobs, Greenhouse, Lever, AngelList right now and return the JSON array.'
-    : 'Find 5 currently open jobs for Head of Design VP Design Creative Director at tech AI startups. Search LinkedIn Jobs, Greenhouse, Lever, AngelList right now and return the JSON array.';
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch',max_results:5})})
+  var query = phCategory === 'cmo' ? 'Find CMO VP Marketing Head of Marketing roles at funded tech AI startups. Return JSON array.' : 'Find Head of Design VP Design Creative Director roles at funded tech AI startups. Return JSON array.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
   .then(function(r){return r.json();})
   .then(function(d){
     if(d.error) throw new Error(d.error);
@@ -1181,12 +1192,11 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<div class='page active' id='page-search'>"
     "<div class='search-hero'>"
       "<h1>Find your next client</h1>"
-      "<p>Research any company or fetch recently funded startups looking for marketing leadership.</p>"
+      "<p>Research any company to get a full GTM profile, score and pitch opener.</p>"
     "</div>"
     "<div class='search-box'>"
       "<input id='ci' type='text' placeholder='Company name, e.g. Privy, Alchemy, Listen Labs...'>"
       "<button id='rb'>Research →</button>"
-      "<button onclick='openFetchModal()' style='background:none;border:1px solid var(--pip-bor);color:var(--pip);font-weight:700;font-size:12px;padding:12px 16px;cursor:pointer;white-space:nowrap;font-family:Nunito,sans-serif;border-radius:var(--r);transition:opacity .2s'>⚡ Fetch Leads</button>"
     "</div>"
     "<div id='ldg'><div class='spinner'></div><span>Researching <b id='lname'></b>... <span id='ltimer'>0s</span></span></div>"
     "<div id='err'></div>"
@@ -1204,6 +1214,21 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<textarea id='ii' placeholder='[{&quot;company&quot;:&quot;Privy&quot;,...}]'></textarea>"
       "<div id='ierr'></div>"
       "<button class='sub-btn' id='iib'>Import</button>"
+    "</div>"
+    "<div class='fetch-hero'>"
+      "<div class='fetch-hero-title'>&#9889; Fetch New Leads</div>"
+      "<div class='fetch-hero-sub'>Pull recently funded companies from the web — they land in your Inbox for review</div>"
+      "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
+      "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
+      "<div id='fetch-err'></div>"
+      "<div id='fetch-results'>"
+        "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px;text-align:center'>Select companies to research — they go to your Inbox:</div>"
+        "<div class='fetch-list' id='fetch-list'></div>"
+        "<div style='display:flex;align-items:center;justify-content:center;margin-top:12px'>"
+          "<button id='res-sel-btn'>Research Selected →</button>"
+          "<span id='fetch-count' style='margin-left:12px'></span>"
+        "</div>"
+      "</div>"
     "</div>"
   "</div>\n"
 
