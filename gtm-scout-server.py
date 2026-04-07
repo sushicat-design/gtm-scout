@@ -276,10 +276,10 @@ body::after{
 .credits-count{font-size:11px;font-weight:600;color:var(--pip2);white-space:nowrap;font-family:'JetBrains Mono',monospace}
 
 /* ── SEARCH HERO ── */
-.search-hero{text-align:center;padding:72px 0 56px;position:relative}
+.search-hero{text-align:center;padding:40px 0 28px;position:relative}
 .search-hero h1{
-  font-size:64px;font-weight:700;letter-spacing:-.04em;
-  margin-bottom:18px;line-height:.96;color:var(--tx);
+  font-size:48px;font-weight:700;letter-spacing:-.04em;
+  margin-bottom:14px;line-height:.98;color:var(--tx);
   font-family:'Outfit',sans-serif;
 }
 .search-hero h1 span{
@@ -287,8 +287,8 @@ body::after{
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   display:inline-block;
 }
-.search-hero p{font-size:16px;color:var(--tx2);line-height:1.7;max-width:380px;margin:0 auto;font-weight:400}
-.search-box{display:flex;gap:6px;max-width:580px;margin:36px auto 0}
+.search-hero p{font-size:14px;color:var(--tx2);line-height:1.6;max-width:380px;margin:0 auto;font-weight:400}
+.search-box{display:flex;gap:6px;max-width:580px;margin:24px auto 0}
 #ci{
   flex:1;
   background:rgba(6,12,20,0.9);
@@ -332,7 +332,7 @@ body::after{
 
 /* ── FETCH HERO ── */
 .fetch-hero{
-  text-align:center;margin:72px auto 0;
+  text-align:center;margin:40px auto 0;
   padding:56px 44px;border:1px solid var(--bor2);
   border-radius:var(--r);background:var(--sur);
   max-width:500px;position:relative;overflow:hidden;
@@ -353,7 +353,7 @@ body::after{
 .fetch-hero-sub{font-size:14px;color:var(--tx2);margin-bottom:36px;line-height:1.7}
 .fetch-hero-btn{
   background:var(--pip);color:#fff;border:none;
-  font-weight:700;font-size:15px;padding:15px 48px;
+  font-weight:700;font-size:14px;padding:13px 40px;
   cursor:pointer;font-family:'Outfit',sans-serif;
   border-radius:var(--r);transition:all .22s;
   box-shadow:var(--glow-sm);letter-spacing:.02em;
@@ -3587,6 +3587,37 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<a href='mailto:hello@scout.so' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Contact</a>"
   "</div>"
 "</footer>\n"
+  "<div class='modal-overlay' id='profile-modal'>"
+    "<div class='modal'>"
+      "<div class='modal-title'>Edit Profile</div>"
+      "<div class='modal-field'><label class='modal-label'>Name / Agency</label><input class='modal-input' id='pm-name' placeholder='Your name or agency'></div>"
+      "<div class='modal-field'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div>"
+      "<div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are...'></textarea></div>"
+      "<div class='modal-field'><label class='modal-label'>LinkedIn URL</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/yourname'></div>"
+      "<div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://twitter.com/yourhandle'></div>"
+      "<div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com'></div>"
+      "<div class='modal-actions'>"
+        "<button class='modal-cancel' onclick=\"document.getElementById('profile-modal').classList.remove('open')\">Cancel</button>"
+        "<button class='modal-save' onclick='profileSaveInfo()'>Save</button>"
+      "</div>"
+    "</div>"
+  "</div>\n"
+  "<div class='modal-overlay' id='case-modal'>"
+    "<div class='modal'>"
+      "<input type='hidden' id='cm-idx' value='-1'>"
+      "<div class='modal-title'>Case Study</div>"
+      "<div class='modal-field'><label class='modal-label'>Client Name</label><input class='modal-input' id='cm-client' placeholder='Acme Inc (or keep anonymous)'></div>"
+      "<div class='modal-field'><label class='modal-label'>What you did</label><input class='modal-input' id='cm-title' placeholder='Built GTM from zero to Series B'></div>"
+      "<div class='modal-field'><label class='modal-label'>Result / Impact</label><textarea class='modal-input modal-textarea' id='cm-result' placeholder='Describe the outcome...'></textarea></div>"
+      "<div class='modal-field'><label class='modal-label'>Key Metrics (comma separated)</label><input class='modal-input' id='cm-metrics' placeholder='3x pipeline, $2M ARR, 40% CAC reduction'></div>"
+      "<div class='modal-actions'>"
+        "<button class='modal-cancel' onclick=\"document.getElementById('case-modal').classList.remove('open')\">Cancel</button>"
+        "<button class='modal-cancel' onclick='profileDeleteCase()' style='color:var(--red);border-color:rgba(239,68,68,0.2)'>Delete</button>"
+        "<button class='modal-save' onclick='profileSaveCase()'>Save</button>"
+      "</div>"
+    "</div>"
+  "</div>\n"
+
   "<script>" + JS + "</script>\n"
   "</body>\n</html>\n")
 
