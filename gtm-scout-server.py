@@ -677,18 +677,13 @@ function goHome(){window.location.href='/';}
 function openProfileModal(){
   profileLoad();
   var m = document.getElementById('profile-modal');
-  if(!m){ alert('Profile editor not found. Please refresh the page.'); return; }
-  var map = {
-    'pm-name': PROFILE.name||'',
-    'pm-tagline': PROFILE.tagline||'',
-    'pm-bio': PROFILE.bio||'',
-    'pm-linkedin': PROFILE.linkedin||'',
-    'pm-twitter': PROFILE.twitter||'',
-    'pm-website': PROFILE.website||''
-  };
-  Object.keys(map).forEach(function(id){
-    var el = document.getElementById(id);
-    if(el) el.value = map[id];
+  if(!m){ alert('Profile editor not found — please refresh.'); return; }
+  var fields = ['name','email','tagline','bio','agency','role','location','experience',
+    'client_size','availability','industries','funding_stage','company_size','deal_size',
+    'linkedin','twitter','website','calendly','min_score'];
+  fields.forEach(function(f){
+    var el = document.getElementById('pm-'+f);
+    if(el) el.value = PROFILE[f]||'';
   });
   m.style.cssText = 'display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
 }
@@ -1777,15 +1772,14 @@ function profileEditInfo(){
 }
 
 function profileSaveInfo(){
-  var fields=['name','tagline','bio','email','agency','role','location','experience',
+  var fields=['name','email','tagline','bio','agency','role','location','experience',
     'client_size','availability','industries','funding_stage','company_size','deal_size',
     'linkedin','twitter','website','calendly','min_score'];
   fields.forEach(function(f){
     var el=document.getElementById('pm-'+f);
     if(el) PROFILE[f]=el.value.trim();
   });
-  var pm=document.getElementById('profile-modal');
-  if(pm){pm.classList.remove('open');pm.style.display='';}
+  closeProfileModal();
   profileSave();
 }
 
@@ -4048,28 +4042,6 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     </div>
   </div>
 
-  <!-- Top-up credits -->
-  <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
-    <div>
-      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Just need a few more credits?</div>
-      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
-        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
-        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
-        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
-      </a>
-      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
-        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
-        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
-        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
-        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
-      </a>
-    </div>
-  </div>
-</div>
-
 <div class="wl" id="waitlist">
   <div class="wl-card">
     <div>
@@ -4099,6 +4071,28 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <div class="prc hot"><div class="pbdg">Most popular</div><div class="pn">Pro</div><div class="pp">$29<span class="pper">/mo</span></div><div class="pd">For freelancers actively prospecting.</div><button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button><ul class="pfl"><li>Unlimited research</li><li>20 lead fetches/month</li><li>Pip Hunt job search</li><li>CSV export</li></ul></div>
     <div class="prc"><div class="pn">Agency</div><div class="pp">$99<span class="pper">/mo</span></div><div class="pd">For agencies managing multiple clients.</div><button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button><ul class="pfl"><li>Everything in Pro</li><li>5 team members</li><li>100 lead fetches</li><li>White-label pitches</li></ul></div>
   </div>
+
+<!-- Top-up credits -->
+  <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Just need a few more credits?</div>
+      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
+      </a>
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+      </a>
+    </div>
+  </div>
+</div>
 </div>
 
 <div class="ctaw">
