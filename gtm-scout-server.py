@@ -1532,20 +1532,22 @@ function closeFetchModal(){
 
 
 function onboardingSave(){
-  var name = document.getElementById('ob-name').value.trim();
-  if(!name){document.getElementById('ob-name').focus();return;}
-  var p = {};
-  try{var ps=localStorage.getItem('scout_profile');if(ps)p=JSON.parse(ps);}catch(e){}
-  p.name = name;
-  p.tagline = document.getElementById('ob-tagline').value.trim();
-  p.linkedin = document.getElementById('ob-linkedin').value.trim();
-  try{localStorage.setItem('scout_profile',JSON.stringify(p));}catch(e){}
-  document.getElementById('onboarding-modal').classList.remove('open');
-  // Reload profile data
-  try{PROFILE=p;}catch(e){}
+  var n = (document.getElementById("ob-name")||{value:""}).value.trim();
+  if(!n){ if(document.getElementById("ob-name")) document.getElementById("ob-name").focus(); return; }
+  PROFILE.name = n;
+  PROFILE.tagline = (document.getElementById("ob-tagline")||{value:""}).value.trim();
+  PROFILE.linkedin = (document.getElementById("ob-linkedin")||{value:""}).value.trim();
+  try{ localStorage.setItem("scout_profile", JSON.stringify(PROFILE)); }catch(e){}
+  var sp = document.getElementById("ob-splash");
+  if(sp){ sp.style.opacity="0"; setTimeout(function(){ sp.style.display="none"; },400); }
+  var ov = document.getElementById("onboarding-overlay");
+  if(ov) ov.classList.remove("open");
 }
 function onboardingSkip(){
-  document.getElementById('onboarding-modal').classList.remove('open');
+  var sp = document.getElementById("ob-splash");
+  if(sp){ sp.style.opacity="0"; setTimeout(function(){ sp.style.display="none"; },400); }
+  var ov = document.getElementById("onboarding-overlay");
+  if(ov) ov.classList.remove("open");
 }
 
 document.addEventListener('DOMContentLoaded',function(){
@@ -1557,7 +1559,10 @@ document.addEventListener('DOMContentLoaded',function(){
     var p = {};
     try{var ps=localStorage.getItem('scout_profile');if(ps)p=JSON.parse(ps);}catch(e){}
     if(!p.name){
-      document.getElementById('onboarding-modal').classList.add('open');
+      var sp = document.getElementById("ob-splash");
+      if(sp){ sp.style.display="flex"; setTimeout(function(){ sp.style.opacity="1"; },50); }
+      var ov = document.getElementById("onboarding-overlay");
+      if(ov) ov.classList.add("open");
     }
   }, 400);
 
@@ -2893,7 +2898,10 @@ document.addEventListener('DOMContentLoaded',function(){
     var p = {};
     try{var ps=localStorage.getItem('scout_profile');if(ps)p=JSON.parse(ps);}catch(e){}
     if(!p.name){
-      document.getElementById('onboarding-modal').classList.add('open');
+      var sp = document.getElementById("ob-splash");
+      if(sp){ sp.style.display="flex"; setTimeout(function(){ sp.style.opacity="1"; },50); }
+      var ov = document.getElementById("onboarding-overlay");
+      if(ov) ov.classList.add("open");
     }
   }, 400);
 
@@ -3736,7 +3744,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Scout Settings</div>"
       "<div class='modal-field'><label class='modal-label'>Min GTM Score to show in leads (0 = show all)</label><input class='modal-input' id='pm-min_score' placeholder='0' type='number' min='0' max='100'></div>"
       "<div class='modal-actions'>"
-        "<button class='modal-cancel' onclick=\"document.getElementById('profile-modal').classList.remove('open');document.getElementById('profile-modal').style.display='';\">Cancel</button>"
+        "<button class=\'modal-cancel\' onclick=\'closeProfileModal()\'>Cancel</button>"
         "<button class='modal-save' onclick='profileSaveInfo()'>Save changes</button>"
       "</div>"
     "</div>"
