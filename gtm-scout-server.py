@@ -3983,53 +3983,42 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl">From free</div></div>
     </div>
   </div>
-  <div class="hero-mock">
-    <!-- Typing animation bar -->
-    <div class="mock-search">
-      <div class="mock-search-dot"></div>
-      <div class="mock-search-text" id="typetext">Researching Ambience Healthcare...</div>
-      <div class="mock-search-spin"></div>
-    </div>
-    <!-- Result card -->
-    <div class="mock-card" id="mockcard">
-      <div class="mock-card-top">
-        <div>
-          <div class="mock-company">Ambience Healthcare</div>
-          <div class="mock-meta">Series B &middot; Healthcare AI &middot; SF</div>
+  <div class="hr">
+    <div class="demo-widget">
+      <div class="dw-titlebar">
+        <div class="dw-dot" style="background:#ff5f57"></div>
+        <div class="dw-dot" style="background:#febc2e"></div>
+        <div class="dw-dot" style="background:#28c840"></div>
+        <span class="dw-tbar-lbl">scout — research</span>
+      </div>
+      <div class="dw-search-row">
+        <div class="dw-search-icon"></div>
+        <div class="dw-search-text"><span id="dw-typed"></span><span class="dw-cursor" id="dw-cur"></span></div>
+      </div>
+      <div id="dw-status" style="display:none">
+        <div class="dw-status-row"><div class="dw-status-dot"></div><span class="dw-status-txt" id="dw-stxt">Scanning funding data...</span></div>
+        <div class="dw-prog-track"><div class="dw-prog-fill" id="dw-pfill"></div></div>
+      </div>
+      <div class="dw-result" id="dw-result" style="display:none">
+        <div class="dw-result-head">
+          <div><div class="dw-co-name" id="dw-name">Ambience Healthcare</div><div class="dw-co-meta" id="dw-meta">Series B · Healthcare AI · SF</div></div>
+          <div class="dw-score-block"><div class="dw-score-num" id="dw-score">0</div><div class="dw-score-tag" id="dw-score-tag">Hot Lead</div></div>
         </div>
-        <div class="mock-score-wrap">
-          <div class="mock-score" id="mockscore">0</div>
-          <div class="mock-score-label">GTM Score</div>
+        <div class="dw-bar-track"><div class="dw-bar-fill" id="dw-bfill"></div></div>
+        <div class="dw-signals">
+          <div class="dw-sig" id="dws0"><div class="dw-sdot green"></div><span></span></div>
+          <div class="dw-sig" id="dws1"><div class="dw-sdot green"></div><span></span></div>
+          <div class="dw-sig" id="dws2"><div class="dw-sdot green"></div><span></span></div>
+          <div class="dw-sig" id="dws3"><div class="dw-sdot amber"></div><span></span></div>
         </div>
-      </div>
-      <div class="mock-bar-wrap">
-        <div class="mock-bar"><div class="mock-bar-fill" id="mockbar"></div></div>
-        <div class="mock-tag" id="mocktag">Analysing...</div>
-      </div>
-      <div class="mock-signals">
-        <div class="mock-signal" id="s1"><span>Recently funded</span><span class="sig-wait">—</span></div>
-        <div class="mock-signal" id="s2"><span>No CMO on LinkedIn</span><span class="sig-wait">—</span></div>
-        <div class="mock-signal" id="s3"><span>Hiring marketing roles</span><span class="sig-wait">—</span></div>
-        <div class="mock-signal" id="s4"><span>Has agency already</span><span class="sig-wait">—</span></div>
-      </div>
-      <div class="mock-pitch-wrap" id="pitchwrap">
-        <div class="mock-pitch-label">AI Pitch Opener</div>
-        <div class="mock-pitch" id="pitchtext"></div>
-      </div>
-    </div>
-    <!-- Founder chips -->
-    <div class="mock-founders" id="mockfounders">
-      <div class="mock-founder-chip">
-        <div class="mock-fav">JK</div>
-        <div><div class="mock-fname">James Kim</div><div class="mock-frole">CEO &amp; Co-founder</div></div>
-      </div>
-      <div class="mock-founder-chip">
-        <div class="mock-fav">SR</div>
-        <div><div class="mock-fname">Sara Reyes</div><div class="mock-frole">CTO &amp; Co-founder</div></div>
+        <div class="dw-pitch" id="dw-pitch">
+          <div class="dw-pitch-lbl">AI pitch opener</div>
+          <div class="dw-pitch-txt" id="dw-ptxt"></div>
+        </div>
       </div>
     </div>
   </div>
-  </section>
+</section>
 <div class="mq">
   <div class="mqt">
     <span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span><span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span>
