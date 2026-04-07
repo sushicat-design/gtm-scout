@@ -743,6 +743,14 @@ function updateBadges() {
   if(lb) lb.textContent = DB.length;
   if(ib) { ib.textContent = INBOX.length; ib.style.display = INBOX.length ? '' : 'none'; }
 }
+function renderAll(){
+  if(currentPage==='leads') renderLeads();
+  else if(currentPage==='pipeline') renderPipelinePage();
+  else if(currentPage==='inbox') renderInbox();
+  else if(currentPage==='profile'){ profileLoad(); renderProfile(); }
+  updateBadges();
+}
+
 
 function openSidebar(){
   document.getElementById('sidebar').classList.add('open');
@@ -1630,15 +1638,28 @@ function renderProfile(){
   var avatarHtml = PROFILE.avatar
     ? '<img src="'+PROFILE.avatar+'" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'
     : '<span style="font-size:28px;font-weight:700;color:var(--pip)">'+initials+'</span>';
-
   var plan = (tierLoad().plan||'free');
   var planLabel = {free:'Free',pro:'Pro',agency:'Agency'}[plan]||'Free';
   var planColor = plan==='free' ? 'var(--tx3)' : 'var(--pip2)';
-
+  var socials = '';
+  if(PROFILE.linkedin) socials += '<a class="prof-social" href="'+PROFILE.linkedin+'" target="_blank">LinkedIn</a>';
+  if(PROFILE.twitter) socials += '<a class="prof-social" href="'+PROFILE.twitter+'" target="_blank">Twitter/X</a>';
+  if(PROFILE.website) socials += '<a class="prof-social" href="'+PROFILE.website+'" target="_blank">Website</a>';
+  if(PROFILE.calendly) socials += '<a class="prof-social" href="'+PROFILE.calendly+'" target="_blank">Book a call</a>';
+  var servicesHtml = (PROFILE.services_list||[]).map(function(s){
+    return '<span class="prof-tag">'+s+'</span>';
+  }).join('') + '<button class="prof-tag-add" onclick="profileAddService()">+ Add</button>';
+  var casesHtml = (PROFILE.cases||[]).map(function(c,i){
+    var metrics = (c.metrics||[]).map(function(m){return '<span class="case-metric">'+m+'</span>';}).join('');
+    return '<div class="case-card" onclick="profileEditCase('+i+')">'
+      +'<div class="case-card-client">'+(c.client||'Client')+'</div>'
+      +'<div class="case-card-title">'+(c.title||'')+'</div>'
+      +'<div class="case-card-result">'+(c.result||'')+'</div>'
+      +(metrics?'<div class="case-metrics">'+metrics+'</div>':'')
+      +'</div>';
+  }).join('') + '<button class="case-card-add" onclick="profileAddCase()">+ Add Case Study</button>';
   cont.innerHTML =
     '<div class="prof-wrap">'+
-
-    // LEFT COLUMN
     '<div class="prof-left">'+
       '<div class="prof-card">'+
         '<div class="prof-avatar-wrap">'+
@@ -1649,75 +1670,49 @@ function renderProfile(){
         '<div class="prof-name">'+(PROFILE.name||'Your Name')+'</div>'+
         '<div class="prof-tagline">'+(PROFILE.tagline||'Add your tagline')+'</div>'+
         '<div class="prof-plan-badge" style="color:'+planColor+'">'+planLabel+' plan</div>'+
-        '<div class="prof-socials">'+
-          (PROFILE.linkedin?'<a class="prof-social" href="'+PROFILE.linkedin+'" target="_blank">LinkedIn</a>':'')+
-          (PROFILE.twitter?'<a class="prof-social" href="'+PROFILE.twitter+'" target="_blank">Twitter/X</a>':'')+
-          (PROFILE.website?'<a class="prof-social" href="'+PROFILE.website+'" target="_blank">Website</a>':'')+
-          (PROFILE.calendly?'<a class="prof-social" href="'+PROFILE.calendly+'" target="_blank">Book a call</a>':'')+
-        '</div>'+
+        (socials?'<div class="prof-socials">'+socials+'</div>':'')+
         '<div class="prof-stats">'+
-          '<div class="prof-stat"><div class="prof-stat-n">'+DB.length+'</div><div class="prof-stat-l">Saved leads</div></div>'+
-          '<div class="prof-stat"><div class="prof-stat-n">'+(DB.filter(function(d){return d.outreach_status==='contacted'||d.outreach_status==='in_talks'||d.outreach_status==='closed';}).length)+'</div><div class="prof-stat-l">Contacted</div></div>'+
-          '<div class="prof-stat"><div class="prof-stat-n">'+(DB.filter(function(d){return d.outreach_status==='closed';}).length)+'</div><div class="prof-stat-l">Closed</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+DB.length+'</div><div class="prof-stat-l">Leads</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.cases||[]).length+'</div><div class="prof-stat-l">Cases</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.services_list||[]).length+'</div><div class="prof-stat-l">Services</div></div>'+
         '</div>'+
         '<button class="prof-edit-btn" data-action="edit-profile">Edit Profile</button>'+
+        '<button class="prof-edit-btn" onclick="profileCopyShare()" style="margin-top:8px;background:none;border:1px solid var(--bor2);color:var(--tx2)">Copy Share Link</button>'+
         (plan==='free'?'<button class="prof-upgrade-btn" onclick="showPricing()">Upgrade to Pro</button>':'')+
       '</div>'+
-    '</div>'+
-
-    // RIGHT COLUMN
-    '<div class="prof-right">'+
-
-      // About
-      '<div class="prof-section">'+
-        '<div class="prof-section-title">About</div>'+
-        '<div class="prof-bio">'+(PROFILE.bio||'<span style="color:var(--tx3)">Add a bio — this helps personalise your pitch openers.</span>')+'</div>'+
+      '<div class="prof-card">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+          '<div class="prof-section-title">Services</div>'+
+        '</div>'+
+        servicesHtml+
       '</div>'+
-
-      // Business details
+    '</div>'+
+    '<div class="prof-right">'+
       '<div class="prof-section">'+
-        '<div class="prof-section-title">Business Details</div>'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+          '<div class="prof-section-title">About</div>'+
+          '<button onclick="openProfileModal()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Edit</button>'+
+        '</div>'+
+        (PROFILE.bio?'<div style="font-size:14px;color:var(--tx2);line-height:1.8">'+PROFILE.bio+'</div>':'<div style="font-size:13px;color:var(--tx3)">Add a bio to tell prospects who you are.</div>')+
+      '</div>'+
+      '<div class="prof-section">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+          '<div class="prof-section-title">Case Studies</div>'+
+          '<button onclick="profileAddCase()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">+ Add</button>'+
+        '</div>'+
+        '<div class="case-studies-grid">'+casesHtml+'</div>'+
+      '</div>'+
+      '<div class="prof-section">'+
+        '<div class="prof-section-title" style="margin-bottom:12px">Business Details</div>'+
         '<div class="prof-grid">'+
-          '<div class="prof-field"><div class="prof-field-label">Agency / Company</div><div class="prof-field-val">'+(PROFILE.agency||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Your Role</div><div class="prof-field-val">'+(PROFILE.role||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Role</div><div class="prof-field-val">'+(PROFILE.role||'—')+'</div></div>'+
           '<div class="prof-field"><div class="prof-field-label">Location</div><div class="prof-field-val">'+(PROFILE.location||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Years Experience</div><div class="prof-field-val">'+(PROFILE.experience||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Typical Client Size</div><div class="prof-field-val">'+(PROFILE.client_size||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Industries</div><div class="prof-field-val">'+(PROFILE.industries||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Ideal Stage</div><div class="prof-field-val">'+(PROFILE.funding_stage||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Deal Size</div><div class="prof-field-val">'+(PROFILE.deal_size||'—')+'</div></div>'+
           '<div class="prof-field"><div class="prof-field-label">Availability</div><div class="prof-field-val">'+(PROFILE.availability||'—')+'</div></div>'+
         '</div>'+
       '</div>'+
-
-      // Ideal Client Profile
-      '<div class="prof-section">'+
-        '<div class="prof-section-title">Ideal Client Profile</div>'+
-        '<div class="prof-grid">'+
-          '<div class="prof-field"><div class="prof-field-label">Target Industries</div><div class="prof-field-val">'+(PROFILE.industries||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Ideal Funding Stage</div><div class="prof-field-val">'+(PROFILE.funding_stage||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Ideal Company Size</div><div class="prof-field-val">'+(PROFILE.company_size||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Deal Size / Rate</div><div class="prof-field-val">'+(PROFILE.deal_size||'—')+'</div></div>'+
-        '</div>'+
-      '</div>'+
-
-      // Services
-      '<div class="prof-section">'+
-        '<div class="prof-section-title">Services</div>'+
-        '<div class="prof-tags" id="services-tags">'+
-          (PROFILE.services_list||[]).map(function(s){
-            return '<span class="prof-tag">'+s+'</span>';
-          }).join('')+
-          '<button class="prof-tag-add" onclick="profileAddService()">+ Add</button>'+
-        '</div>'+
-      '</div>'+
-
-      // Notification preferences
-      '<div class="prof-section">'+
-        '<div class="prof-section-title">Scout Preferences</div>'+
-        '<div class="prof-grid">'+
-          '<div class="prof-field"><div class="prof-field-label">Email for notifications</div><div class="prof-field-val">'+(PROFILE.email||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Min GTM Score to show</div><div class="prof-field-val">'+(PROFILE.min_score||'0')+'+</div></div>'+
-        '</div>'+
-      '</div>'+
-
     '</div>'+
     '</div>';
 }
@@ -1795,6 +1790,8 @@ function profileAddCase(){
 function profileEditCase(i){
   openCaseModal(i,PROFILE.cases[i]);
 }
+
+function closeCaseModal(){ document.getElementById("case-modal").classList.remove("open"); }
 
 function openCaseModal(idx,c){
   document.getElementById('cm-idx').value=idx;
@@ -1992,6 +1989,22 @@ function earnCredit(){
 }
 
 // Smart upsell - show after every 3rd research for free users
+function showUpsellToast(msg){
+  var existing = document.getElementById("upsell-toast");
+  if(existing) existing.remove();
+  var toast = document.createElement("div");
+  toast.id = "upsell-toast";
+  toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--pip-bor);border-radius:var(--r);padding:14px 18px;max-width:300px;z-index:500;font-size:12px;color:var(--tx2);display:flex;flex-direction:column;gap:8px";
+  var span = document.createElement("span"); span.textContent = msg;
+  var btn = document.createElement("button");
+  btn.textContent = "Upgrade to Pro";
+  btn.style.cssText = "background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif";
+  btn.onclick = function(){ showPricing(); toast.remove(); };
+  toast.appendChild(span); toast.appendChild(btn);
+  document.body.appendChild(toast);
+  setTimeout(function(){ if(toast.parentNode) toast.remove(); }, 8000);
+}
+
 function maybeShowUpsell(){
   var t = tierLoad();
   if(t.plan !== 'free') return;
@@ -2327,6 +2340,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div class='pricing-note'>"
         "Cancel anytime &nbsp;&#183;&nbsp; Secure payments via Stripe &nbsp;&#183;&nbsp; "
         "<a href='#' onclick='closePricing()'>Maybe later</a>"
+        "<br><a href='https://buy.stripe.com/fZu8wP4MW2u2c0Y96abjW04' target='_blank' style='font-size:10px;color:var(--tx3)'>$1 test payment</a>"
       "</div>\n"
 
   "<footer style='border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px'>"
@@ -2730,6 +2744,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 </div>
 </div>
 
+<div style="text-align:center;padding:0 48px 24px;position:relative;z-index:1"><a href="https://buy.stripe.com/fZu8wP4MW2u2c0Y96abjW04" target="_blank" style="font-size:11px;color:var(--tx3);text-decoration:none;border-bottom:1px solid var(--bor2)">$1 test payment</a></div>
 <div class="ctaw">
   <div class="ctac">
     <img class="cpip" src="data:image/png;base64,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" alt="Pip">
