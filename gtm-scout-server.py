@@ -634,10 +634,69 @@ footer{border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-item
 footer span,footer a,footer button{font-size:11px;color:var(--tx3);text-decoration:none;font-weight:400;background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;transition:color .15s}
 footer a:hover,footer button:hover{color:var(--pip2)}
 
+/* ── PROFILE PAGE REBUILD ── */
+.prof-wrap{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+.prof-left{display:flex;flex-direction:column;gap:14px}
+.prof-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:24px}
+.prof-avatar-wrap{position:relative;width:80px;height:80px;margin:0 auto 16px}
+.prof-avatar{width:80px;height:80px;border-radius:50%;background:var(--sur2);border:1px solid var(--pip-bor);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 0 20px rgba(45,157,232,0.15)}
+.prof-avatar-btn{position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--pip);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background .2s;line-height:1}
+.prof-avatar-btn:hover{background:var(--pip2)}
+.prof-name{font-size:17px;font-weight:700;letter-spacing:-.02em;text-align:center;color:var(--tx);margin-bottom:4px}
+.prof-tagline{font-size:12px;color:var(--tx3);text-align:center;line-height:1.5;margin-bottom:8px}
+.prof-plan-badge{font-size:10px;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px}
+.prof-socials{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.prof-social{font-size:11px;padding:3px 10px;border:1px solid var(--bor);color:var(--tx2);text-decoration:none;border-radius:var(--r-pill);transition:all .15s}
+.prof-social:hover{border-color:var(--pip-bor);color:var(--pip2)}
+.prof-stats{display:flex;justify-content:space-around;padding:14px 0;border-top:1px solid var(--bor);border-bottom:1px solid var(--bor);margin-bottom:14px}
+.prof-stat{text-align:center}
+.prof-stat-n{font-size:20px;font-weight:700;color:var(--pip2);font-family:'JetBrains Mono',monospace;line-height:1}
+.prof-stat-l{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600}
+.prof-edit-btn{width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;padding:9px;border-radius:var(--r-sm);cursor:pointer;transition:all .2s;margin-bottom:6px}
+.prof-edit-btn:hover{border-color:var(--pip-bor);color:var(--pip2)}
+.prof-upgrade-btn{width:100%;background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;padding:9px;border-radius:var(--r-sm);cursor:pointer;transition:all .2s;box-shadow:0 0 16px rgba(45,157,232,0.2)}
+.prof-upgrade-btn:hover{background:var(--pip2);box-shadow:0 0 24px rgba(45,157,232,0.35)}
+.prof-right{display:flex;flex-direction:column;gap:14px}
+.prof-section{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px 22px}
+.prof-section-title{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:14px;letter-spacing:-.01em}
+.prof-bio{font-size:13px;color:var(--tx2);line-height:1.75}
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prof-field{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r-sm);padding:10px 13px}
+.prof-field-label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px;font-weight:700}
+.prof-field-val{font-size:13px;color:var(--tx);font-weight:400}
+.prof-tags{display:flex;flex-wrap:wrap;gap:6px}
+.prof-tag{font-size:11px;color:var(--pip2);border:1px solid var(--pip-bor);background:var(--pip-dim);padding:4px 12px;border-radius:var(--r-pill);font-weight:600}
+.prof-tag-add{font-size:11px;color:var(--tx3);border:1px dashed var(--bor2);background:none;padding:4px 12px;border-radius:var(--r-pill);cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
+.prof-tag-add:hover{border-color:var(--pip-bor);color:var(--pip2)}
+
 """
 
 JS = """
 function goHome(){window.location.href='/';}
+
+function openProfileModal(){
+  profileLoad();
+  var m = document.getElementById('profile-modal');
+  if(!m){ alert('Profile editor not found. Please refresh the page.'); return; }
+  var map = {
+    'pm-name': PROFILE.name||'',
+    'pm-tagline': PROFILE.tagline||'',
+    'pm-bio': PROFILE.bio||'',
+    'pm-linkedin': PROFILE.linkedin||'',
+    'pm-twitter': PROFILE.twitter||'',
+    'pm-website': PROFILE.website||''
+  };
+  Object.keys(map).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = map[id];
+  });
+  m.style.cssText = 'display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+}
+
+function closeProfileModal(){
+  var m = document.getElementById('profile-modal');
+  if(m) m.style.cssText = 'display:none';
+}
 
 var DB = [];
 var INBOX = [];
@@ -1510,7 +1569,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // Profile root event delegation
   document.addEventListener('click', function(e){
     if(e.target && e.target.getAttribute('data-action')==='edit-profile'){
-      profileEditInfo();
+      openProfileModal();
     }
   });
   // Nav via sidebar hamburger menu
@@ -1587,92 +1646,100 @@ function renderProfile(){
   profileLoad();
   var cont = document.getElementById('profile-root');
   if(!cont) return;
-
-  var initials = PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : 'ME';
+  var initials = PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : '?';
   var avatarHtml = PROFILE.avatar
-    ? '<img src="'+PROFILE.avatar+'" alt="avatar">'
-    : '<span style="font-size:32px;font-weight:800;color:var(--pip)">'+initials+'</span>';
+    ? '<img src="'+PROFILE.avatar+'" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'
+    : '<span style="font-size:28px;font-weight:700;color:var(--pip)">'+initials+'</span>';
 
-  var socialLinks = '';
-  if(PROFILE.linkedin) socialLinks += '<a class="profile-social-link" href="'+PROFILE.linkedin+'" target="_blank">LinkedIn</a>';
-  if(PROFILE.twitter) socialLinks += '<a class="profile-social-link" href="'+PROFILE.twitter+'" target="_blank">Twitter</a>';
-  if(PROFILE.website) socialLinks += '<a class="profile-social-link" href="'+PROFILE.website+'" target="_blank">Website</a>';
-
-  var servicesHtml = '';
-  (PROFILE.services||[]).forEach(function(s,i){
-    servicesHtml += '<div class="service-item">'
-      +'<span class="service-icon">'+(s.icon||'')+'</span>'
-      +'<div><div class="service-name">'+s.name+'</div>'
-      +(s.desc?'<div class="service-desc">'+s.desc+'</div>':'')
-      +'</div>'
-      +'<button onclick="profileRemoveService('+i+')" style="margin-left:auto;background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px">×</button>'
-      +'</div>';
-  });
-
-  var casesHtml = '';
-  (PROFILE.cases||[]).forEach(function(c,i){
-    var metrics = (c.metrics||[]).map(function(m){return '<span class="case-metric">'+m+'</span>';}).join('');
-    casesHtml += '<div class="case-card" onclick="profileEditCase('+i+')">'
-      +'<div class="case-card-client">'+(c.client||'Client')+'</div>'
-      +'<div class="case-card-title">'+(c.title||'')+'</div>'
-      +'<div class="case-card-result">'+(c.result||'')+'</div>'
-      +(metrics?'<div class="case-metrics">'+metrics+'</div>':'')
-      +'</div>';
-  });
-  casesHtml += '<button class="case-card-add" onclick="profileAddCase()">+ Add Case Study</button>';
+  var plan = (tierLoad().plan||'free');
+  var planLabel = {free:'Free',pro:'Pro',agency:'Agency'}[plan]||'Free';
+  var planColor = plan==='free' ? 'var(--tx3)' : 'var(--pip2)';
 
   cont.innerHTML =
-    '<div class="profile-layout">'
-      +'<div class="profile-sidebar">'
-        // Identity card
-        +'<div class="profile-card">'
-          +'<div class="profile-avatar-wrap">'
-            +'<div class="profile-avatar">'+avatarHtml+'</div>'
-            +'<button class="profile-avatar-edit" onclick="profileUploadAvatar()" title="Change photo"></button>'
-          +'</div>'
-          +'<input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="profileHandleAvatar(this)">'
-          +(PROFILE.name?'<div class="profile-name">'+PROFILE.name+'</div>':'<div class="profile-name" style="color:var(--tx3)">Your Name</div>')
-          +(PROFILE.tagline?'<div class="profile-tagline">'+PROFILE.tagline+'</div>':'<div class="profile-tagline">Add a tagline...</div>')
-          +(socialLinks?'<div class="profile-socials">'+socialLinks+'</div>':'')
-          +'<div class="profile-stat-row">'
-            +'<div class="profile-stat"><div class="profile-stat-n">'+DB.length+'</div><div class="profile-stat-l">Leads</div></div>'
-            +'<div class="profile-stat"><div class="profile-stat-n">'+(PROFILE.cases||[]).length+'</div><div class="profile-stat-l">Cases</div></div>'
-            +'<div class="profile-stat"><div class="profile-stat-n">'+(PROFILE.services||[]).length+'</div><div class="profile-stat-l">Services</div></div>'
-          +'</div>'
-          +'<button class="profile-edit-btn" data-action="edit-profile"> Edit Profile</button>'
-          +'<button class="profile-share-btn" onclick="profileCopyShare()"> Copy Share Link</button>'
-        +'</div>'
-        // Services card
-        +'<div class="profile-card">'
-          +'<div class="profile-section-header" style="margin-bottom:14px">'
-            +'<div class="profile-section-title">Services</div>'
-            +'<button class="profile-add-btn" onclick="profileAddService()">+ Add</button>'
-          +'</div>'
-          +(servicesHtml||'<div style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0">Add your services to show prospects what you offer</div>')
-        +'</div>'
-      +'</div>'
-      // Main column
-      +'<div class="profile-main">'
-        // Bio
-        +'<div class="profile-section">'
-          +'<div class="profile-section-header">'
-            +'<div class="profile-section-title">About</div>'
-            +'<button class="profile-add-btn" onclick="profileEditInfo()">Edit</button>'
-          +'</div>'
-          +(PROFILE.bio
-            ?'<div style="font-size:14px;color:var(--tx2);line-height:1.8">'+PROFILE.bio+'</div>'
-            :'<div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px 0">Add a bio to tell prospects who you are and what you do best.</div>')
-        +'</div>'
-        // Case studies
-        +'<div class="profile-section">'
-          +'<div class="profile-section-header">'
-            +'<div class="profile-section-title">Case Studies</div>'
-            +'<button class="profile-add-btn" onclick="profileAddCase()">+ Add</button>'
-          +'</div>'
-          +'<div class="case-studies-grid">'+casesHtml+'</div>'
-        +'</div>'
-      +'</div>'
-    +'</div>';
+    '<div class="prof-wrap">'+
+
+    // LEFT COLUMN
+    '<div class="prof-left">'+
+      '<div class="prof-card">'+
+        '<div class="prof-avatar-wrap">'+
+          '<div class="prof-avatar">'+avatarHtml+'</div>'+
+          '<button class="prof-avatar-btn" onclick="profileUploadAvatar()" title="Change photo">+</button>'+
+          '<input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="profileHandleAvatar(this)">'+
+        '</div>'+
+        '<div class="prof-name">'+(PROFILE.name||'Your Name')+'</div>'+
+        '<div class="prof-tagline">'+(PROFILE.tagline||'Add your tagline')+'</div>'+
+        '<div class="prof-plan-badge" style="color:'+planColor+'">'+planLabel+' plan</div>'+
+        '<div class="prof-socials">'+
+          (PROFILE.linkedin?'<a class="prof-social" href="'+PROFILE.linkedin+'" target="_blank">LinkedIn</a>':'')+
+          (PROFILE.twitter?'<a class="prof-social" href="'+PROFILE.twitter+'" target="_blank">Twitter/X</a>':'')+
+          (PROFILE.website?'<a class="prof-social" href="'+PROFILE.website+'" target="_blank">Website</a>':'')+
+          (PROFILE.calendly?'<a class="prof-social" href="'+PROFILE.calendly+'" target="_blank">Book a call</a>':'')+
+        '</div>'+
+        '<div class="prof-stats">'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+DB.length+'</div><div class="prof-stat-l">Saved leads</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(DB.filter(function(d){return d.outreach_status==='contacted'||d.outreach_status==='in_talks'||d.outreach_status==='closed';}).length)+'</div><div class="prof-stat-l">Contacted</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(DB.filter(function(d){return d.outreach_status==='closed';}).length)+'</div><div class="prof-stat-l">Closed</div></div>'+
+        '</div>'+
+        '<button class="prof-edit-btn" data-action="edit-profile">Edit Profile</button>'+
+        (plan==='free'?'<button class="prof-upgrade-btn" onclick="showPricing()">Upgrade to Pro</button>':'')+
+      '</div>'+
+    '</div>'+
+
+    // RIGHT COLUMN
+    '<div class="prof-right">'+
+
+      // About
+      '<div class="prof-section">'+
+        '<div class="prof-section-title">About</div>'+
+        '<div class="prof-bio">'+(PROFILE.bio||'<span style="color:var(--tx3)">Add a bio — this helps personalise your pitch openers.</span>')+'</div>'+
+      '</div>'+
+
+      // Business details
+      '<div class="prof-section">'+
+        '<div class="prof-section-title">Business Details</div>'+
+        '<div class="prof-grid">'+
+          '<div class="prof-field"><div class="prof-field-label">Agency / Company</div><div class="prof-field-val">'+(PROFILE.agency||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Your Role</div><div class="prof-field-val">'+(PROFILE.role||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Location</div><div class="prof-field-val">'+(PROFILE.location||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Years Experience</div><div class="prof-field-val">'+(PROFILE.experience||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Typical Client Size</div><div class="prof-field-val">'+(PROFILE.client_size||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Availability</div><div class="prof-field-val">'+(PROFILE.availability||'—')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+
+      // Ideal Client Profile
+      '<div class="prof-section">'+
+        '<div class="prof-section-title">Ideal Client Profile</div>'+
+        '<div class="prof-grid">'+
+          '<div class="prof-field"><div class="prof-field-label">Target Industries</div><div class="prof-field-val">'+(PROFILE.industries||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Ideal Funding Stage</div><div class="prof-field-val">'+(PROFILE.funding_stage||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Ideal Company Size</div><div class="prof-field-val">'+(PROFILE.company_size||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Deal Size / Rate</div><div class="prof-field-val">'+(PROFILE.deal_size||'—')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+
+      // Services
+      '<div class="prof-section">'+
+        '<div class="prof-section-title">Services</div>'+
+        '<div class="prof-tags" id="services-tags">'+
+          (PROFILE.services_list||[]).map(function(s){
+            return '<span class="prof-tag">'+s+'</span>';
+          }).join('')+
+          '<button class="prof-tag-add" onclick="profileAddService()">+ Add</button>'+
+        '</div>'+
+      '</div>'+
+
+      // Notification preferences
+      '<div class="prof-section">'+
+        '<div class="prof-section-title">Scout Preferences</div>'+
+        '<div class="prof-grid">'+
+          '<div class="prof-field"><div class="prof-field-label">Email for notifications</div><div class="prof-field-val">'+(PROFILE.email||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Min GTM Score to show</div><div class="prof-field-val">'+(PROFILE.min_score||'0')+'+</div></div>'+
+        '</div>'+
+      '</div>'+
+
+    '</div>'+
+    '</div>';
 }
 
 function profileUploadAvatar(){
@@ -1690,32 +1757,54 @@ function profileEditInfo(){
   profileLoad();
   var m=document.getElementById('profile-modal');
   if(!m){console.error('profile-modal not found');return;}
-  var fields={
-    'pm-name':PROFILE.name||'',
-    'pm-tagline':PROFILE.tagline||'',
-    'pm-bio':PROFILE.bio||'',
-    'pm-linkedin':PROFILE.linkedin||'',
-    'pm-twitter':PROFILE.twitter||'',
-    'pm-website':PROFILE.website||''
+  var map={
+    'pm-name':PROFILE.name,'pm-email':PROFILE.email,'pm-tagline':PROFILE.tagline,
+    'pm-bio':PROFILE.bio,'pm-agency':PROFILE.agency,'pm-role':PROFILE.role,
+    'pm-location':PROFILE.location,'pm-experience':PROFILE.experience,
+    'pm-client_size':PROFILE.client_size,'pm-availability':PROFILE.availability,
+    'pm-industries':PROFILE.industries,'pm-funding_stage':PROFILE.funding_stage,
+    'pm-company_size':PROFILE.company_size,'pm-deal_size':PROFILE.deal_size,
+    'pm-linkedin':PROFILE.linkedin,'pm-twitter':PROFILE.twitter,
+    'pm-website':PROFILE.website,'pm-calendly':PROFILE.calendly,
+    'pm-min_score':PROFILE.min_score
   };
-  Object.keys(fields).forEach(function(id){
+  Object.keys(map).forEach(function(id){
     var el=document.getElementById(id);
-    if(el) el.value=fields[id];
+    if(el) el.value=map[id]||'';
   });
   m.classList.add('open');
-  m.style.display = 'flex';
+  m.style.display='flex';
 }
 
 function profileSaveInfo(){
-  PROFILE.name=document.getElementById('pm-name').value.trim();
-  PROFILE.tagline=document.getElementById('pm-tagline').value.trim();
-  PROFILE.bio=document.getElementById('pm-bio').value.trim();
-  PROFILE.linkedin=document.getElementById('pm-linkedin').value.trim();
-  PROFILE.twitter=document.getElementById('pm-twitter').value.trim();
-  PROFILE.website=document.getElementById('pm-website').value.trim();
-  var pm = document.getElementById('profile-modal');
-  if(pm){ pm.classList.remove('open'); pm.style.display=''; }
+  var fields=['name','tagline','bio','email','agency','role','location','experience',
+    'client_size','availability','industries','funding_stage','company_size','deal_size',
+    'linkedin','twitter','website','calendly','min_score'];
+  fields.forEach(function(f){
+    var el=document.getElementById('pm-'+f);
+    if(el) PROFILE[f]=el.value.trim();
+  });
+  var pm=document.getElementById('profile-modal');
+  if(pm){pm.classList.remove('open');pm.style.display='';}
   profileSave();
+}
+
+function profileAddService(){
+  var name=prompt('Service name (e.g. "GTM Strategy"):');
+  if(name&&name.trim()){
+    PROFILE.services_list=PROFILE.services_list||[];
+    PROFILE.services_list.push(name.trim());
+    profileSave();
+  }
+}
+
+function profileAddService(){
+  var name = prompt('Service name (e.g. "GTM Strategy", "Demand Gen", "Content Marketing"):');
+  if(name && name.trim()){
+    PROFILE.services_list = PROFILE.services_list || [];
+    PROFILE.services_list.push(name.trim());
+    profileSave();
+  }
 }
 
 function profileAddService(){
@@ -2817,7 +2906,7 @@ document.addEventListener('DOMContentLoaded',function(){
   // Profile root event delegation
   document.addEventListener('click', function(e){
     if(e.target && e.target.getAttribute('data-action')==='edit-profile'){
-      profileEditInfo();
+      openProfileModal();
     }
   });
   // Nav via sidebar hamburger menu
@@ -3013,15 +3102,24 @@ function profileEditInfo(){
 }
 
 function profileSaveInfo(){
-  PROFILE.name=document.getElementById('pm-name').value.trim();
-  PROFILE.tagline=document.getElementById('pm-tagline').value.trim();
-  PROFILE.bio=document.getElementById('pm-bio').value.trim();
-  PROFILE.linkedin=document.getElementById('pm-linkedin').value.trim();
-  PROFILE.twitter=document.getElementById('pm-twitter').value.trim();
-  PROFILE.website=document.getElementById('pm-website').value.trim();
-  var pm = document.getElementById('profile-modal');
-  if(pm){ pm.classList.remove('open'); pm.style.display=''; }
+  var fields=['name','tagline','bio','email','agency','role','location','experience',
+    'client_size','availability','industries','funding_stage','company_size','deal_size',
+    'linkedin','twitter','website','calendly','min_score'];
+  fields.forEach(function(f){
+    var el=document.getElementById('pm-'+f);
+    if(el) PROFILE[f]=el.value.trim();
+  });
+  closeProfileModal();
   profileSave();
+}
+
+function profileAddService(){
+  var name = prompt('Service name (e.g. "GTM Strategy", "Demand Gen", "Content Marketing"):');
+  if(name && name.trim()){
+    PROFILE.services_list = PROFILE.services_list || [];
+    PROFILE.services_list.push(name.trim());
+    profileSave();
+  }
 }
 
 function profileAddService(){
@@ -3604,17 +3702,40 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</div>"
 "</footer>\n"
   "<div class='modal-overlay' id='profile-modal'>"
-    "<div class='modal'>"
+    "<div class='modal' style='max-width:600px'>"
       "<div class='modal-title'>Edit Profile</div>"
-      "<div class='modal-field'><label class='modal-label'>Name / Agency</label><input class='modal-input' id='pm-name' placeholder='Your name or agency'></div>"
-      "<div class='modal-field'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div>"
-      "<div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are...'></textarea></div>"
-      "<div class='modal-field'><label class='modal-label'>LinkedIn URL</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/yourname'></div>"
-      "<div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://twitter.com/yourhandle'></div>"
-      "<div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com'></div>"
+      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:4px'>Identity</div>"
+      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
+        "<div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='Cara Moschetti'></div>"
+        "<div class='modal-field'><label class='modal-label'>Email</label><input class='modal-input' id='pm-email' placeholder='you@yoursite.com'></div>"
+        "<div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Sushicat Ventures'></div>"
+        "<div class='modal-field'><label class='modal-label'>Your Role</label><input class='modal-input' id='pm-role' placeholder='Fractional CMO'></div>"
+        "<div class='modal-field'><label class='modal-label'>Location</label><input class='modal-input' id='pm-location' placeholder='New York, USA'></div>"
+        "<div class='modal-field'><label class='modal-label'>Years Experience</label><input class='modal-input' id='pm-experience' placeholder='10+'></div>"
+      "</div>"
+      "<div class='modal-field' style='margin-top:4px'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div>"
+      "<div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are and what you do...'></textarea></div>"
+      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Ideal Client</div>"
+      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
+        "<div class='modal-field'><label class='modal-label'>Target Industries</label><input class='modal-input' id='pm-industries' placeholder='AI, SaaS, Fintech'></div>"
+        "<div class='modal-field'><label class='modal-label'>Ideal Funding Stage</label><input class='modal-input' id='pm-funding_stage' placeholder='Seed – Series B'></div>"
+        "<div class='modal-field'><label class='modal-label'>Ideal Company Size</label><input class='modal-input' id='pm-company_size' placeholder='10–100 employees'></div>"
+        "<div class='modal-field'><label class='modal-label'>Deal Size / Rate</label><input class='modal-input' id='pm-deal_size' placeholder='$5k–$15k/mo'></div>"
+        "<div class='modal-field'><label class='modal-label'>Typical Engagement</label><input class='modal-input' id='pm-client_size' placeholder='3–6 month retainers'></div>"
+        "<div class='modal-field'><label class='modal-label'>Availability</label><input class='modal-input' id='pm-availability' placeholder='2 spots open Q2 2026'></div>"
+      "</div>"
+      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Links</div>"
+      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
+        "<div class='modal-field'><label class='modal-label'>LinkedIn</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/you'></div>"
+        "<div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://x.com/yourhandle'></div>"
+        "<div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com'></div>"
+        "<div class='modal-field'><label class='modal-label'>Book a Call (Calendly)</label><input class='modal-input' id='pm-calendly' placeholder='https://calendly.com/you'></div>"
+      "</div>"
+      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Scout Settings</div>"
+      "<div class='modal-field'><label class='modal-label'>Min GTM Score to show in leads (0 = show all)</label><input class='modal-input' id='pm-min_score' placeholder='0' type='number' min='0' max='100'></div>"
       "<div class='modal-actions'>"
-        "<button class='modal-cancel' onclick=\"document.getElementById('profile-modal').classList.remove('open')\">Cancel</button>"
-        "<button class='modal-save' onclick='profileSaveInfo()'>Save</button>"
+        "<button class='modal-cancel' onclick=\"document.getElementById('profile-modal').classList.remove('open');document.getElementById('profile-modal').style.display='';\">Cancel</button>"
+        "<button class='modal-save' onclick='profileSaveInfo()'>Save changes</button>"
       "</div>"
     "</div>"
   "</div>\n"
@@ -3764,6 +3885,41 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 .fl{font-size:12px;color:var(--tx3);text-decoration:none;transition:color .15s}
 .fl:hover{color:var(--pip2)}
 
+.demo-widget{background:#060c14;border-radius:14px;overflow:hidden;width:460px;border:1px solid rgba(45,157,232,0.18);box-shadow:0 0 80px rgba(45,157,232,0.07),0 24px 64px rgba(0,0,0,0.6)}
+.dw-titlebar{background:#0a1220;padding:13px 18px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(45,157,232,0.08)}
+.dw-dot{width:10px;height:10px;border-radius:50%}
+.dw-tbar-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-left:8px;letter-spacing:.04em}
+.dw-search-row{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(45,157,232,0.07);background:#060c14}
+.dw-search-icon{width:16px;height:16px;border:1.5px solid var(--pip);border-radius:50%;position:relative;flex-shrink:0}
+.dw-search-icon::after{content:'';position:absolute;bottom:-4px;right:-3px;width:5px;height:1.5px;background:var(--pip);transform:rotate(45deg);border-radius:1px}
+.dw-search-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);flex:1}
+.dw-cursor{display:inline-block;width:2px;height:13px;background:var(--pip);margin-left:1px;vertical-align:middle;animation:dw-blink .8s step-end infinite}
+@keyframes dw-blink{0%,100%{opacity:1}50%{opacity:0}}
+.dw-status-row{padding:12px 20px;display:flex;align-items:center;gap:8px}
+.dw-status-dot{width:6px;height:6px;border-radius:50%;background:var(--pip);animation:dw-pulse 1.2s ease-in-out infinite;flex-shrink:0}
+@keyframes dw-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+.dw-status-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)}
+.dw-prog-track{height:2px;background:rgba(45,157,232,0.08);margin:0 20px 14px;border-radius:1px;overflow:hidden}
+.dw-prog-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width .3s ease}
+.dw-result{padding:20px}
+.dw-result-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.dw-co-name{font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-.02em;margin-bottom:3px;font-family:'Outfit',sans-serif}
+.dw-co-meta{font-size:11px;color:var(--tx3);font-family:'Outfit',sans-serif}
+.dw-score-block{text-align:right}
+.dw-score-num{font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--pip2);line-height:1;letter-spacing:-.04em}
+.dw-score-tag{font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;color:var(--pip2);letter-spacing:.12em;text-transform:uppercase;text-align:right;margin-top:1px}
+.dw-bar-track{height:2px;background:rgba(45,157,232,0.1);border-radius:1px;margin-bottom:16px;overflow:hidden}
+.dw-bar-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.dw-signals{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.dw-sig{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--tx2);opacity:0;transform:translateX(-5px);transition:opacity .35s ease,transform .35s ease;font-family:'Outfit',sans-serif}
+.dw-sig.show{opacity:1;transform:translateX(0)}
+.dw-sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.dw-sdot.green{background:#10b981}.dw-sdot.amber{background:var(--amb)}
+.dw-pitch{background:var(--sur2);border-left:2px solid var(--pip);padding:12px 14px;border-radius:0 6px 6px 0;opacity:0;transform:translateY(4px);transition:opacity .4s ease,transform .4s ease}
+.dw-pitch.show{opacity:1;transform:translateY(0)}
+.dw-pitch-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--pip2);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+.dw-pitch-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.75;min-height:52px}
+
 .demo-widget{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;overflow:hidden;width:460px;box-shadow:0 0 60px rgba(45,157,232,0.08)}
 .dw-header{display:flex;align-items:center;gap:6px;padding:12px 16px;background:var(--sur2);border-bottom:1px solid var(--bor)}
 .dw-dot{width:10px;height:10px;border-radius:50%}
@@ -3819,7 +3975,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <p class="sub">Stop wasting hours on companies that aren't ready to hire. Scout tells you in 8 seconds whether a company needs marketing leadership — and writes your first line of outreach.</p>
     <div class="actions">
       <a href="/app" class="btnp">Get started free</a>
-      <a href="#demo" class="btng">See a live example</a>
+      <a href="#CALENDAR_LINK" target="_blank" class="btng" id="book-call-btn">Book a call</a>
     </div>
     <div class="stats">
       <div class="stat"><div class="stn">8<span>s</span></div><div class="stl">To full GTM profile</div></div>
@@ -3924,6 +4080,23 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     </div>
   </div>
 </div>
+<div style="position:relative;z-index:1;padding:0 48px 80px;max-width:1240px;margin:0 auto" id="waitlist">
+  <div style="background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:56px 48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center">
+    <div>
+      <div class="slbl">Early access</div>
+      <h2 style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
+      <p style="font-size:15px;color:var(--tx2);line-height:1.7;margin-bottom:0">Be first to know when new features drop. No spam — just Scout updates and occasional GTM tips from Pip.</p>
+    </div>
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="email" id="wl-email" placeholder="you@agency.com" style="flex:1;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:14px;padding:13px 18px;outline:none;border-radius:8px;transition:border-color .2s" onfocus="this.style.borderColor='rgba(45,157,232,0.5)'" onblur="this.style.borderColor='rgba(45,157,232,0.2)'">
+        <button onclick="submitWaitlist()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;padding:13px 24px;border-radius:8px;cursor:pointer;white-space:nowrap;box-shadow:0 0 24px rgba(45,157,232,0.25);transition:all .2s" onmouseover="this.style.background='#5bc4f5'" onmouseout="this.style.background='#2d9de8'">Join waitlist</button>
+      </div>
+      <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:Outfit,sans-serif"></div>
+      <p style="font-size:11px;color:var(--tx3);margin-top:10px;font-family:Outfit,sans-serif">Already 140+ fractional CMOs and agencies signed up.</p>
+    </div>
+  </div>
+</div>
 <div class="ps" id="pricing">
   <div style="text-align:center;margin-bottom:56px">
     <div class="slbl" style="text-align:center">Pricing</div>
@@ -3941,7 +4114,10 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <img class="cpip" src="data:image/png;base64,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" alt="Pip">
     <div class="ch2">Your next client<br>is already funded.</div>
     <p class="cs">They just raised. They have no CMO. They need you.<br>Scout finds them before your competitors do.</p>
-    <a href="/app" class="btnp" style="display:inline-flex;font-size:16px;padding:16px 44px">Start researching free</a>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="/app" class="btnp" style="display:inline-flex;font-size:16px;padding:16px 44px">Start researching free</a>
+      <a href="#CALENDAR_LINK" target="_blank" class="btng" style="display:inline-flex;font-size:16px;padding:16px 44px">Book a call with Cara</a>
+    </div>
     <div class="cn">No credit card required &middot; Free forever tier available</div>
   </div>
 </div>
@@ -4142,7 +4318,41 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 })();
 </script>
 </body>
-</html>'''
+</html  <div class="hr">
+    <div class="demo-widget">
+      <div class="dw-titlebar">
+        <div class="dw-dot" style="background:#ff5f57"></div>
+        <div class="dw-dot" style="background:#febc2e"></div>
+        <div class="dw-dot" style="background:#28c840"></div>
+        <span class="dw-tbar-lbl">scout — research</span>
+      </div>
+      <div class="dw-search-row">
+        <div class="dw-search-icon"></div>
+        <div class="dw-search-text"><span id="dw-typed"></span><span class="dw-cursor" id="dw-cur"></span></div>
+      </div>
+      <div id="dw-status" style="display:none">
+        <div class="dw-status-row"><div class="dw-status-dot"></div><span class="dw-status-txt" id="dw-stxt">Scanning funding data...</span></div>
+        <div class="dw-prog-track"><div class="dw-prog-fill" id="dw-pfill"></div></div>
+      </div>
+      <div class="dw-result" id="dw-result" style="display:none">
+        <div class="dw-result-head">
+          <div><div class="dw-co-name" id="dw-name">Ambience Healthcare</div><div class="dw-co-meta" id="dw-meta">Series B &middot; Healthcare AI &middot; SF</div></div>
+          <div class="dw-score-block"><div class="dw-score-num" id="dw-score">0</div><div class="dw-score-tag">Hot Lead</div></div>
+        </div>
+        <div class="dw-bar-track"><div class="dw-bar-fill" id="dw-bfill"></div></div>
+        <div class="dw-signals" id="dw-sigs">
+          <div class="dw-sig" id="dws0"><div class="dw-sdot green"></div><span></span></div>
+          <div class="dw-sig" id="dws1"><div class="dw-sdot green"></div><span></span></div>
+          <div class="dw-sig" id="dws2"><div class="dw-sdot green"></div><span></span></div>
+          <div class="dw-sig" id="dws3"><div class="dw-sdot amber"></div><span></span></div>
+        </div>
+        <div class="dw-pitch" id="dw-pitch">
+          <div class="dw-pitch-lbl">AI pitch opener</div>
+          <div class="dw-pitch-txt" id="dw-ptxt"></div>
+        </div>
+      </div>
+    </div>
+  </div>>'''
 
 LEGAL_HTML = '''<!DOCTYPE html>
 <html lang="en">
@@ -4531,6 +4741,43 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(404); self.end_headers(); return
 
     def do_POST(self):
+        if self.path == '/stripe-webhook':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                payload = self.rfile.read(length)
+                event = json.loads(payload)
+                etype = event.get('type','')
+                print('[Stripe]', etype)
+                if etype in ('checkout.session.completed','customer.subscription.created','customer.subscription.updated'):
+                    sess = event.get('data',{}).get('object',{})
+                    customer_email = sess.get('customer_email') or sess.get('customer_details',{}).get('email','')
+                    amount = sess.get('amount_total',0) or sess.get('plan',{}).get('amount',0)
+                    plan = 'pro' if amount <= 3000 else 'agency'
+                    if customer_email:
+                        print(f'[Stripe] Upgrading {customer_email} to {plan}')
+                        # Log upgrade for manual processing until Supabase auth is added
+                        with open('/tmp/scout_upgrades.txt','a') as f:
+                            import datetime
+                            f.write(f"{datetime.datetime.utcnow().isoformat()} | {customer_email} | {plan}\n")
+                self.respond({'ok': True})
+            except Exception as e:
+                print('[Stripe webhook error]', e)
+                self.respond({'error': str(e)})
+            return
+        if self.path == '/waitlist':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                data = json.loads(self.rfile.read(length))
+                email = data.get('email', '').strip()
+                if email:
+                    wl_file = '/tmp/scout_waitlist.txt'
+                    with open(wl_file, 'a') as f:
+                        f.write(email + '\n')
+                    print('[Waitlist]', email)
+                self.respond({'ok': True})
+            except Exception as e:
+                self.respond({'error': str(e)})
+            return
         if self.path == '/save':
             length = int(self.headers.get('Content-Length', 0))
             try:
