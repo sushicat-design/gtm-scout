@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#v26
+#V27
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -428,6 +428,38 @@ body{background:var(--bg);color:var(--tx);font-family:'Nunito',sans-serif;font-s
 .ob-type-btn.selected div:nth-child(2){color:var(--pip)!important;}
 .ob-type-btn:hover{border-color:var(--bor)!important;background:var(--sur2)!important;}
 
+/* ── PRICING / TIER MODAL ── */
+.pricing-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.pricing-overlay.open{display:flex}
+.pricing-modal{background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:36px 32px;width:100%;max-width:780px;max-height:90vh;overflow-y:auto}
+.pricing-title{font-size:26px;font-weight:800;letter-spacing:-.04em;text-align:center;margin-bottom:6px}
+.pricing-sub{font-size:14px;color:var(--tx3);text-align:center;margin-bottom:32px}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.tier-card{background:var(--bg);border:1px solid var(--bor);border-radius:var(--r);padding:24px;position:relative;transition:all .2s}
+.tier-card.featured{border-color:var(--pip);background:var(--pip-dim)}
+.tier-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:10px;font-weight:800;padding:3px 12px;border-radius:var(--r-pill);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.tier-name{font-size:14px;font-weight:800;color:var(--tx2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.tier-price{font-size:36px;font-weight:800;letter-spacing:-.04em;color:var(--tx);line-height:1;margin-bottom:4px}
+.tier-price span{font-size:14px;font-weight:500;color:var(--tx3)}
+.tier-desc{font-size:12px;color:var(--tx3);margin-bottom:20px;line-height:1.6;min-height:36px}
+.tier-features{list-style:none;margin-bottom:24px;display:flex;flex-direction:column;gap:8px}
+.tier-features li{font-size:12px;color:var(--tx2);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.tier-features li::before{content:'✓';color:var(--pip);font-weight:800;flex-shrink:0;margin-top:1px}
+.tier-features li.dim{color:var(--tx3)}
+.tier-features li.dim::before{content:'—';color:var(--tx3)}
+.tier-cta{width:100%;background:var(--pip);color:#fff;border:none;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;padding:12px;border-radius:var(--r-sm);cursor:pointer;transition:all .2s}
+.tier-cta:hover{opacity:.88;transform:translateY(-1px)}
+.tier-cta.outline{background:none;border:1px solid var(--bor2);color:var(--tx2)}
+.tier-cta.outline:hover{border-color:var(--pip);color:var(--pip);transform:none}
+.pricing-note{font-size:11px;color:var(--tx3);text-align:center;line-height:1.8}
+.pricing-note a{color:var(--pip);text-decoration:none}
+/* credits system */
+.credits-bar{background:var(--bg);border:1px solid var(--bor);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.credits-label{font-size:11px;color:var(--tx3);font-weight:600}
+.credits-track{flex:1;height:6px;background:var(--bor2);border-radius:3px;overflow:hidden}
+.credits-fill{height:100%;background:var(--pip);border-radius:3px;transition:width .3s}
+.credits-count{font-size:11px;font-weight:800;color:var(--pip)}
+
 """
 
 JS = """
@@ -526,7 +558,7 @@ function sc(n){return n>=80?'var(--pip)':n>=50?'var(--amb)':'var(--tx3)';}
 function su(v){if(!v||v==='null'||v==='undefined')return '';return String(v).indexOf('http')===0?v:'https://'+v;}
 
 // ── SEARCH PAGE ──────────────────────────────────────────────────────────────
-function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)return;document.getElementById('ci').value='';run(v);}
+function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)return;if(!tierCanResearch())return;document.getElementById('ci').value='';run(v);}
 
 function bulk(){
   if(busy)return;
@@ -942,9 +974,9 @@ var PH_SAVED = [];
 var phCategory = 'cmo';
 var phFilters = {remote: false, startup: false, week: false};
 
-var PH_SYS_CMO = "Search the web RIGHT NOW for real open job postings for CMO VP Marketing Head of Marketing Head of Growth roles at funded tech AI startups. Return ONLY a valid JSON array with no text before or after. Each item: {role, company, location, remote, salary, posted, apply_method, apply_url, description, sector}. Max 8 real jobs with apply URLs.";
+var PH_SYS_CMO = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: CMO, VP Marketing, Head of Marketing, Head of Growth, VP Growth at funded tech and AI startups. Return 6-8 real current openings only.";
 
-var PH_SYS_DESIGN = "Search the web RIGHT NOW for real open job postings for Head of Design VP Design Creative Director Brand Director roles at funded tech AI startups. Return ONLY a valid JSON array with no text before or after. Each item: {role, company, location, remote, salary, posted, apply_method, apply_url, description, sector}. Max 8 real jobs with apply URLs.";
+var PH_SYS_DESIGN = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: Head of Design, VP Design, Creative Director, Brand Director, Head of Brand at funded tech and AI startups. Return 6-8 real current openings only.";
 
 function phSetCategory(cat){
   phCategory = cat;
@@ -961,12 +993,13 @@ function phToggleFilter(f){
 }
 
 function phFetch(){
+  if(!tierCanPipHunt())return;
   var btn = document.getElementById('ph-fetch-btn');
   var status = document.getElementById('ph-status');
   btn.disabled = true;
   status.textContent = 'Searching job boards...';
   var sys = phCategory === 'cmo' ? PH_SYS_CMO : PH_SYS_DESIGN;
-  var query = phCategory === 'cmo' ? 'Find CMO VP Marketing Head of Marketing roles at funded tech AI startups. Return JSON array.' : 'Find Head of Design VP Design Creative Director roles at funded tech AI startups. Return JSON array.';
+  var query = phCategory === 'cmo' ? 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co CMO VP Marketing Head of Marketing startup 2025 2026' : 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co Head of Design VP Design Creative Director startup 2025 2026';
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
   .then(function(r){return r.json();})
   .then(function(d){
@@ -988,9 +1021,39 @@ function phFetch(){
       }
     }
     if(!Array.isArray(jobs)||!jobs.length){
-      // Build placeholder jobs from text mentions if JSON failed
-      status.textContent='Parsed '+t.length+' chars - no structured data. Try again.';
-      btn.disabled=false;
+      // Last resort: ask Claude to convert the text to JSON
+      status.textContent='Reformatting results...';
+      fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key:'',company:'Convert this job listing text to a JSON array. Return ONLY the JSON array starting with [. Each item needs: role, company, location, remote, salary, posted, apply_method, apply_url, description, sector. Text: '+t.slice(0,3000),
+        system:'Return ONLY a valid JSON array starting with [. No explanation, no markdown.'})})
+      .then(function(r2){return r2.json();})
+      .then(function(d2){
+        var t2=(d2.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+        var a2=t2.indexOf('['),b2=t2.lastIndexOf(']');
+        if(a2>=0&&b2>a2){
+          try{
+            jobs=JSON.parse(t2.slice(a2,b2+1));
+            jobs.forEach(function(j){
+              j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
+              j._cat=phCategory;
+              j.role=j.role||j.title||'Open Role';
+              j.company=j.company||'Unknown';
+            });
+            jobs=jobs.filter(function(j){return j.company&&j.role;});
+            PH_JOBS=PH_JOBS.concat(jobs);
+            phSave();phRenderJobs();
+            status.textContent=jobs.length+' jobs found';
+          }catch(e2){status.textContent='Could not parse results. Try again.';}
+        } else {
+          status.textContent='No structured results. Try again.';
+        }
+        setTimeout(function(){status.textContent='';},4000);
+        btn.disabled=false;
+      }).catch(function(){
+        status.textContent='Parse failed. Try again.';
+        setTimeout(function(){status.textContent='';},3000);
+        btn.disabled=false;
+      });
       return;
     }
     // Filter junk
@@ -1257,6 +1320,7 @@ function onboardingSkip(){
 
 document.addEventListener('DOMContentLoaded',function(){
   setPage('search');
+  updateCreditsBar();
   load();
   // Show onboarding modal on first visit
   setTimeout(function(){
@@ -1573,6 +1637,123 @@ function onboardingSkip(){
   document.getElementById('onboarding-overlay').classList.remove('open');
 }
 
+// ── TIER / CREDITS SYSTEM ─────────────────────────────────────────────────────
+var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:0}, pro:{research:999,fetch:20,piphunt:999}, agency:{research:9999,fetch:100,piphunt:9999}};
+var TIER_LABELS = {free:'Free',pro:'Pro',agency:'Agency'};
+
+function tierLoad(){
+  try{
+    var t=localStorage.getItem('scout_tier');
+    if(t) return JSON.parse(t);
+  }catch(e){}
+  return {plan:'free', research_used:0, fetch_used:0, period: new Date().toISOString().slice(0,7)};
+}
+
+function tierSave(t){ try{localStorage.setItem('scout_tier',JSON.stringify(t));}catch(e){} }
+
+function tierReset(t){
+  // Reset monthly usage if new month
+  var thisMonth = new Date().toISOString().slice(0,7);
+  if(t.period !== thisMonth){ t.research_used=0; t.fetch_used=0; t.period=thisMonth; tierSave(t); }
+  return t;
+}
+
+function tierCanResearch(){
+  var t = tierReset(tierLoad());
+  var limit = TIER_LIMITS[t.plan||'free'].research;
+  if(t.research_used >= limit){
+    showPricing('You have used your '+limit+' free research credits this month.');
+    return false;
+  }
+  return true;
+}
+
+function tierCanFetch(){
+  var t = tierReset(tierLoad());
+  var limit = TIER_LIMITS[t.plan||'free'].fetch;
+  if(t.fetch_used >= limit){
+    showPricing('You have used your '+limit+' free fetch credits this month.');
+    return false;
+  }
+  return true;
+}
+
+function tierCanPipHunt(){
+  var t = tierReset(tierLoad());
+  if(t.plan==='free'){
+    showPricing('Pip Hunt is available on Pro and Agency plans.');
+    return false;
+  }
+  return true;
+}
+
+function tierUseResearch(){
+  var t = tierReset(tierLoad());
+  t.research_used = (t.research_used||0) + 1;
+  tierSave(t);
+  updateCreditsBar();
+}
+
+function tierUseFetch(){
+  var t = tierReset(tierLoad());
+  t.fetch_used = (t.fetch_used||0) + 1;
+  tierSave(t);
+  updateCreditsBar();
+}
+
+function updateCreditsBar(){
+  var t = tierReset(tierLoad());
+  var plan = t.plan||'free';
+  var lim = TIER_LIMITS[plan];
+  var barEl = document.getElementById('credits-bar');
+  if(!barEl) return;
+  if(plan !== 'free'){ barEl.style.display='none'; return; }
+  barEl.style.display='flex';
+  var used = t.research_used||0;
+  var pct = Math.min(100, Math.round(used/lim.research*100));
+  document.getElementById('credits-fill').style.width = pct+'%';
+  document.getElementById('credits-count').textContent = (lim.research-used)+' research credits left';
+  document.getElementById('credits-fill').style.background = pct>=80?'var(--red)':'var(--pip)';
+}
+
+function showPricing(msg){
+  if(msg) document.getElementById('pricing-msg').textContent = msg;
+  document.getElementById('pricing-overlay').classList.add('open');
+}
+
+function closePricing(){
+  document.getElementById('pricing-overlay').classList.remove('open');
+}
+
+function selectTier(plan){
+  if(plan === 'free'){
+    var t = tierLoad();
+    t.plan = 'free';
+    tierSave(t);
+    closePricing();
+    updateCreditsBar();
+    return;
+  }
+  // Redirect to Stripe checkout
+  var urls = {
+    pro: 'https://buy.stripe.com/REPLACE_PRO_LINK',
+    agency: 'https://buy.stripe.com/REPLACE_AGENCY_LINK'
+  };
+  window.open(urls[plan], '_blank');
+  closePricing();
+}
+
+// Earn free credits by tagging a company hiring
+function earnCredit(){
+  var t = tierReset(tierLoad());
+  if(t.plan !== 'free') return;
+  t.research_used = Math.max(0, (t.research_used||0) - 1);
+  tierSave(t);
+  updateCreditsBar();
+  var ind = document.getElementById('save-ind');
+  if(ind){ind.textContent='+1 credit earned!';ind.style.color='var(--pip)';setTimeout(function(){ind.textContent='';},2500);}
+}
+
 """
 
 HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
@@ -1590,7 +1771,8 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<span class='logo-text'>Scout</span>"
     "</button>"
     "<div class='topbar-right'>"
-      "<span class='save-ind' id='save-ind'></span>"
+      "<button onclick='showPricing()' id='upgrade-btn' style='background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Nunito,sans-serif'>&#9889; Upgrade</button>"
+    "<span class='save-ind' id='save-ind'></span>"
       "<button class='hamburger' onclick='openSidebar()' title='Menu'>"
         "<span></span><span></span><span></span>"
       "</button>"
@@ -1834,6 +2016,66 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "</div>"
     "</div>"
   "</div>\n"
+  "</div>\n"
+
+  "<div class='pricing-overlay' id='pricing-overlay'>"
+    "<div class='pricing-modal'>"
+      "<div id='pricing-msg' style='font-size:13px;color:var(--amb);text-align:center;margin-bottom:12px;min-height:18px'></div>"
+      "<div class='pricing-title'>Choose your plan</div>"
+      "<div class='pricing-sub'>Start free. Upgrade when Scout starts paying for itself.</div>"
+      "<div class='pricing-grid'>"
+        "<div class='tier-card'>"
+          "<div class='tier-name'>Free</div>"
+          "<div class='tier-price'>$0<span>/mo</span></div>"
+          "<div class='tier-desc'>Try Scout and see if it fits your workflow</div>"
+          "<ul class='tier-features'>"
+            "<li>5 company researches/month</li>"
+            "<li>2 lead fetches/month</li>"
+            "<li>Inbox &amp; Pipeline</li>"
+            "<li class='dim'>Pip Hunt job search</li>"
+            "<li class='dim'>CSV export</li>"
+            "<li class='dim'>Team access</li>"
+            "<li>+1 credit per company you tag as hiring</li>"
+          "</ul>"
+          "<button class='tier-cta outline' onclick='selectTier(\"free\")'>Current plan</button>"
+        "</div>"
+        "<div class='tier-card featured'>"
+          "<div class='tier-badge'>Most Popular</div>"
+          "<div class='tier-name'>Pro</div>"
+          "<div class='tier-price'>$29<span>/mo</span></div>"
+          "<div class='tier-desc'>For freelancers and fractional CMOs actively prospecting</div>"
+          "<ul class='tier-features'>"
+            "<li>Unlimited research</li>"
+            "<li>20 lead fetches/month</li>"
+            "<li>Pip Hunt job search</li>"
+            "<li>CSV export</li>"
+            "<li>Inbox, Pipeline, Profile</li>"
+            "<li class='dim'>Team access</li>"
+            "<li>Priority support</li>"
+          "</ul>"
+          "<button class='tier-cta' onclick='selectTier(\"pro\")'>Get Pro &#8594;</button>"
+        "</div>"
+        "<div class='tier-card'>"
+          "<div class='tier-name'>Agency</div>"
+          "<div class='tier-price'>$99<span>/mo</span></div>"
+          "<div class='tier-desc'>For agencies managing multiple clients and team pipelines</div>"
+          "<ul class='tier-features'>"
+            "<li>Everything in Pro</li>"
+            "<li>Up to 5 team members</li>"
+            "<li>Shared pipeline &amp; inbox</li>"
+            "<li>100 lead fetches/month</li>"
+            "<li>White-label pitch openers</li>"
+            "<li>Client workspace</li>"
+            "<li>Dedicated support</li>"
+          "</ul>"
+          "<button class='tier-cta' onclick='selectTier(\"agency\")'>Get Agency &#8594;</button>"
+        "</div>"
+      "</div>"
+      "<div class='pricing-note'>"
+        "Cancel anytime &nbsp;&#183;&nbsp; Secure payments via Stripe &nbsp;&#183;&nbsp; "
+        "<a href='#' onclick='closePricing()'>Maybe later</a>"
+      "</div>"
+    "</div>"
   "</div>\n"
 
   "<script>" + JS + "</script>\n"
