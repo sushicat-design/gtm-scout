@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#V29
+#V30
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -897,10 +897,11 @@ function load() {
 function save() {
   var ind = document.getElementById('save-ind');
   if(ind) { ind.textContent = 'saving...'; ind.style.color = 'var(--tx3)'; }
-  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(DB)})
+  var all = DB.concat(INBOX);
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all)})
   .then(function(r){return r.json();})
   .then(function(d){
-    if(ind) { ind.textContent = d.ok ? 'saved ✓' : 'save error'; ind.style.color = d.ok ? 'var(--grn)' : 'var(--red)'; }
+    if(ind) { ind.textContent = d.ok ? 'saved ✓' : 'save error'; ind.style.color = d.ok ? 'var(--pip)' : 'var(--red)'; }
     setTimeout(function(){ if(ind) ind.textContent = ''; }, 3000);
   })
   .catch(function(e){
@@ -2483,10 +2484,12 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "</div>"
       "<div class='pricing-note'>"
         "Cancel anytime &nbsp;&#183;&nbsp; Secure payments via Stripe &nbsp;&#183;&nbsp; "
-        "<a href='#' onclick='closePricing()'>Maybe later</a>"
-      "</div>"
-    "</div>"
-  "</div>\n"
+        "<a href='#' onclick='closePricing()'>Maybe later</a><br><br>"
+        "<span style='color:var(--tx3)'>Just need a bit more? Top up credits without a subscription:</span><br>"
+        "<a href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01' target='_blank'>20 credits — $9</a>"
+        " &nbsp;&#183;&nbsp; "
+        "<a href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01' target='_blank'>50 credits — $19</a>"
+      "</div>\n"
 
   "<footer style='border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px'>"
   "<span style='font-size:11px;color:var(--tx3)'>&#169; 2026 Scout · Sushicat Ventures LLC</span>"
@@ -2494,7 +2497,6 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<a href='/legal#terms' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Terms of Service</a>"
     "<a href='/legal#privacy' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Privacy Policy</a>"
     "<a href='mailto:hello@scout.so' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Contact</a>"
-    "<button onclick='showPricing()' style='font-size:11px;color:var(--pip);background:none;border:none;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700;padding:0'>&#9889; Upgrade</button>"
   "</div>"
 "</footer>\n"
   "<script>" + JS + "</script>\n"
@@ -2868,16 +2870,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
-        # Serve PIN page if PIN is set
-        app_pin = os.environ.get('APP_PIN', '')
-        if app_pin and self.path == '/':
-            content = PIN_HTML.replace('__PIN__', app_pin).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/html; charset=utf-8')
-            self.send_header('Content-Length', str(len(content)))
-            self.end_headers()
-            self.wfile.write(content)
-            return
+        # Open access - no PIN required
         if self.path not in ('/', '/app', ''):
             self.send_response(404); self.end_headers(); return
         content = HTML.encode('utf-8')
