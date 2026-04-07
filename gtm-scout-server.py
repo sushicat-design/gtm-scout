@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#V31
+#V32
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -94,47 +94,34 @@ CSS = """
 /* ── RESET & BASE ── */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#060810;
-  --sur:#0a0d16;
-  --sur2:#0f1220;
-  --sur3:#141829;
-  --bor:rgba(255,255,255,0.06);
-  --bor2:rgba(255,255,255,0.1);
-  --bor3:rgba(255,255,255,0.15);
-  --pip:#3b9eff;
-  --pip-dim:rgba(59,158,255,0.07);
-  --pip-bor:rgba(59,158,255,0.18);
-  --pip-deep:#1a6fd4;
-  --pip-light:#7ec8ff;
-  --pip-glow:rgba(59,158,255,0.35);
-  --amb:#f5a623;
-  --amb-dim:rgba(245,166,35,0.08);
-  --red:#ff5a5a;
-  --grn:#2ecc8a;
-  --grn-dim:rgba(46,204,138,0.08);
-  --tx:#f0f4ff;
-  --tx2:#8b96b0;
-  --tx3:#3d4560;
-  --r:8px;
-  --r-sm:5px;
-  --r-pill:4px;
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.4);
-  --shadow:0 4px 24px rgba(0,0,0,0.5);
-  --shadow-lg:0 12px 48px rgba(0,0,0,0.6);
-  --glow:0 0 40px rgba(59,158,255,0.12);
+  --bg:#050608;--sur:#08090f;--sur2:#0c0e18;--sur3:#10131f;
+  --bor:rgba(255,255,255,0.055);--bor2:rgba(255,255,255,0.09);--bor3:rgba(255,255,255,0.14);
+  --pip:#4f8eff;--pip-dim:rgba(79,142,255,0.07);--pip-bor:rgba(79,142,255,0.2);
+  --pip-deep:#2557d6;--pip-light:#94b8ff;--pip-glow:rgba(79,142,255,0.4);
+  --amb:#ff9f45;--amb-dim:rgba(255,159,69,0.08);
+  --red:#ff4d6a;--grn:#00d68f;--grn-dim:rgba(0,214,143,0.08);
+  --tx:#f2f4ff;--tx2:#7a82a0;--tx3:#363d55;
+  --r:6px;--r-sm:4px;--r-pill:4px;
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.5);
+  --shadow:0 4px 28px rgba(0,0,0,0.6);
+  --shadow-lg:0 16px 56px rgba(0,0,0,0.7);
 }
 
 /* Subtle noise grain texture on bg */
 body{
   background:var(--bg);
   color:var(--tx);
-  font-family:'Sora',sans-serif;
+  font-family:'Outfit',sans-serif;
   font-size:14px;
   line-height:1.7;
   font-weight:500;
   -webkit-font-smoothing:antialiased;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
   min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 15% -5%,rgba(79,142,255,0.055) 0%,transparent 65%),
+    radial-gradient(ellipse 60% 40% at 85% 105%,rgba(37,87,214,0.045) 0%,transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E");
 }
 
 /* ── TOPBAR ── */
@@ -148,10 +135,10 @@ body{
   z-index:100;
   gap:12px;
 }
-.logo-btn{display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;padding:0;font-family:'Sora',sans-serif;transition:opacity .2s}
+.logo-btn{display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;padding:0;font-family:'Outfit',sans-serif;transition:opacity .2s}
 .logo-btn:hover{opacity:.8}
 .logo-mark{width:30px;height:30px;display:flex;align-items:center;justify-content:center}
-.logo-text{font-size:17px;font-weight:900;letter-spacing:-.04em;color:var(--tx);font-family:'Sora',sans-serif}
+.logo-text{font-size:12px;font-weight:700;letter-spacing:.22em;color:var(--tx);font-family:'Outfit',sans-serif;text-transform:uppercase}
 .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
 .save-ind{font-size:11px;color:var(--tx3);min-width:56px;text-align:right;font-weight:600}
 
@@ -163,16 +150,7 @@ body{
 /* ── SIDEBAR ── */
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;backdrop-filter:blur(4px)}
 .sidebar-overlay.open{display:block}
-.sidebar{
-  position:fixed;top:0;right:0;height:100vh;width:276px;
-  background:var(--sur);
-  border-left:1px solid var(--bor2);
-  z-index:201;
-  transform:translateX(100%);
-  transition:transform .28s cubic-bezier(.4,0,.2,1);
-  display:flex;flex-direction:column;
-  box-shadow:-24px 0 80px rgba(0,0,0,0.5);
-}
+.sidebar{position:fixed;top:0;right:0;height:100vh;width:260px;background:var(--sur);border-left:1px solid var(--bor2);z-index:201;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,0.5);}
 .sidebar.open{transform:translateX(0)}
 .sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--bor)}
 .sidebar-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3)}
@@ -182,7 +160,7 @@ body{
 .sidebar-item{
   display:flex;align-items:center;gap:13px;
   padding:13px 20px;cursor:pointer;border:none;
-  background:none;font-family:'Sora',sans-serif;
+  background:none;font-family:'Outfit',sans-serif;
   font-size:13px;font-weight:700;color:var(--tx2);
   text-align:left;transition:all .18s;
   border-left:2px solid transparent;width:100%;
@@ -227,17 +205,13 @@ body{
   background:radial-gradient(ellipse at center,rgba(59,158,255,0.08) 0%,transparent 70%);
   pointer-events:none;
 }
-.search-hero h1{
-  font-size:52px;font-weight:900;letter-spacing:-.05em;
-  margin-bottom:14px;line-height:1.05;
-  color:var(--tx);
-}
+.search-hero h1{font-size:56px;font-weight:800;letter-spacing:-.04em;margin-bottom:14px;line-height:1.0;color:var(--tx);font-family:'Outfit',sans-serif;}
 .search-hero p{font-size:16px;color:var(--tx2);line-height:1.7;max-width:420px;margin:0 auto}
 .search-box{display:flex;gap:8px;max-width:640px;margin:32px auto 0}
 #ci{
   flex:1;background:var(--sur);
   border:1px solid var(--bor2);
-  color:var(--tx);font-family:'Sora',sans-serif;
+  color:var(--tx);font-family:'Outfit',sans-serif;
   font-size:15px;font-weight:500;
   padding:14px 20px;outline:none;
   border-radius:var(--r);
@@ -251,7 +225,7 @@ body{
   color:#fff;border:none;font-weight:800;
   font-size:14px;padding:14px 28px;
   cursor:pointer;white-space:nowrap;
-  font-family:'Sora',sans-serif;
+  font-family:'Outfit',sans-serif;
   border-radius:var(--r);
   transition:all .2s;
   box-shadow:0 4px 20px rgba(59,158,255,0.25);
@@ -263,7 +237,7 @@ body{
 .search-actions{display:flex;gap:8px;justify-content:center;margin-top:12px}
 .tlink{
   background:none;border:1px solid var(--bor2);color:var(--tx3);
-  font-size:12px;cursor:pointer;font-family:'Sora',sans-serif;
+  font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;
   padding:6px 16px;border-radius:var(--r-pill);
   transition:all .2s;font-weight:700;letter-spacing:-.01em;
 }
@@ -296,7 +270,7 @@ body{
 #bi,#ii{
   width:100%;background:var(--bg);
   border:1px solid var(--bor2);color:var(--tx);
-  font-family:'Sora',sans-serif;font-size:13px;
+  font-family:'Outfit',sans-serif;font-size:13px;
   padding:10px 14px;min-height:90px;resize:vertical;
   outline:none;line-height:1.7;border-radius:var(--r-sm);
   transition:border-color .2s;
@@ -306,7 +280,7 @@ body{
   background:linear-gradient(135deg,var(--pip),var(--pip-deep));
   color:#fff;border:none;font-weight:800;
   font-size:12px;padding:9px 20px;cursor:pointer;
-  margin-top:10px;font-family:'Sora',sans-serif;
+  margin-top:10px;font-family:'Outfit',sans-serif;
   border-radius:var(--r-sm);
   box-shadow:0 4px 16px rgba(59,158,255,0.2);
   transition:all .2s;
@@ -315,30 +289,20 @@ body{
 #ierr{display:none;color:var(--red);font-size:12px;margin-top:6px;font-weight:600}
 
 /* ── FETCH HERO ── */
-.fetch-hero{
-  text-align:center;
-  margin:56px auto 0;
-  padding:52px 40px;
-  border:1px solid var(--bor);
-  border-radius:var(--r);
-  background:linear-gradient(160deg,var(--sur) 0%,var(--sur2) 100%);
-  max-width:580px;
-  position:relative;
-  overflow:hidden;
-}
+.fetch-hero{text-align:center;margin:56px auto 0;padding:52px 40px;border:1px solid var(--bor2);border-radius:var(--r);background:var(--sur);max-width:560px;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
 .fetch-hero::before{
   content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
   width:400px;height:200px;
   background:radial-gradient(ellipse,rgba(59,158,255,0.07) 0%,transparent 70%);
   pointer-events:none;
 }
-.fetch-hero-title{font-size:24px;font-weight:900;letter-spacing:-.03em;margin-bottom:10px;color:var(--tx)}
+.fetch-hero-title{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px;color:var(--tx);font-family:'Outfit',sans-serif}
 .fetch-hero-sub{font-size:14px;color:var(--tx2);margin-bottom:32px;line-height:1.7;max-width:400px;margin-left:auto;margin-right:auto}
 .fetch-hero-btn{
   background:linear-gradient(135deg,var(--pip),var(--pip-deep));
   color:#fff;border:none;font-weight:900;
   font-size:16px;padding:16px 52px;
-  cursor:pointer;font-family:'Sora',sans-serif;
+  cursor:pointer;font-family:'Outfit',sans-serif;
   border-radius:var(--r);
   box-shadow:0 8px 32px rgba(59,158,255,0.3);
   transition:all .25s;letter-spacing:-.02em;
@@ -364,7 +328,7 @@ body{
   background:linear-gradient(135deg,var(--pip),var(--pip-deep));
   color:#fff;border:none;font-weight:800;
   font-size:12px;padding:10px 20px;cursor:pointer;
-  font-family:'Sora',sans-serif;border-radius:var(--r-sm);
+  font-family:'Outfit',sans-serif;border-radius:var(--r-sm);
   box-shadow:0 4px 16px rgba(59,158,255,0.2);
 }
 #fetch-count{font-size:11px;color:var(--tx3);margin-left:10px;font-weight:600}
@@ -374,13 +338,13 @@ body{
 
 /* ── TOOLBAR (leads page) ── */
 .leads-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.leads-header h2{font-size:24px;font-weight:900;letter-spacing:-.04em;color:var(--tx)}
+.leads-header h2{font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx);font-family:'Outfit',sans-serif}
 .leads-toolbar{display:flex;align-items:center;gap:7px;margin-bottom:22px;flex-wrap:wrap}
 .fb{
   font-size:11px;padding:6px 14px;
   background:none;border:1px solid var(--bor);
   color:var(--tx3);cursor:pointer;
-  font-family:'Sora',sans-serif;
+  font-family:'Outfit',sans-serif;
   border-radius:var(--r-pill);transition:all .18s;font-weight:700;
 }
 .fb:hover{border-color:var(--bor2);color:var(--tx2)}
@@ -390,7 +354,7 @@ body{
   font-size:11px;padding:6px 14px;
   background:none;border:1px solid var(--bor);
   color:var(--tx2);cursor:pointer;
-  font-family:'Sora',sans-serif;
+  font-family:'Outfit',sans-serif;
   border-radius:var(--r-sm);font-weight:700;transition:all .18s;
 }
 .tb-btn:hover{border-color:var(--pip);color:var(--pip)}
@@ -399,18 +363,8 @@ body{
 
 /* ── SAVED LEADS GRID ── */
 .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.lead-card{
-  background:linear-gradient(160deg,var(--sur) 0%,var(--sur2) 100%);
-  border:1px solid var(--bor);
-  border-radius:var(--r);overflow:hidden;
-  transition:all .22s;
-  box-shadow:var(--shadow-sm);
-}
-.lead-card:hover{
-  border-color:var(--bor2);
-  box-shadow:var(--shadow),0 0 0 1px rgba(59,158,255,0.06);
-  transform:translateY(-1px);
-}
+.lead-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);overflow:hidden;transition:border-color .15s,transform .15s,box-shadow .15s;box-shadow:var(--shadow-sm);}
+.lead-card:hover{border-color:rgba(79,142,255,0.28);box-shadow:var(--shadow),0 0 24px rgba(79,142,255,0.05);transform:translateY(-1px);}
 .lead-card-header{
   padding:18px 20px 14px;
   border-bottom:1px solid var(--bor);
@@ -446,15 +400,10 @@ body{
 .sy{font-size:10px;font-weight:800;color:var(--pip)}
 .sn{font-size:10px;font-weight:800;color:var(--red)}
 .su{font-size:10px;color:var(--tx3);font-weight:600}
-.pitch-box{
-  background:linear-gradient(135deg,rgba(59,158,255,0.06),rgba(26,111,212,0.04));
-  border:1px solid var(--pip-bor);
-  padding:16px;margin-top:8px;border-radius:var(--r-sm);
-  position:relative;overflow:hidden;
-}
+.pitch-box{background:var(--sur2);border:1px solid var(--bor2);border-left:2px solid var(--pip);padding:16px;margin-top:8px;border-radius:0 var(--r-sm) var(--r-sm) 0;position:relative;overflow:hidden;}
 .pitch-box::before{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(59,158,255,0.08),transparent);pointer-events:none}
 .pitch-label{font-size:8px;color:var(--pip);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;font-weight:800}
-.pitch-text{font-size:12px;color:#c0deff;line-height:1.85;font-style:italic;font-weight:500}
+.pitch-text{font-size:11px;color:var(--tx2);line-height:1.85;font-style:normal;font-weight:400;font-family:'JetBrains Mono',monospace}
 .founder-row{
   display:flex;gap:11px;align-items:flex-start;
   padding:9px 11px;background:var(--bg);
@@ -481,7 +430,7 @@ body{
 .social-links a:hover{border-color:var(--pip);color:var(--pip);background:var(--pip-dim)}
 .notes-area{
   width:100%;background:var(--bg);border:1px solid var(--bor2);
-  color:var(--tx);font-family:'Sora',sans-serif;
+  color:var(--tx);font-family:'Outfit',sans-serif;
   font-size:12px;padding:10px 14px;min-height:58px;
   resize:none;outline:none;line-height:1.6;
   border-radius:var(--r-sm);margin-top:4px;
@@ -497,7 +446,7 @@ body{
   font-size:11px;padding:5px 13px;
   background:none;border:1px solid var(--bor);
   color:var(--tx2);cursor:pointer;
-  font-family:'Sora',sans-serif;
+  font-family:'Outfit',sans-serif;
   border-radius:var(--r-pill);transition:all .18s;font-weight:700;
 }
 .abtn:hover{border-color:var(--pip);color:var(--pip);background:var(--pip-dim)}
@@ -512,13 +461,9 @@ body{
 
 /* ── PIPELINE PAGE ── */
 .pipeline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
-.pipeline-header h2{font-size:24px;font-weight:900;letter-spacing:-.04em;color:var(--tx)}
+.pipeline-header h2{font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx);font-family:'Outfit',sans-serif}
 .pipeline-board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
-.pipeline-col{
-  background:linear-gradient(160deg,var(--sur) 0%,var(--sur2) 100%);
-  border:1px solid var(--bor);padding:14px;
-  border-radius:var(--r);
-}
+.pipeline-col{background:var(--sur);border:1px solid var(--bor);padding:12px;border-radius:var(--r);}
 .pipeline-col-header{
   font-size:9px;font-weight:800;text-transform:uppercase;
   letter-spacing:.14em;padding-bottom:12px;
@@ -535,7 +480,7 @@ body{
   box-shadow:0 4px 20px rgba(59,158,255,0.1);
   transform:translateY(-1px);
 }
-.pipeline-card-name{font-family:'Sora',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px;color:var(--tx);letter-spacing:-.02em}
+.pipeline-card-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px;color:var(--tx);letter-spacing:-.02em}
 .pipeline-card-meta{font-size:10px;color:var(--tx3);margin-bottom:3px;font-weight:600}
 .pipeline-card-note{font-size:10px;color:var(--tx3);font-style:italic;margin-top:5px;line-height:1.5}
 .pipeline-card-date{font-size:10px;color:var(--amb);margin-top:3px;font-weight:700}
@@ -543,7 +488,7 @@ body{
 
 /* ── INBOX PAGE ── */
 .inbox-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.inbox-header h2{font-size:24px;font-weight:900;letter-spacing:-.04em;color:var(--tx)}
+.inbox-header h2{font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx);font-family:'Outfit',sans-serif}
 .inbox-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .inbox-card{
   background:linear-gradient(160deg,var(--sur) 0%,var(--sur2) 100%);
@@ -560,7 +505,7 @@ body{
   flex:1;background:linear-gradient(135deg,var(--pip),var(--pip-deep));
   color:#fff;border:none;font-weight:800;
   font-size:12px;padding:10px;cursor:pointer;
-  font-family:'Sora',sans-serif;border-radius:var(--r-sm);
+  font-family:'Outfit',sans-serif;border-radius:var(--r-sm);
   transition:all .2s;box-shadow:0 4px 16px rgba(59,158,255,0.2);
   letter-spacing:-.01em;
 }
@@ -569,7 +514,7 @@ body{
   flex:1;background:none;color:var(--tx3);
   border:1px solid var(--bor);font-weight:700;
   font-size:12px;padding:10px;cursor:pointer;
-  font-family:'Sora',sans-serif;border-radius:var(--r-sm);
+  font-family:'Outfit',sans-serif;border-radius:var(--r-sm);
   transition:all .2s;
 }
 .btn-dismiss:hover{border-color:rgba(255,90,90,0.3);color:var(--red)}
@@ -621,14 +566,14 @@ body{
 .profile-stat-l{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-top:4px;font-weight:700}
 .profile-edit-btn{
   width:100%;background:none;border:1px solid var(--bor2);
-  color:var(--tx2);font-family:'Sora',sans-serif;
+  color:var(--tx2);font-family:'Outfit',sans-serif;
   font-size:12px;font-weight:800;padding:10px;
   border-radius:var(--r-sm);cursor:pointer;transition:all .2s;
 }
 .profile-edit-btn:hover{border-color:var(--pip);color:var(--pip);background:var(--pip-dim)}
 .profile-share-btn{
   width:100%;background:linear-gradient(135deg,var(--pip),var(--pip-deep));
-  color:#fff;border:none;font-family:'Sora',sans-serif;
+  color:#fff;border:none;font-family:'Outfit',sans-serif;
   font-size:12px;font-weight:800;padding:10px;
   border-radius:var(--r-sm);cursor:pointer;
   transition:all .2s;margin-top:8px;
@@ -655,7 +600,7 @@ body{
 .profile-section-title{font-size:15px;font-weight:900;letter-spacing:-.02em}
 .profile-add-btn{
   background:none;border:1px solid var(--pip-bor);color:var(--pip);
-  font-family:'Sora',sans-serif;font-size:11px;font-weight:800;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:800;
   padding:5px 14px;border-radius:var(--r-pill);cursor:pointer;transition:all .2s;
 }
 .profile-add-btn:hover{background:var(--pip-dim)}
@@ -678,7 +623,7 @@ body{
 .case-card-add{
   background:none;border:1px dashed var(--bor2);color:var(--tx3);
   display:flex;align-items:center;justify-content:center;gap:8px;
-  font-family:'Sora',sans-serif;font-size:13px;font-weight:700;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;
   padding:40px;border-radius:var(--r-sm);cursor:pointer;
   transition:all .2s;width:100%;
 }
@@ -686,12 +631,12 @@ body{
 
 /* ── PIP HUNT ── */
 .ph-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
-.ph-header h2{font-size:24px;font-weight:900;letter-spacing:-.04em;display:flex;align-items:center;gap:10px;color:var(--tx)}
+.ph-header h2{font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--tx);font-family:'Outfit',sans-serif}
 .ph-tabs{display:flex;gap:4px;margin-bottom:22px;border-bottom:1px solid var(--bor);padding-bottom:0}
 .ph-tab{
   padding:9px 22px;font-size:13px;font-weight:800;color:var(--tx3);
   cursor:pointer;border:none;background:none;
-  font-family:'Sora',sans-serif;
+  font-family:'Outfit',sans-serif;
   border-bottom:2px solid transparent;
   transition:all .2s;margin-bottom:-1px;letter-spacing:-.01em;
 }
@@ -701,7 +646,7 @@ body{
 .ph-filter{
   font-size:11px;padding:5px 14px;background:none;
   border:1px solid var(--bor);color:var(--tx3);
-  cursor:pointer;font-family:'Sora',sans-serif;
+  cursor:pointer;font-family:'Outfit',sans-serif;
   border-radius:var(--r-pill);transition:all .2s;font-weight:700;
 }
 .ph-filter:hover{border-color:var(--pip);color:var(--pip)}
@@ -710,7 +655,7 @@ body{
   background:linear-gradient(135deg,var(--pip),var(--pip-deep));
   color:#fff;border:none;font-weight:800;font-size:12px;
   padding:9px 22px;cursor:pointer;
-  font-family:'Sora',sans-serif;border-radius:var(--r);
+  font-family:'Outfit',sans-serif;border-radius:var(--r);
   transition:all .2s;margin-left:auto;
   box-shadow:0 4px 16px rgba(59,158,255,0.2);
 }
@@ -753,21 +698,14 @@ body{
 /* ── MODALS ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 .modal-overlay.open{display:flex}
-.modal{
-  background:linear-gradient(160deg,var(--sur) 0%,var(--sur2) 100%);
-  border:1px solid var(--bor2);border-radius:var(--r);
-  padding:32px;width:100%;max-width:540px;
-  max-height:88vh;overflow-y:auto;
-  box-shadow:var(--shadow-lg),0 0 80px rgba(59,158,255,0.08);
-  animation:fadeUp .25s ease;
-}
-.modal-title{font-size:20px;font-weight:900;letter-spacing:-.03em;margin-bottom:22px;color:var(--tx)}
+.modal{background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:32px;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:fadeUp .25s ease;}
+.modal-title{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-bottom:22px;color:var(--tx);font-family:'Outfit',sans-serif}
 .modal-field{margin-bottom:14px}
 .modal-label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;font-weight:800;margin-bottom:6px;display:block}
 .modal-input{
   width:100%;background:var(--bg);
   border:1px solid var(--bor2);color:var(--tx);
-  font-family:'Sora',sans-serif;font-size:13px;font-weight:500;
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;
   padding:11px 15px;outline:none;border-radius:var(--r-sm);
   transition:all .2s;
 }
@@ -776,7 +714,7 @@ body{
 .modal-actions{display:flex;gap:8px;margin-top:22px;justify-content:flex-end}
 .modal-save{
   background:linear-gradient(135deg,var(--pip),var(--pip-deep));
-  color:#fff;border:none;font-family:'Sora',sans-serif;
+  color:#fff;border:none;font-family:'Outfit',sans-serif;
   font-weight:800;font-size:13px;padding:11px 26px;
   border-radius:var(--r-sm);cursor:pointer;
   box-shadow:0 4px 16px rgba(59,158,255,0.2);
@@ -785,7 +723,7 @@ body{
 .modal-save:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(59,158,255,0.3)}
 .modal-cancel{
   background:none;border:1px solid var(--bor2);color:var(--tx2);
-  font-family:'Sora',sans-serif;font-weight:700;
+  font-family:'Outfit',sans-serif;font-weight:700;
   font-size:13px;padding:11px 26px;border-radius:var(--r-sm);
   cursor:pointer;transition:all .2s;
 }
@@ -794,28 +732,13 @@ body{
 /* ── PRICING MODAL ── */
 .pricing-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
 .pricing-overlay.open{display:flex}
-.pricing-modal{
-  background:linear-gradient(160deg,var(--sur) 0%,var(--sur2) 100%);
-  border:1px solid var(--bor2);border-radius:var(--r);
-  padding:40px 36px;width:100%;max-width:800px;
-  max-height:90vh;overflow-y:auto;
-  box-shadow:var(--shadow-lg),0 0 100px rgba(59,158,255,0.1);
-  animation:fadeUp .3s ease;
-}
-.pricing-title{font-size:30px;font-weight:900;letter-spacing:-.05em;text-align:center;margin-bottom:8px;color:var(--tx)}
+.pricing-modal{background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:40px 36px;width:100%;max-width:800px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:fadeUp .3s ease;}
+.pricing-title{font-size:28px;font-weight:800;letter-spacing:-.04em;text-align:center;margin-bottom:8px;color:var(--tx);font-family:'Outfit',sans-serif}
 .pricing-sub{font-size:14px;color:var(--tx3);text-align:center;margin-bottom:36px;font-weight:500}
 .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
-.tier-card{
-  background:var(--bg);border:1px solid var(--bor);
-  border-radius:var(--r);padding:26px;position:relative;
-  transition:all .22s;
-}
+.tier-card{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:26px;position:relative;transition:all .18s;}
 .tier-card:hover{border-color:var(--bor2);transform:translateY(-1px);box-shadow:var(--shadow)}
-.tier-card.featured{
-  border-color:var(--pip-bor);
-  background:linear-gradient(160deg,rgba(59,158,255,0.06),rgba(26,111,212,0.03));
-  box-shadow:0 0 40px rgba(59,158,255,0.1);
-}
+.tier-card.featured{border-color:var(--pip-bor);background:var(--sur2);box-shadow:0 0 32px rgba(79,142,255,0.08);}
 .tier-badge{
   position:absolute;top:-12px;left:50%;transform:translateX(-50%);
   background:linear-gradient(135deg,var(--pip),var(--pip-deep));
@@ -835,7 +758,7 @@ body{
 .tier-features li.dim::before{content:'—';color:var(--tx3)}
 .tier-cta{
   width:100%;background:linear-gradient(135deg,var(--pip),var(--pip-deep));
-  color:#fff;border:none;font-family:'Sora',sans-serif;
+  color:#fff;border:none;font-family:'Outfit',sans-serif;
   font-weight:800;font-size:13px;padding:13px;
   border-radius:var(--r-sm);cursor:pointer;transition:all .2s;
   box-shadow:0 4px 16px rgba(59,158,255,0.2);
@@ -862,6 +785,10 @@ footer{
 }
 footer a,footer span,footer button{font-size:11px;color:var(--tx3);font-weight:600}
 footer a:hover,footer button:hover{color:var(--pip)}
+
+.search-actions{display:none!important}
+#bpanel{display:none!important}
+#ipanel{display:none!important}
 
 """
 
@@ -1909,13 +1836,21 @@ function profileHandleAvatar(input){
 }
 
 function profileEditInfo(){
+  profileLoad();
   var m=document.getElementById('profile-modal');
-  document.getElementById('pm-name').value=PROFILE.name||'';
-  document.getElementById('pm-tagline').value=PROFILE.tagline||'';
-  document.getElementById('pm-bio').value=PROFILE.bio||'';
-  document.getElementById('pm-linkedin').value=PROFILE.linkedin||'';
-  document.getElementById('pm-twitter').value=PROFILE.twitter||'';
-  document.getElementById('pm-website').value=PROFILE.website||'';
+  if(!m){console.error('profile-modal not found');return;}
+  var fields={
+    'pm-name':PROFILE.name||'',
+    'pm-tagline':PROFILE.tagline||'',
+    'pm-bio':PROFILE.bio||'',
+    'pm-linkedin':PROFILE.linkedin||'',
+    'pm-twitter':PROFILE.twitter||'',
+    'pm-website':PROFILE.website||''
+  };
+  Object.keys(fields).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.value=fields[id];
+  });
   m.classList.add('open');
 }
 
@@ -2096,6 +2031,7 @@ function tierUseResearch(){
   t.research_used = (t.research_used||0) + 1;
   tierSave(t);
   updateCreditsBar();
+  maybeShowUpsell();
 }
 
 function tierUseFetch(){
@@ -2163,6 +2099,1331 @@ function earnCredit(){
   if(ind){ind.textContent='+1 credit earned!';ind.style.color='var(--pip)';setTimeout(function(){ind.textContent='';},2500);}
 }
 
+// Smart upsell - show after every 3rd research for free users
+function maybeShowUpsell(){
+  var t = tierLoad();
+  if(t.plan !== 'free') return;
+  var used = t.research_used||0;
+  if(used > 0 && used % 3 === 0){
+    var msgs = [
+      'You have used '+used+' of your 5 free researches this month.',
+      'Enjoying Scout? Pro gives you unlimited research for $29/month.',
+      'Running low on credits? Upgrade to Pro for unlimited access.'
+    ];
+    var msg = msgs[Math.min(Math.floor(used/3)-1, msgs.length-1)];
+    // Show subtle toast instead of full modal
+    showUpsellToast(msg);
+  }
+}
+
+
+
+function save() {
+  var ind = document.getElementById('save-ind');
+  if(ind) { ind.textContent = 'saving...'; ind.style.color = 'var(--tx3)'; }
+  var all = DB.concat(INBOX);
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all)})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(ind) { ind.textContent = d.ok ? 'saved' : 'save error'; ind.style.color = d.ok ? 'var(--pip)' : 'var(--red)'; }
+    setTimeout(function(){ if(ind) ind.textContent = ''; }, 3000);
+  })
+  .catch(function(e){
+    if(ind) { ind.textContent = 'save failed'; ind.style.color = 'var(--red)'; }
+  });
+}
+
+
+function saveAll() {
+  var all = DB.concat(INBOX);
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all)})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var ind=document.getElementById('save-ind');
+    if(ind){ind.textContent=d.ok?'saved':'save error';ind.style.color=d.ok?'var(--pip)':'var(--red)';}
+    setTimeout(function(){var ind=document.getElementById('save-ind');if(ind)ind.textContent='';},3000);
+  }).catch(function(){
+    var ind=document.getElementById('save-ind');
+    if(ind){ind.textContent='save failed';ind.style.color='var(--red)';}
+  });
+}
+
+// Override save to use saveAll
+function save(){ saveAll(); }
+
+function updateBadges() {
+  var lb = document.getElementById('leads-badge');
+  var ib = document.getElementById('inbox-badge');
+  if(lb) lb.textContent = DB.length;
+  if(ib) { ib.textContent = INBOX.length; ib.style.display = INBOX.length ? '' : 'none'; }
+}
+
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+function navTo(page){closeSidebar();setPage(page);}
+function setPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.add('active');
+  ['profile','inbox','pipeline','leads','piphunt','search'].forEach(function(p){
+    var el = document.getElementById('si-'+p);
+    if(el) el.classList.toggle('active', p===page);
+  });
+  if(page==='leads') renderLeads();
+  if(page==='pipeline') renderPipelinePage();
+  if(page==='inbox') renderInbox();
+  if(page==='piphunt'){phLoad();phRenderJobs();}
+  if(page==='profile'){profileLoad();renderProfile();}
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function sc(n){return n>=80?'var(--pip)':n>=50?'var(--amb)':'var(--tx3)';}
+function su(v){if(!v||v==='null'||v==='undefined')return '';return String(v).indexOf('http')===0?v:'https://'+v;}
+
+// ── SEARCH PAGE ──────────────────────────────────────────────────────────────
+function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)return;if(!tierCanResearch())return;document.getElementById('ci').value='';run(v);}
+
+function bulk(){
+  if(busy)return;
+  var names=document.getElementById('bi').value.trim().split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+  if(!names.length)return;
+  document.getElementById('bi').value='';
+  var i=0;function next(){if(i>=names.length)return;run(names[i++],next);}next();
+}
+
+function importJSON(){
+  var raw=document.getElementById('ii').value.trim();
+  var errEl=document.getElementById('ierr');errEl.style.display='none';
+  try{
+    var clean=raw.replace(/```json/g,'').replace(/```/g,'').trim();
+    var parsed=clean.charAt(0)==='['?JSON.parse(clean):[JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1))];
+    var added=0;
+    for(var i=0;i<parsed.length;i++){var r=parsed[i];if(r&&r.company){r._id='id'+Date.now()+Math.floor(Math.random()*9999);r._open=true;DB.unshift(r);added++;}}
+    if(!added)throw new Error('No valid company objects found');
+    save();updateBadges();document.getElementById('ii').value='';
+    document.getElementById('ipanel').style.display='none';
+  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+}
+
+function showPanel(id){
+  ['bpanel','ipanel'].forEach(function(pid){
+    var el=document.getElementById(pid);
+    if(el) el.style.display=(pid===id&&el.style.display!=='block')?'block':'none';
+  });
+  var btog=document.getElementById('btog');
+  var itog=document.getElementById('itog');
+  if(btog) btog.textContent=document.getElementById('bpanel').style.display==='block'?'− Bulk':'+ Bulk';
+  if(itog) itog.textContent=document.getElementById('ipanel').style.display==='block'?'− Import JSON':'+ Import JSON';
+}
+
+
+function run(company,callback){
+  busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
+  document.getElementById('err').style.display='none';document.getElementById('lname').textContent=company;
+  document.getElementById('ldg').style.display='flex';
+  var secs=0;document.getElementById('ltimer').textContent='0s';
+  ti=setInterval(function(){document.getElementById('ltimer').textContent=(++secs)+'s';},1000);
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON returned');
+    var res=JSON.parse(t.slice(a,b+1));
+    if(!res.company)throw new Error('Missing company data');
+    res._open=true;
+    // Update existing or add new
+    var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
+    if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
+    save();renderAll();
+  }).catch(function(e){var el=document.getElementById('err');el.textContent='Error: '+e.message;el.style.display='block';})
+  .finally(function(){clearInterval(ti);document.getElementById('ldg').style.display='none';document.getElementById('rb').disabled=false;document.getElementById('ci').disabled=false;busy=false;if(callback)setTimeout(callback,400);});
+}
+
+
+// ── FETCH / INBOX FLOW ───────────────────────────────────────────────────────
+
+function fetchLeads() {
+  var btn=document.getElementById('fetch-btn');
+  var ldg=document.getElementById('fetch-ldg');
+  var errEl=document.getElementById('fetch-err');
+  var res=document.getElementById('fetch-results');
+  btn.disabled=true; errEl.style.display='none'; res.style.display='none'; ldg.style.display='flex';
+  var srcNames=activeSources.map(function(s){
+    return s==='techcrunch'?'TechCrunch':s==='blockworks'?'Blockworks':s==='theblock'?'The Block':
+           s==='producthunt'?'Product Hunt':s==='linkedinjobs'?'LinkedIn Jobs':'crypto-fundraising.info';
+  }).join(', ');
+  var extraInstructions = '';
+  if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
+  if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
+  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    var t=d.text||'';t=t.replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');if(a<0||b<0)throw new Error('No results found');
+    var cos=JSON.parse(t.slice(a,b+1));
+    // Filter out error messages or non-company results
+    var badWords=['insufficient','unable','error','no data','no results','no companies','n/a','unknown','failed'];
+    cos=cos.filter(function(co){
+      if(!co.company||typeof co.company!=='string')return false;
+      var lower=co.company.toLowerCase();
+      return !badWords.some(function(w){return lower.indexOf(w)>=0;});
+    });
+    if(!cos.length)throw new Error('No valid companies found in results');
+    var list=document.getElementById('fetch-list');list.innerHTML='';
+    cos.forEach(function(co){
+      var item=document.createElement('div');item.className='fetch-item sel';
+      item.innerHTML='<input type="checkbox" checked data-co="'+encodeURIComponent(JSON.stringify(co))+'"><div><div class="fetch-item-name">'+(co.company||'?')+'</div><div class="fetch-item-meta">'+[co.sector,co.funding,co.stage,co.source].filter(Boolean).join(' · ')+'</div></div>';
+      item.onclick=function(e){if(e.target.type==='checkbox')return;var cb=item.querySelector('input');cb.checked=!cb.checked;item.classList.toggle('sel',cb.checked);updateCount();};
+      item.querySelector('input').onchange=function(){item.classList.toggle('sel',this.checked);updateCount();};
+      list.appendChild(item);
+    });
+    updateCount();ldg.style.display='none';res.style.display='block';btn.disabled=false;
+  }).catch(function(e){ldg.style.display='none';errEl.textContent='Error: '+e.message;errEl.style.display='block';btn.disabled=false;});
+}
+
+
+function updateCount(){var n=document.querySelectorAll('#fetch-list input:checked').length;document.getElementById('fetch-count').textContent=n+' selected';}
+
+
+function researchSelected(){
+  closeFetchModal();
+  var cbs=document.querySelectorAll('#fetch-list input:checked');
+  var names=[];
+  cbs.forEach(function(cb){
+    try{var co=JSON.parse(decodeURIComponent(cb.getAttribute('data-co')));if(co.company)names.push(co.company);}catch(e){}
+  });
+  if(!names.length)return;
+  document.getElementById('fetch-results').style.display='none';
+  closeFetchModal();
+  // Research each and add to INBOX for review
+  var i=0;
+  function next(){
+    if(i>=names.length)return;
+    var name=names[i++];
+    runToInbox(name, next);
+  }
+  next();
+}
+
+function runToInbox(company, callback){
+  var ind=document.getElementById('save-ind');
+  if(ind){ind.textContent='researching '+company+'...';ind.style.color='var(--tx3)';}
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON');
+    var res=JSON.parse(t.slice(a,b+1));
+    if(!res.company)throw new Error('Missing company');
+    // Skip cold leads and companies that already have a CMO
+    var score = res.gtm_readiness_score || 0;
+    var hasCmo = res.has_cmo === true;
+    if(score < 50 || hasCmo){
+      if(ind){ind.textContent='skipped '+res.company+' (not a fit)';ind.style.color='var(--tx3)';}
+      setTimeout(function(){if(ind)ind.textContent='';},2000);
+      if(callback) setTimeout(callback, 300);
+      return;
+    }
+    // Skip cold leads - not worth pursuing
+    var score = res.gtm_readiness_score || 0;
+    if(score < 50){
+      if(ind){ind.textContent='Skipped '+res.company+' (cold lead, score '+score+')';ind.style.color='var(--tx3)';}
+      if(callback) setTimeout(callback, 300);
+      return;
+    }
+    res._id='id'+Date.now()+Math.floor(Math.random()*9999);
+    res._inbox=true;
+    res._open=false;
+    INBOX.unshift(res);
+    save();updateBadges();
+    if(currentPage==='inbox') renderInbox();
+    if(ind){ind.textContent='added to inbox';ind.style.color='var(--pip)';}
+    setTimeout(function(){if(ind)ind.textContent='';},2000);
+  }).catch(function(e){
+    if(ind){ind.textContent='error: '+e.message;ind.style.color='var(--red)';}
+    setTimeout(function(){if(ind)ind.textContent='';},3000);
+  }).finally(function(){
+    if(callback) setTimeout(callback, 300);
+  });
+}
+
+function approveInboxCard(id){
+  var idx=INBOX.findIndex(function(x){return x._id===id;});
+  if(idx<0)return;
+  var card=INBOX.splice(idx,1)[0];
+  card._inbox=false;
+  card.outreach_status='not_contacted';
+  DB.unshift(card);
+  save();updateBadges();renderInbox();
+}
+
+function dismissInboxCard(id){
+  INBOX=INBOX.filter(function(x){return x._id!==id;});
+  save();updateBadges();renderInbox();
+}
+
+// ── RENDER: SAVED LEADS (3-col open cards) ───────────────────────────────────
+function renderLeads(){
+  var shown=fil==='all'?DB:DB.filter(function(r){
+    return r.gtm_label===(fil==='hot'?'Hot Lead':fil==='warm'?'Warm Lead':'Cold Lead');
+  });
+  var cont=document.getElementById('leads-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  if(!shown.length){
+    cont.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-title">No saved leads yet</div><p>Research companies on the Search page or approve leads from your Inbox.</p></div>';
+    return;
+  }
+  shown.forEach(function(r){
+    var n=r.gtm_readiness_score||0,c=sc(n),s=r.socials||{},g=r.gtm_signals||{},ff=Array.isArray(r.founders)?r.founders:[],id=r._id,site=su(r.website);
+    var card=document.createElement('div');card.className='lead-card';
+    var statusColors={'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--pip)','closed':'var(--grn)'};
+    var statusLabels={'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed ✓'};
+    var curStatus=r.outreach_status||'not_contacted';
+    var remoteBadge=r.hiring_remote?'<span class="hiring-badge">hiring remotely</span>':'';
+    var inv=[r.lead_investor,r.other_investors].filter(function(v){return v&&v!=='null';}).join(', ');
+
+    // Signals
+    var sigsHtml='';
+    [['recently_funded','Recently funded'],['no_cmo','No CMO'],['pre_launch_or_early','Pre-launch'],['has_product','Has product'],['small_team','Small team'],['marketing_gap_visible','Marketing gap'],['active_community','Active community']].forEach(function(x){
+      var v=g[x[0]],cls=v===true?'sy':v===false?'sn':'su',t=v===true?'Yes':v===false?'No':'?';
+      sigsHtml+='<div class="sig-row"><span style="color:var(--tx2);font-size:12px">'+x[1]+'</span><span class="'+cls+'">'+t+'</span></div>';
+    });
+
+    // Founders
+    var fndHtml='';
+    if(ff.length){ff.forEach(function(f){var ini=String(f.name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();fndHtml+='<div class="founder-row"><div class="fav">'+ini+'</div><div><div class="fname">'+(f.name||'')+'</div><div class="frole">'+(f.role||'')+(f.background?' · '+f.background:'')+'</div></div></div>';});}
+    else fndHtml='<div class="lc-text dim">Unknown</div>';
+
+    // Social links
+    var tw=s.twitter?'https://twitter.com/'+String(s.twitter).replace('@',''):'';
+    var socHtml='<div class="social-links">';
+    [[tw,'Twitter'],[s.linkedin,'LinkedIn'],[s.discord,'Discord'],[s.telegram,'Telegram'],[s.github,'GitHub']].forEach(function(x){var u=su(x[0]);if(u)socHtml+='<a href="'+u+'" target="_blank">'+x[1]+'</a>';});
+    socHtml+='</div>';
+
+    card.innerHTML=
+      '<div class="lead-card-header">'+
+        '<div class="lead-card-top">'+
+          '<div><div class="lead-card-name">'+(r.company||'')+(site?'&nbsp;<a href="'+site+'" target="_blank" style="font-size:10px;color:var(--pip);border:1px solid var(--pip-bor);padding:1px 7px;border-radius:999px;text-decoration:none;font-weight:700">visit</a>':'')+'</div>'+
+          '<div class="lead-card-meta" style="margin-top:4px">'+remoteBadge+'<span class="lead-card-sector">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</span></div></div>'+
+          '<div style="text-align:right"><div class="lead-card-score" style="color:'+c+'">'+n+'</div><div class="lead-card-tag" style="color:'+c+';border-color:'+c+';font-size:9px;padding:2px 8px;border-radius:999px;border:1px solid;display:inline-block;margin-top:4px">'+(r.gtm_label||'')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="lead-card-body">'+
+        '<div class="lc-sec">Profile</div>'+
+        '<div class="lc-grid">'+
+          '<div class="lc-cell"><div class="lc-key">HQ</div><div class="lc-val'+(r.hq?'':' dim')+'">'+(r.hq||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Founded</div><div class="lc-val'+(r.founded?'':' dim')+'">'+(r.founded||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Team</div><div class="lc-val'+(r.employee_count?'':' dim')+'">'+(r.employee_count||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Funding</div><div class="lc-val'+(r.funding_amount?'':' dim')+'">'+(r.funding_amount||'—')+'</div></div>'+
+        '</div>'+
+        (inv?'<div class="lc-sec">Investors</div><div class="lc-text">'+inv+'</div>':'') +
+        '<div class="lc-sec">Socials</div>'+socHtml+
+        '<div class="lc-sec">Founders</div>'+fndHtml+
+        '<div class="lc-sec">GTM Signals</div><div>'+sigsHtml+'</div>'+
+        '<div class="lc-sec">Why They Fit</div><div class="lc-text">'+(r.why_fit||'—')+'</div>'+
+        '<div class="lc-sec">Reach Out To</div><div class="lc-text" style="color:var(--pip)">'+
+          (r.best_contact_name&&r.best_contact_title?r.best_contact_name+' — '+r.best_contact_title:r.best_contact_title||r.decision_maker||'—')+
+        '</div>'+
+        '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'—')+'</div></div>'+
+        '<div class="lc-sec" style="margin-top:12px">Notes</div>'+
+        '<textarea class="notes-area" id="note'+id+'" placeholder="Add notes...">'+(r._notes||'')+'</textarea>'+
+      '</div>'+
+      '<div class="lead-card-actions" id="act'+id+'"></div>';
+
+    // Wire notes
+    card.querySelector('.notes-area').addEventListener('input', function(e){
+      r._notes=e.target.value;
+      clearTimeout(r._nt);
+      r._nt=setTimeout(function(){save();},800);
+    });
+
+    // Build action buttons
+    var acts=card.querySelector('.lead-card-actions');
+
+    var cpBtn=document.createElement('button');cpBtn.className='abtn g';cpBtn.textContent='Copy Pitch';
+    (function(cid){cpBtn.onclick=function(){var el=document.getElementById('pt'+cid);if(el)navigator.clipboard.writeText(el.textContent);cpBtn.textContent='Copied!';setTimeout(function(){cpBtn.textContent='Copy Pitch';},1800);};})(id);
+    acts.appendChild(cpBtn);
+
+    // LinkedIn search
+    var liQ=encodeURIComponent(((r.best_contact_name||'')+' '+(r.best_contact_title||r.decision_maker||'')+' '+(r.company||'')).trim());
+    var liBtn=document.createElement('button');liBtn.className='abtn';liBtn.textContent='Find on LinkedIn';
+    liBtn.onclick=function(){window.open('https://www.linkedin.com/search/results/people/?keywords='+liQ,'_blank');};
+    acts.appendChild(liBtn);
+
+    // Status button
+    var stBtn=document.createElement('button');stBtn.className='abtn';
+    stBtn.textContent=statusLabels[curStatus]||'Not Contacted';
+    stBtn.style.color=statusColors[curStatus]||'var(--tx3)';
+    stBtn.style.borderColor=statusColors[curStatus]||'var(--bor2)';
+    (function(rec){stBtn.onclick=function(){
+      var order=['not_contacted','contacted','in_talks','closed'];
+      var cur=rec.outreach_status||'not_contacted';
+      rec.outreach_status=order[(order.indexOf(cur)+1)%order.length];
+      save();renderLeads();
+    };})(r);
+    acts.appendChild(stBtn);
+
+    // Follow-up date
+    var fuWrap=document.createElement('div');fuWrap.style.cssText='display:flex;align-items:center;gap:5px';
+    var fuLabel=document.createElement('span');fuLabel.style.cssText='font-size:10px;color:var(--tx3)';fuLabel.textContent='Follow-up:';
+    var fuInput=document.createElement('input');fuInput.type='date';
+    fuInput.style.cssText='background:var(--bg);border:1px solid var(--bor2);color:var(--tx2);font-family:Sora,sans-serif;font-size:11px;padding:4px 8px;outline:none;border-radius:4px';
+    fuInput.value=r._followup||'';
+    (function(rec){fuInput.onchange=function(){rec._followup=fuInput.value;save();};})(r);
+    fuWrap.appendChild(fuLabel);fuWrap.appendChild(fuInput);acts.appendChild(fuWrap);
+
+    // Re-research
+    var rrBtn=document.createElement('button');rrBtn.className='abtn';rrBtn.textContent='↻ Re-research';
+    (function(rec){rrBtn.onclick=function(){
+      rrBtn.textContent='Researching...';rrBtn.disabled=true;
+      fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:rec.company,system:SYS})})
+      .then(function(r){return r.json();}).then(function(d){
+        if(d.error)throw new Error(d.error);
+        var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+        var a=t.indexOf('{'),b=t.lastIndexOf('}');
+        var fresh=JSON.parse(t.slice(a,b+1));
+        fresh._id=rec._id;fresh._open=true;fresh._notes=rec._notes;fresh._followup=rec._followup;fresh.outreach_status=rec.outreach_status;
+        var idx=DB.findIndex(function(x){return x._id===rec._id;});
+        if(idx>=0)DB[idx]=fresh;
+        save();renderLeads();
+      }).catch(function(e){rrBtn.textContent='↻ Re-research';rrBtn.disabled=false;});
+    };})(r);
+    acts.appendChild(rrBtn);
+
+    // Remove
+    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';rmBtn.textContent='Remove';
+    (function(cid){rmBtn.onclick=function(){if(confirm('Remove this lead?')){DB=DB.filter(function(x){return x._id!==cid;});save();updateBadges();renderLeads();}};})(id);
+    acts.appendChild(rmBtn);
+
+    cont.appendChild(card);
+  });
+}
+
+// ── RENDER: PIPELINE (kanban) ─────────────────────────────────────────────────
+function renderPipelinePage(){
+  var cont=document.getElementById('pipeline-board');
+  if(!cont)return;
+  cont.innerHTML='';
+  var stages=['not_contacted','contacted','in_talks','closed'];
+  var labels={'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed'};
+  var colors={'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--pip)','closed':'var(--grn)'};
+  var icons={'not_contacted':'○','contacted':'◎','in_talks':'◉','closed':'●'};
+  stages.forEach(function(stage){
+    var col=document.createElement('div');col.className='pipeline-col';
+    var items=DB.filter(function(r){return(r.outreach_status||'not_contacted')===stage;});
+    var hdr=document.createElement('div');hdr.className='pipeline-col-header';
+    hdr.innerHTML='<span style="color:'+colors[stage]+'">'+icons[stage]+' '+labels[stage]+'</span>'+
+      '<span style="background:var(--bor2);color:var(--tx3);font-size:10px;padding:2px 8px;border-radius:999px">'+items.length+'</span>';
+    col.appendChild(hdr);
+    if(!items.length){
+      var empty=document.createElement('div');empty.className='pipeline-empty';empty.textContent='No leads';col.appendChild(empty);
+    }
+    items.forEach(function(r){
+      var score=r.gtm_readiness_score||0,c=sc(score);
+      var item=document.createElement('div');item.className='pipeline-card';
+      item.innerHTML=
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+          '<div class="pipeline-card-name">'+(r.company||'')+'</div>'+
+          '<span style="font-size:14px;font-weight:800;color:'+c+'">'+score+'</span>'+
+        '</div>'+
+        '<div class="pipeline-card-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</div>'+
+        (r._followup?'<div class="pipeline-card-date"> '+r._followup+'</div>':'')+
+        (r._notes?'<div class="pipeline-card-note">'+(r._notes.slice(0,80))+(r._notes.length>80?'...':'')+'</div>':'')+
+        '<div style="margin-top:8px;font-size:11px;color:var(--pip)">'+(r.best_contact_title||r.decision_maker||'')+'</div>';
+      (function(rec){item.onclick=function(){
+        var order=['not_contacted','contacted','in_talks','closed'];
+        var cur=rec.outreach_status||'not_contacted';
+        rec.outreach_status=order[(order.indexOf(cur)+1)%order.length];
+        save();renderPipelinePage();
+      };})(r);
+      col.appendChild(item);
+    });
+    cont.appendChild(col);
+  });
+}
+
+// ── RENDER: INBOX ─────────────────────────────────────────────────────────────
+function renderInbox(){
+  var cont=document.getElementById('inbox-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  updateBadges();
+  if(!INBOX.length){
+    cont.innerHTML='<div class="inbox-empty" style="grid-column:1/-1"><div class="inbox-empty-title">Inbox is empty</div><p style="color:var(--tx3);font-size:13px">Fetch leads from the Search page and they will appear here for review.</p></div>';
+    return;
+  }
+  // Event delegation for approve/dismiss
+  cont.addEventListener('click',function(e){
+    var a=e.target.closest('.btn-approve');
+    var d=e.target.closest('.btn-dismiss');
+    if(a)approveInboxCard(a.getAttribute('data-id'));
+    if(d)dismissInboxCard(d.getAttribute('data-id'));
+  });
+  INBOX.forEach(function(r){
+    var n=r.gtm_readiness_score||0,c=sc(n),id=r._id;
+    var inv=[r.lead_investor,r.other_investors].filter(function(v){return v&&v!=='null';}).join(', ');
+    var card=document.createElement('div');card.className='inbox-card';
+    var whyFit=r.why_fit?'<div style="margin-bottom:8px;font-size:12px;color:var(--tx2)">'+r.why_fit+'</div>':'';
+    var pitch=r.pitch_opener?'<div style="font-size:11px;color:var(--pip-light);font-style:italic;padding:10px;background:var(--pip-dim);border-radius:8px;border:1px solid var(--pip-bor)">'+r.pitch_opener+'</div>':'';
+    var contact=(r.best_contact_title||r.decision_maker)?'<div style="margin-top:8px;font-size:11px;color:var(--pip)">Contact: '+(r.best_contact_name?r.best_contact_name+' - ':''+(r.best_contact_title||r.decision_maker||''))+'</div>':'';
+    var investors=inv?'<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Investors: '+inv+'</div>':'';
+    card.innerHTML=
+      '<div class="inbox-card-header">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+          '<div>'+
+            '<div class="inbox-card-name">'+(r.company||'')+'</div>'+
+            '<div class="inbox-card-meta">'+(r.sector||'')+(r.stage?' - '+r.stage:'')+(r.hq?' - '+r.hq:'')+'</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-size:20px;font-weight:800;color:'+c+'">'+n+'</div>'+
+            '<div style="font-size:9px;font-weight:700;color:'+c+';border:1px solid '+c+';padding:2px 8px;border-radius:999px;display:inline-block;margin-top:3px">'+(r.gtm_label||'')+'</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="inbox-card-body">'+whyFit+pitch+contact+investors+'</div>'+
+      '<div class="inbox-card-actions">'+
+        '<button class="btn-approve" data-id="'+id+'">Save to Pipeline</button>'+
+        '<button class="btn-dismiss" data-id="'+id+'">Dismiss</button>'+
+      '</div>';
+    cont.appendChild(card);
+  });
+}
+
+// ── PIP HUNT ─────────────────────────────────────────────────────────────────
+var PH_JOBS = [];
+var PH_SAVED = [];
+var phCategory = 'cmo';
+var phFilters = {remote: false, startup: false, week: false};
+
+var PH_SYS_CMO = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: CMO, VP Marketing, Head of Marketing, Head of Growth, VP Growth at funded tech and AI startups. Return 6-8 real current openings only.";
+
+var PH_SYS_DESIGN = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: Head of Design, VP Design, Creative Director, Brand Director, Head of Brand at funded tech and AI startups. Return 6-8 real current openings only.";
+
+function phSetCategory(cat){
+  phCategory = cat;
+  document.querySelectorAll('.ph-tab').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('data-cat')===cat);
+  });
+  phRenderJobs();
+}
+
+function phToggleFilter(f){
+  phFilters[f] = !phFilters[f];
+  document.querySelector('[data-filter="'+f+'"]').classList.toggle('on', phFilters[f]);
+  phRenderJobs();
+}
+
+function phFetch(){
+  if(!tierCanPipHunt())return;
+  var btn = document.getElementById('ph-fetch-btn');
+  var status = document.getElementById('ph-status');
+  btn.disabled = true;
+  status.textContent = 'Searching job boards...';
+  var sys = phCategory === 'cmo' ? PH_SYS_CMO : PH_SYS_DESIGN;
+  var query = phCategory === 'cmo' ? 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co CMO VP Marketing Head of Marketing startup 2025 2026' : 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co Head of Design VP Design Creative Director startup 2025 2026';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error) throw new Error(d.error);
+    var t=(d.text||'');
+    // Try to extract JSON array - be very permissive
+    t = t.replace(/```json/g,'').replace(/```/g,'');
+    var a=t.indexOf('['), b=t.lastIndexOf(']');
+    var jobs = [];
+    if(a>=0 && b>a){
+      try{ jobs=JSON.parse(t.slice(a,b+1)); }catch(e){
+        // Try to find any JSON objects
+        var objs=[];
+        var re=/{[^{}]+}/g, m;
+        while((m=re.exec(t))!==null){
+          try{var o=JSON.parse(m[0]);if(o.company||o.role)objs.push(o);}catch(e){}
+        }
+        jobs=objs;
+      }
+    }
+    if(!Array.isArray(jobs)||!jobs.length){
+      // Last resort: ask Claude to convert the text to JSON
+      status.textContent='Reformatting results...';
+      fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key:'',company:'Convert this job listing text to a JSON array. Return ONLY the JSON array starting with [. Each item needs: role, company, location, remote, salary, posted, apply_method, apply_url, description, sector. Text: '+t.slice(0,3000),
+        system:'Return ONLY a valid JSON array starting with [. No explanation, no markdown.'})})
+      .then(function(r2){return r2.json();})
+      .then(function(d2){
+        var t2=(d2.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+        var a2=t2.indexOf('['),b2=t2.lastIndexOf(']');
+        if(a2>=0&&b2>a2){
+          try{
+            jobs=JSON.parse(t2.slice(a2,b2+1));
+            jobs.forEach(function(j){
+              j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
+              j._cat=phCategory;
+              j.role=j.role||j.title||'Open Role';
+              j.company=j.company||'Unknown';
+            });
+            jobs=jobs.filter(function(j){return j.company&&j.role;});
+            PH_JOBS=PH_JOBS.concat(jobs);
+            phSave();phRenderJobs();
+            status.textContent=jobs.length+' jobs found';
+          }catch(e2){status.textContent='Could not parse results. Try again.';}
+        } else {
+          status.textContent='No structured results. Try again.';
+        }
+        setTimeout(function(){status.textContent='';},4000);
+        btn.disabled=false;
+      }).catch(function(){
+        status.textContent='Parse failed. Try again.';
+        setTimeout(function(){status.textContent='';},3000);
+        btn.disabled=false;
+      });
+      return;
+    }
+    // Filter junk
+    var bad=['error','unable','insufficient','no results','no jobs','n/a'];
+    jobs=jobs.filter(function(j){
+      if(!j.company&&!j.role) return false;
+      var lower=((j.company||'')+(j.role||'')).toLowerCase();
+      return !bad.some(function(w){return lower.indexOf(w)>=0;});
+    });
+    // Normalize fields
+    jobs.forEach(function(j){
+      j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
+      j._cat=phCategory;
+      j.role=j.role||j.title||j.position||'Open Role';
+      j.company=j.company||j.employer||'Unknown';
+      j.apply_url=j.apply_url||j.url||j.link||j.application_url||null;
+      j.apply_method=j.apply_method||(j.apply_url&&j.apply_url.indexOf('@')>=0?'email':j.apply_url?'link':null);
+      j.remote=j.remote||j.is_remote||(j.location&&j.location.toLowerCase().indexOf('remote')>=0)||false;
+    });
+    // Dedupe
+    jobs.forEach(function(j){
+      var exists=PH_JOBS.some(function(x){return x.company===j.company&&x.role===j.role;});
+      if(!exists) PH_JOBS.unshift(j);
+    });
+    phSave();
+    phRenderJobs();
+    status.textContent=jobs.length+' jobs found';
+    setTimeout(function(){status.textContent='';},4000);
+  })
+  .catch(function(e){
+    status.textContent='Error: '+e.message;
+    setTimeout(function(){status.textContent='';},5000);
+  })
+  .finally(function(){btn.disabled=false;});
+}
+
+function phSave(){
+  var all = DB.concat(INBOX).concat([{_ph_jobs:PH_JOBS,_ph_saved:PH_SAVED}]);
+  // Save PH data separately in gist as second file - for now just use localStorage fallback
+  try{localStorage.setItem('ph_jobs',JSON.stringify(PH_JOBS));}catch(e){}
+  try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
+}
+
+function phLoad(){
+  try{var j=localStorage.getItem('ph_jobs');if(j)PH_JOBS=JSON.parse(j);}catch(e){}
+  try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
+}
+
+function phSaveJob(id){
+  var job=PH_JOBS.find(function(j){return j._id===id;});
+  if(!job)return;
+  var already=PH_SAVED.some(function(j){return j._id===id;});
+  if(!already){PH_SAVED.unshift(job);}
+  phSave();
+  phRenderJobs();
+}
+
+function phRemoveSaved(id){
+  PH_SAVED=PH_SAVED.filter(function(j){return j._id!==id;});
+  phSave();
+  phRenderJobs();
+}
+
+function phResearchInScout(company){
+  setPage('search');
+  var ci=document.getElementById('ci');
+  if(ci){ci.value=company;ci.focus();}
+}
+
+function phCopyApply(val){
+  navigator.clipboard.writeText(val);
+}
+
+function phRenderJobs(){
+  var cont=document.getElementById('ph-jobs-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  var jobs=PH_JOBS.filter(function(j){return j._cat===phCategory;});
+  if(phFilters.remote) jobs=jobs.filter(function(j){return j.remote;});
+  if(phFilters.startup) jobs=jobs.filter(function(j){
+    var s=(j.sector||'').toLowerCase();
+    return s.indexOf('ai')>=0||s.indexOf('tech')>=0||s.indexOf('saas')>=0||s.indexOf('fintech')>=0;
+  });
+  if(phFilters.week) jobs=jobs.filter(function(j){
+    var p=(j.posted||'').toLowerCase();
+    return p.indexOf('day')>=0||p.indexOf('hour')>=0||p.indexOf('today')>=0||p.indexOf('1 week')>=0;
+  });
+
+  if(!jobs.length){
+    cont.innerHTML='<div class="ph-empty" style="grid-column:1/-1"><div class="ph-empty-title">No jobs yet</div><p>Click "Search Jobs" to find open '+(phCategory==='cmo'?'marketing leadership':'design leadership')+' roles.</p></div>';
+    return;
+  }
+
+  jobs.forEach(function(job){
+    var id=job._id;
+    var isSaved=PH_SAVED.some(function(j){return j._id===id;});
+    var card=document.createElement('div');
+    card.className='ph-card'+(isSaved?' saved':'');
+
+    var applyHtml='';
+    if(job.apply_url){
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var isLinkedIn=job.apply_method==='linkedin'||(job.apply_url||'').indexOf('linkedin')>=0;
+      var methodLabel=isEmail?'Email':isLinkedIn?'LinkedIn':'Apply';
+      var displayUrl=isEmail?job.apply_url:(job.apply_url.replace(/^https?:\/\//,'').slice(0,50)+(job.apply_url.length>55?'...':''));
+      applyHtml='<div class="ph-apply">'+
+        '<span class="ph-apply-method">'+methodLabel+'</span>'+
+        (isEmail
+          ? '<span class="ph-apply-link">'+job.apply_url+'</span>'
+          : '<a class="ph-apply-link" href="'+job.apply_url+'" target="_blank">'+displayUrl+'</a>')+
+        '</div>';
+    }
+
+    card.innerHTML=
+      '<div class="ph-card-header">'+
+        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
+        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
+        '<div class="ph-card-meta">'+
+          (job.location?'<span class="ph-tag">'+(job.location)+'</span>':'')+
+          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
+          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
+          (job.posted?'<span class="ph-tag new">'+(job.posted)+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="ph-card-body">'+
+        (job.description?'<div class="ph-desc">'+(job.description)+'</div>':'')+
+        applyHtml+
+      '</div>'+
+      '<div class="ph-card-actions" id="pha-'+id+'"></div>';
+
+    // Wire action buttons
+    var acts=card.querySelector('.ph-card-actions');
+
+    // Apply / Copy button
+    if(job.apply_url){
+      var applyBtn=document.createElement('button');
+      applyBtn.className='abtn g';
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      applyBtn.textContent=isEmail?'Copy Email':'Open Application';
+      (function(url,isEm){
+        applyBtn.onclick=function(){
+          if(isEm){navigator.clipboard.writeText(url);applyBtn.textContent='Copied!';setTimeout(function(){applyBtn.textContent='Copy Email';},1800);}
+          else{window.open(url,'_blank');}
+        };
+      })(job.apply_url, isEmail);
+      acts.appendChild(applyBtn);
+    }
+
+    // Save / unsave
+    var saveBtn=document.createElement('button');
+    saveBtn.className='abtn'+(isSaved?' g':'');
+    saveBtn.textContent=isSaved?'Saved ✓':'Save';
+    (function(jid,saved){
+      saveBtn.onclick=function(){
+        if(saved){phRemoveSaved(jid);}
+        else{phSaveJob(jid);}
+      };
+    })(id, isSaved);
+    acts.appendChild(saveBtn);
+
+    // Research company in Scout
+    var rBtn=document.createElement('button');rBtn.className='abtn';
+    rBtn.textContent='Research in Scout';
+    (function(co){rBtn.onclick=function(){phResearchInScout(co);};})(job.company);
+    acts.appendChild(rBtn);
+
+    // Remove from list
+    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';
+    rmBtn.textContent='Remove';
+    (function(jid){rmBtn.onclick=function(){
+      PH_JOBS=PH_JOBS.filter(function(j){return j._id!==jid;});
+      phSave();phRenderJobs();
+    };})(id);
+    acts.appendChild(rmBtn);
+
+    cont.appendChild(card);
+  });
+
+  // Render saved section
+  var savedCont=document.getElementById('ph-saved-grid');
+  if(!savedCont)return;
+  savedCont.innerHTML='';
+  var savedJobs=PH_SAVED.filter(function(j){return j._cat===phCategory;});
+  if(!savedJobs.length){
+    document.getElementById('ph-saved-section').style.display='none';
+    return;
+  }
+  document.getElementById('ph-saved-section').style.display='block';
+  savedJobs.forEach(function(job){
+    var id=job._id;
+    var mini=document.createElement('div');mini.className='ph-card saved';
+    mini.innerHTML=
+      '<div class="ph-card-header">'+
+        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
+        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
+        '<div class="ph-card-meta">'+
+          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
+          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="ph-card-actions"></div>';
+    var acts=mini.querySelector('.ph-card-actions');
+    if(job.apply_url){
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var ab=document.createElement('button');ab.className='abtn g';
+      ab.textContent=isEmail?'Copy Email':'Open Application';
+      (function(url,isEm){ab.onclick=function(){
+        if(isEm){navigator.clipboard.writeText(url);ab.textContent='Copied!';setTimeout(function(){ab.textContent='Copy Email';},1800);}
+        else window.open(url,'_blank');
+      };})(job.apply_url,isEmail);
+      acts.appendChild(ab);
+    }
+    var unBtn=document.createElement('button');unBtn.className='abtn ghost';unBtn.textContent='Remove';
+    (function(jid){unBtn.onclick=function(){phRemoveSaved(jid);phRenderJobs();};})(id);
+    acts.appendChild(unBtn);
+    savedCont.appendChild(mini);
+  });
+}
+// ── DOM READY ─────────────────────────────────────────────────────────────────
+function openFetchModal(){
+  document.getElementById('fetch-modal').classList.add('open');
+  document.getElementById('fetch-results').style.display='none';
+  document.getElementById('fetch-err').style.display='none';
+}
+function closeFetchModal(){
+  document.getElementById('fetch-modal').classList.remove('open');
+}
+
+function openFetchModal(){
+  var m=document.getElementById('fetch-modal');
+  if(m){m.style.display='flex';}
+  // Wire src pills if not already
+  document.querySelectorAll('#fetch-modal .src-pill').forEach(function(p){
+    p.onclick=function(){
+      var s=p.getAttribute('data-src');
+      var i=activeSources.indexOf(s);
+      if(i>=0){activeSources.splice(i,1);p.classList.remove('on');}
+      else{activeSources.push(s);p.classList.add('on');}
+    };
+  });
+}
+function closeFetchModal(){
+  var m=document.getElementById('fetch-modal');
+  if(m){m.style.display='none';}
+}
+
+
+function onboardingSave(){
+  var name = document.getElementById('ob-name').value.trim();
+  if(!name){document.getElementById('ob-name').focus();return;}
+  var p = {};
+  try{var ps=localStorage.getItem('scout_profile');if(ps)p=JSON.parse(ps);}catch(e){}
+  p.name = name;
+  p.tagline = document.getElementById('ob-tagline').value.trim();
+  p.linkedin = document.getElementById('ob-linkedin').value.trim();
+  try{localStorage.setItem('scout_profile',JSON.stringify(p));}catch(e){}
+  document.getElementById('onboarding-modal').classList.remove('open');
+  // Reload profile data
+  try{PROFILE=p;}catch(e){}
+}
+function onboardingSkip(){
+  document.getElementById('onboarding-modal').classList.remove('open');
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  setPage('search');
+  updateCreditsBar();
+  load();
+  // Show onboarding modal on first visit
+  setTimeout(function(){
+    var p = {};
+    try{var ps=localStorage.getItem('scout_profile');if(ps)p=JSON.parse(ps);}catch(e){}
+    if(!p.name){
+      document.getElementById('onboarding-modal').classList.add('open');
+    }
+  }, 400);
+
+  // Nav via sidebar hamburger menu
+
+
+  // Search page
+  document.getElementById('rb').onclick=go;
+  document.getElementById('ci').addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  document.getElementById('btog').onclick=function(){showPanel('bpanel');};
+  document.getElementById('itog').onclick=function(){showPanel('ipanel');};
+  document.getElementById('brb').onclick=bulk;
+  document.getElementById('iib').onclick=importJSON;
+
+  // Fetch
+  document.getElementById('fetch-btn').onclick=fetchLeads;
+  document.getElementById('res-sel-btn').onclick=researchSelected;
+  document.querySelectorAll('.src-pill').forEach(function(p){
+    p.onclick=function(){
+      var s=p.getAttribute('data-src');
+      var i=activeSources.indexOf(s);
+      if(i>=0){activeSources.splice(i,1);p.classList.remove('on');}
+      else{activeSources.push(s);p.classList.add('on');}
+    };
+  });
+
+  // Leads toolbar
+  document.querySelectorAll('.fb').forEach(function(b){
+    b.onclick=function(){
+      fil=b.getAttribute('data-f');
+      document.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      renderLeads();
+    };
+  });
+
+  // CSV export
+  document.getElementById('csvbtn').onclick=function(){
+    var h=['Company','Sector','Stage','Funding','HQ','Score','Label','Status','Why Fit','Pitch','Contact'];
+    var rows=DB.map(function(r){
+      function e(v){var s=String(v==null?'':v).replace(/"/g,'""');return s.indexOf(',')>=0?'"'+s+'"':s;}
+      return[r.company,r.sector,r.stage,r.funding_amount,r.hq,r.gtm_readiness_score,r.gtm_label,r.outreach_status,r.why_fit,r.pitch_opener,r.best_contact_title||r.decision_maker].map(e).join(',');
+    });
+    var csv=[h.join(',')].concat(rows).join(String.fromCharCode(10));var blob=new Blob([csv],{type:'text/csv'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='scout-leads.csv';
+    a.click();
+  };
+
+  document.getElementById('clrbtn').onclick=function(){
+    if(confirm('Clear all saved leads?')){DB=[];save();updateBadges();renderLeads();}
+  };
+});
+
+// ── PROFILE ──────────────────────────────────────────────────────────────────
+var PROFILE = {
+  name: '', tagline: '', bio: '',
+  linkedin: '', twitter: '', website: '',
+  avatar: null,
+  services: [],
+  cases: []
+};
+
+function profileLoad(){
+  try{var p=localStorage.getItem('scout_profile');if(p)PROFILE=JSON.parse(p);}catch(e){}
+}
+
+function profileSave(){
+  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  renderProfile();
+}
+
+function renderProfile(){
+  profileLoad();
+  var cont = document.getElementById('profile-root');
+  if(!cont) return;
+
+  var initials = PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : 'ME';
+  var avatarHtml = PROFILE.avatar
+    ? '<img src="'+PROFILE.avatar+'" alt="avatar">'
+    : '<span style="font-size:32px;font-weight:800;color:var(--pip)">'+initials+'</span>';
+
+  var socialLinks = '';
+  if(PROFILE.linkedin) socialLinks += '<a class="profile-social-link" href="'+PROFILE.linkedin+'" target="_blank">LinkedIn</a>';
+  if(PROFILE.twitter) socialLinks += '<a class="profile-social-link" href="'+PROFILE.twitter+'" target="_blank">Twitter</a>';
+  if(PROFILE.website) socialLinks += '<a class="profile-social-link" href="'+PROFILE.website+'" target="_blank">Website</a>';
+
+  var servicesHtml = '';
+  (PROFILE.services||[]).forEach(function(s,i){
+    servicesHtml += '<div class="service-item">'
+      +'<span class="service-icon">'+(s.icon||'')+'</span>'
+      +'<div><div class="service-name">'+s.name+'</div>'
+      +(s.desc?'<div class="service-desc">'+s.desc+'</div>':'')
+      +'</div>'
+      +'<button onclick="profileRemoveService('+i+')" style="margin-left:auto;background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px">×</button>'
+      +'</div>';
+  });
+
+  var casesHtml = '';
+  (PROFILE.cases||[]).forEach(function(c,i){
+    var metrics = (c.metrics||[]).map(function(m){return '<span class="case-metric">'+m+'</span>';}).join('');
+    casesHtml += '<div class="case-card" onclick="profileEditCase('+i+')">'
+      +'<div class="case-card-client">'+(c.client||'Client')+'</div>'
+      +'<div class="case-card-title">'+(c.title||'')+'</div>'
+      +'<div class="case-card-result">'+(c.result||'')+'</div>'
+      +(metrics?'<div class="case-metrics">'+metrics+'</div>':'')
+      +'</div>';
+  });
+  casesHtml += '<button class="case-card-add" onclick="profileAddCase()">+ Add Case Study</button>';
+
+  cont.innerHTML =
+    '<div class="profile-layout">'
+      +'<div class="profile-sidebar">'
+        // Identity card
+        +'<div class="profile-card">'
+          +'<div class="profile-avatar-wrap">'
+            +'<div class="profile-avatar">'+avatarHtml+'</div>'
+            +'<button class="profile-avatar-edit" onclick="profileUploadAvatar()" title="Change photo"></button>'
+          +'</div>'
+          +'<input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="profileHandleAvatar(this)">'
+          +(PROFILE.name?'<div class="profile-name">'+PROFILE.name+'</div>':'<div class="profile-name" style="color:var(--tx3)">Your Name</div>')
+          +(PROFILE.tagline?'<div class="profile-tagline">'+PROFILE.tagline+'</div>':'<div class="profile-tagline">Add a tagline...</div>')
+          +(socialLinks?'<div class="profile-socials">'+socialLinks+'</div>':'')
+          +'<div class="profile-stat-row">'
+            +'<div class="profile-stat"><div class="profile-stat-n">'+DB.length+'</div><div class="profile-stat-l">Leads</div></div>'
+            +'<div class="profile-stat"><div class="profile-stat-n">'+(PROFILE.cases||[]).length+'</div><div class="profile-stat-l">Cases</div></div>'
+            +'<div class="profile-stat"><div class="profile-stat-n">'+(PROFILE.services||[]).length+'</div><div class="profile-stat-l">Services</div></div>'
+          +'</div>'
+          +'<button class="profile-edit-btn" onclick="profileEditInfo()"> Edit Profile</button>'
+          +'<button class="profile-share-btn" onclick="profileCopyShare()"> Copy Share Link</button>'
+        +'</div>'
+        // Services card
+        +'<div class="profile-card">'
+          +'<div class="profile-section-header" style="margin-bottom:14px">'
+            +'<div class="profile-section-title">Services</div>'
+            +'<button class="profile-add-btn" onclick="profileAddService()">+ Add</button>'
+          +'</div>'
+          +(servicesHtml||'<div style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0">Add your services to show prospects what you offer</div>')
+        +'</div>'
+      +'</div>'
+      // Main column
+      +'<div class="profile-main">'
+        // Bio
+        +'<div class="profile-section">'
+          +'<div class="profile-section-header">'
+            +'<div class="profile-section-title">About</div>'
+            +'<button class="profile-add-btn" onclick="profileEditInfo()">Edit</button>'
+          +'</div>'
+          +(PROFILE.bio
+            ?'<div style="font-size:14px;color:var(--tx2);line-height:1.8">'+PROFILE.bio+'</div>'
+            :'<div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px 0">Add a bio to tell prospects who you are and what you do best.</div>')
+        +'</div>'
+        // Case studies
+        +'<div class="profile-section">'
+          +'<div class="profile-section-header">'
+            +'<div class="profile-section-title">Case Studies</div>'
+            +'<button class="profile-add-btn" onclick="profileAddCase()">+ Add</button>'
+          +'</div>'
+          +'<div class="case-studies-grid">'+casesHtml+'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+}
+
+function profileUploadAvatar(){
+  document.getElementById('avatar-input').click();
+}
+
+function profileHandleAvatar(input){
+  if(!input.files||!input.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){PROFILE.avatar=e.target.result;profileSave();};
+  reader.readAsDataURL(input.files[0]);
+}
+
+function profileEditInfo(){
+  profileLoad();
+  var m=document.getElementById('profile-modal');
+  if(!m){console.error('profile-modal not found');return;}
+  var fields={
+    'pm-name':PROFILE.name||'',
+    'pm-tagline':PROFILE.tagline||'',
+    'pm-bio':PROFILE.bio||'',
+    'pm-linkedin':PROFILE.linkedin||'',
+    'pm-twitter':PROFILE.twitter||'',
+    'pm-website':PROFILE.website||''
+  };
+  Object.keys(fields).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.value=fields[id];
+  });
+  m.classList.add('open');
+}
+
+function profileSaveInfo(){
+  PROFILE.name=document.getElementById('pm-name').value.trim();
+  PROFILE.tagline=document.getElementById('pm-tagline').value.trim();
+  PROFILE.bio=document.getElementById('pm-bio').value.trim();
+  PROFILE.linkedin=document.getElementById('pm-linkedin').value.trim();
+  PROFILE.twitter=document.getElementById('pm-twitter').value.trim();
+  PROFILE.website=document.getElementById('pm-website').value.trim();
+  document.getElementById('profile-modal').classList.remove('open');
+  profileSave();
+}
+
+function profileAddService(){
+  var name=prompt('Service name (e.g. GTM Strategy):');
+  if(!name)return;
+  var desc=prompt('Short description (optional):');
+  var icons=['','','','','','','',''];
+  var icon=icons[Math.floor(Math.random()*icons.length)];
+  PROFILE.services=PROFILE.services||[];
+  PROFILE.services.push({name:name.trim(),desc:(desc||'').trim(),icon:icon});
+  profileSave();
+}
+
+function profileRemoveService(i){
+  PROFILE.services.splice(i,1);
+  profileSave();
+}
+
+function profileAddCase(){
+  openCaseModal(-1,{client:'',title:'',result:'',metrics:[]});
+}
+
+function profileEditCase(i){
+  openCaseModal(i,PROFILE.cases[i]);
+}
+
+function openCaseModal(idx,c){
+  document.getElementById('cm-idx').value=idx;
+  document.getElementById('cm-client').value=c.client||'';
+  document.getElementById('cm-title').value=c.title||'';
+  document.getElementById('cm-result').value=c.result||'';
+  document.getElementById('cm-metrics').value=(c.metrics||[]).join(', ');
+  document.getElementById('case-modal').classList.add('open');
+}
+
+function profileSaveCase(){
+  var idx=parseInt(document.getElementById('cm-idx').value);
+  var c={
+    client:document.getElementById('cm-client').value.trim(),
+    title:document.getElementById('cm-title').value.trim(),
+    result:document.getElementById('cm-result').value.trim(),
+    metrics:document.getElementById('cm-metrics').value.split(',').map(function(s){return s.trim();}).filter(Boolean)
+  };
+  PROFILE.cases=PROFILE.cases||[];
+  if(idx>=0)PROFILE.cases[idx]=c;
+  else PROFILE.cases.unshift(c);
+  document.getElementById('case-modal').classList.remove('open');
+  profileSave();
+}
+
+function profileDeleteCase(){
+  var idx=parseInt(document.getElementById('cm-idx').value);
+  if(idx>=0){
+    if(!confirm('Delete this case study?'))return;
+    PROFILE.cases.splice(idx,1);
+    document.getElementById('case-modal').classList.remove('open');
+    profileSave();
+  }
+}
+
+function profileCopyShare(){
+  var url=window.location.origin+'?profile='+encodeURIComponent(PROFILE.name||'me');
+  navigator.clipboard.writeText(url);
+  var btn=document.querySelector('.profile-share-btn');
+  if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Share Profile';},2000);}
+}
+
+var obStep = 1; // 1=type select, 2=details
+
+function obSelectType(type){
+  PROFILE.accountType = type;
+  // Highlight selected
+  document.querySelectorAll('.ob-type-btn').forEach(function(b){
+    b.classList.toggle('selected', b.getAttribute('data-type')===type);
+  });
+  document.getElementById('ob-details').style.display = 'block';
+  // Update labels based on type
+  var nameLbl = document.getElementById('ob-name-label');
+  var tLbl = document.getElementById('ob-tagline-label');
+  var lookLbl = document.getElementById('ob-looking-label');
+  if(type==='agency'||type==='freelance'){
+    nameLbl.textContent = 'Your name or agency';
+    tLbl.textContent = 'What you specialise in';
+    lookLbl.textContent = 'What type of clients are you looking for?';
+  } else if(type==='hiring'){
+    nameLbl.textContent = 'Company name';
+    tLbl.textContent = 'Industry / sector';
+    lookLbl.textContent = 'What marketing role are you hiring for?';
+  } else {
+    nameLbl.textContent = 'Your name';
+    tLbl.textContent = 'Your current role / title';
+    lookLbl.textContent = 'What kind of opportunities are you looking for?';
+  }
+}
+
+function onboardingSave(){
+  var name = document.getElementById('ob-name').value.trim();
+  if(!name){ document.getElementById('ob-name').focus(); return; }
+  PROFILE.name = name;
+  PROFILE.tagline = document.getElementById('ob-tagline').value.trim();
+  PROFILE.linkedin = document.getElementById('ob-linkedin').value.trim();
+  PROFILE.looking = document.getElementById('ob-looking').value.trim();
+  // Save without calling renderProfile (page not active yet)
+  try{ localStorage.setItem('scout_profile', JSON.stringify(PROFILE)); }catch(e){}
+  document.getElementById('onboarding-overlay').classList.remove('open');
+  // Update save indicator
+  var ind = document.getElementById('save-ind');
+  if(ind){ ind.textContent = 'Profile saved'; ind.style.color='var(--pip)'; setTimeout(function(){ind.textContent='';},2000); }
+}
+function onboardingSkip(){
+  document.getElementById('onboarding-overlay').classList.remove('open');
+}
+
+// ── TIER / CREDITS SYSTEM ─────────────────────────────────────────────────────
+var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:0}, pro:{research:999,fetch:20,piphunt:999}, agency:{research:9999,fetch:100,piphunt:9999}};
+var TIER_LABELS = {free:'Free',pro:'Pro',agency:'Agency'};
+
+function tierLoad(){
+  try{
+    var t=localStorage.getItem('scout_tier');
+    if(t) return JSON.parse(t);
+  }catch(e){}
+  return {plan:'free', research_used:0, fetch_used:0, period: new Date().toISOString().slice(0,7)};
+}
+
+function tierSave(t){ try{localStorage.setItem('scout_tier',JSON.stringify(t));}catch(e){} }
+
+function tierReset(t){
+  // Reset monthly usage if new month
+  var thisMonth = new Date().toISOString().slice(0,7);
+  if(t.period !== thisMonth){ t.research_used=0; t.fetch_used=0; t.period=thisMonth; tierSave(t); }
+  return t;
+}
+
+function tierCanResearch(){
+  var t = tierReset(tierLoad());
+  var limit = TIER_LIMITS[t.plan||'free'].research;
+  if(t.research_used >= limit){
+    showPricing('You have used your '+limit+' free research credits this month.');
+    return false;
+  }
+  return true;
+}
+
+function tierCanFetch(){
+  var t = tierReset(tierLoad());
+  var limit = TIER_LIMITS[t.plan||'free'].fetch;
+  if(t.fetch_used >= limit){
+    showPricing('You have used your '+limit+' free fetch credits this month.');
+    return false;
+  }
+  return true;
+}
+
+function tierCanPipHunt(){
+  var t = tierReset(tierLoad());
+  if(t.plan==='free'){
+    showPricing('Pip Hunt is available on Pro and Agency plans.');
+    return false;
+  }
+  return true;
+}
+
+function tierUseResearch(){
+  var t = tierReset(tierLoad());
+  t.research_used = (t.research_used||0) + 1;
+  tierSave(t);
+  updateCreditsBar();
+  maybeShowUpsell();
+}
+
+function tierUseFetch(){
+  var t = tierReset(tierLoad());
+  t.fetch_used = (t.fetch_used||0) + 1;
+  tierSave(t);
+  updateCreditsBar();
+}
+
+function updateCreditsBar(){
+  var t = tierReset(tierLoad());
+  var plan = t.plan||'free';
+  var lim = TIER_LIMITS[plan];
+  var barEl = document.getElementById('credits-bar');
+  var upBtn = document.getElementById('upgrade-btn');
+  if(plan !== 'free'){
+    if(barEl) barEl.style.display='none';
+    if(upBtn) upBtn.style.display='none';
+    return;
+  }
+  if(barEl) barEl.style.display='flex';
+  if(upBtn) upBtn.style.display='';
+  var used = t.research_used||0;
+  var pct = Math.min(100, Math.round(used/lim.research*100));
+  document.getElementById('credits-fill').style.width = pct+'%';
+  document.getElementById('credits-count').textContent = (lim.research-used)+' research credits left';
+  document.getElementById('credits-fill').style.background = pct>=80?'var(--red)':'var(--pip)';
+}
+
+function showPricing(msg){
+  if(msg) document.getElementById('pricing-msg').textContent = msg;
+  document.getElementById('pricing-overlay').classList.add('open');
+}
+
+function closePricing(){
+  document.getElementById('pricing-overlay').classList.remove('open');
+}
+
+function selectTier(plan){
+  if(plan === 'free'){
+    var t = tierLoad();
+    t.plan = 'free';
+    tierSave(t);
+    closePricing();
+    updateCreditsBar();
+    return;
+  }
+  // Redirect to Stripe checkout
+  var urls = {
+    pro: 'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
+    agency: 'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'
+  };
+  window.open(urls[plan], '_blank');
+  closePricing();
+}
+
+// Earn free credits by tagging a company hiring
+function earnCredit(){
+  var t = tierReset(tierLoad());
+  if(t.plan !== 'free') return;
+  t.research_used = Math.max(0, (t.research_used||0) - 1);
+  tierSave(t);
+  updateCreditsBar();
+  var ind = document.getElementById('save-ind');
+  if(ind){ind.textContent='+1 credit earned!';ind.style.color='var(--pip)';setTimeout(function(){ind.textContent='';},2500);}
+}
+
+// Smart upsell - show after every 3rd research for free users
+function maybeShowUpsell(){
+  var t = tierLoad();
+  if(t.plan !== 'free') return;
+  var used = t.research_used||0;
+  if(used > 0 && used % 3 === 0){
+    var msgs = [
+      'You have used '+used+' of your 5 free researches this month.',
+      'Enjoying Scout? Pro gives you unlimited research for $29/month.',
+      'Running low on credits? Upgrade to Pro for unlimited access.'
+    ];
+    var msg = msgs[Math.min(Math.floor(used/3)-1, msgs.length-1)];
+    // Show subtle toast instead of full modal
+    showUpsellToast(msg);
+  }
+}
+
+function showUpsellToast(msg){
+  var existing = document.getElementById('upsell-toast');
+  if(existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.id = 'upsell-toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--pip-bor);border-radius:var(--r);padding:16px 18px;max-width:320px;z-index:500;box-shadow:var(--shadow-lg);animation:fadeUp .3s ease;display:flex;flex-direction:column;gap:10px';
+    setTimeout(function(){if(toast.parentNode)toast.remove();}, 8000);
+}
+
 """
 
 HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
@@ -2220,22 +3481,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "</div>"
     "<div id='ldg'><div class='spinner'></div><span>Researching <b id='lname'></b>... <span id='ltimer'>0s</span></span></div>"
     "<div id='err'></div>"
-    "<div class='search-actions'>"
-      "<button class='tlink' id='btog'>+ Bulk</button>"
-      "<button class='tlink blu' id='itog'>+ Import JSON</button>"
-    "</div>"
-    "<div class='panel-extra' id='bpanel'>"
-      "<div class='panel-label'>One company per line</div>"
-      "<textarea id='bi' placeholder='Privy&#10;Alchemy&#10;EigenLayer'></textarea>"
-      "<button class='sub-btn' id='brb'>Research All →</button>"
-    "</div>"
-    "<div class='panel-extra' id='ipanel'>"
-      "<div class='panel-label'>Paste JSON array</div>"
-      "<textarea id='ii' placeholder='[{&quot;company&quot;:&quot;Privy&quot;,...}]'></textarea>"
-      "<div id='ierr'></div>"
-      "<button class='sub-btn' id='iib'>Import</button>"
-    "</div>"
-    "<div class='fetch-hero'>"
+        "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web — they land in your Inbox for review</div>"
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
