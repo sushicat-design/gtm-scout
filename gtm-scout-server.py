@@ -3765,77 +3765,97 @@ LANDING_HTML = '''<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Scout — Find your next client</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
-<link rel='icon' type='image/png' href='data:image/png;base64,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'>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#020408;--sur:#060c14;--sur2:#0a1220;--pip:#2d9de8;--pip2:#5bc4f5;--pip3:#a8d8ff;--bor:rgba(45,157,232,0.1);--bor2:rgba(45,157,232,0.2);--tx:#eef4ff;--tx2:#7da8c8;--tx3:#2a4a6a}
+:root{--bg:#020408;--sur:#060c14;--sur2:#0a1220;--pip:#2d9de8;--pip2:#5bc4f5;--pip3:#a8d8ff;--bor:rgba(45,157,232,0.1);--bor2:rgba(45,157,232,0.2);--tx:#eef4ff;--tx2:#7da8c8;--tx3:#2a4a6a;--grn:#10b981;--amb:#f59e0b;--red:#ef4444}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 .orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(60px)}
 .o1{width:800px;height:600px;top:-200px;left:-200px;background:radial-gradient(ellipse,rgba(45,157,232,0.08) 0%,transparent 70%);animation:o1 14s ease-in-out infinite alternate}
 .o2{width:600px;height:500px;bottom:-150px;right:-150px;background:radial-gradient(ellipse,rgba(91,196,245,0.06) 0%,transparent 70%);animation:o2 18s ease-in-out infinite alternate}
-.o3{width:300px;height:300px;top:45%;left:45%;background:radial-gradient(circle,rgba(45,157,232,0.05) 0%,transparent 70%);animation:o3 11s ease-in-out infinite alternate}
 @keyframes o1{to{transform:translate(80px,50px) scale(1.12)}}
 @keyframes o2{to{transform:translate(-60px,-40px) scale(1.08)}}
-@keyframes o3{to{transform:translate(40px,-30px)}}
 .grid{position:fixed;inset:0;z-index:0;opacity:.025;background-image:linear-gradient(var(--pip) 1px,transparent 1px),linear-gradient(90deg,var(--pip) 1px,transparent 1px);background-size:64px 64px}
 nav{position:fixed;top:0;left:0;right:0;z-index:200;height:60px;display:flex;align-items:center;padding:0 48px;border-bottom:1px solid var(--bor);background:rgba(2,4,8,0.88);backdrop-filter:blur(20px)}
 .nlogo{font-size:12px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--tx);display:flex;align-items:center;gap:10px;text-decoration:none}
-.ndot{width:7px;height:7px;border-radius:50%;background:var(--pip);box-shadow:0 0 10px var(--pip);animation:ndot 2s ease-in-out infinite}
+.ndot{width:7px;height:7px;border-radius:50%;background:var(--pip);animation:ndot 2s ease-in-out infinite}
 @keyframes ndot{0%,100%{box-shadow:0 0 8px var(--pip)}50%{box-shadow:0 0 22px var(--pip2),0 0 40px rgba(45,157,232,0.3)}}
 .nlinks{display:flex;gap:32px;margin-left:auto;align-items:center}
-.nlink{font-size:13px;color:var(--tx2);text-decoration:none;transition:color .18s}
-.nlink:hover{color:var(--tx)}
-.ncta{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:9px 22px;border-radius:6px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3);transition:all .18s;text-decoration:none;display:inline-flex;align-items:center;letter-spacing:.02em}
-.ncta:hover{background:var(--pip2);box-shadow:0 0 40px rgba(45,157,232,0.45);transform:translateY(-1px)}
-.hero{position:relative;z-index:1;min-height:100vh;display:grid;grid-template-columns:1fr 480px;align-items:center;padding:100px 48px 80px;gap:60px;max-width:1240px;margin:0 auto}
+.nlink{font-size:13px;color:var(--tx2);text-decoration:none;transition:color .18s}.nlink:hover{color:var(--tx)}
+.ncta{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:9px 22px;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-flex;letter-spacing:.02em;transition:all .18s}
+.ncta:hover{background:var(--pip2);transform:translateY(-1px)}
+.hero{position:relative;z-index:1;min-height:100vh;display:grid;grid-template-columns:1fr 500px;align-items:center;padding:100px 48px 60px;gap:60px;max-width:1240px;margin:0 auto}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--bor2);border-radius:4px;padding:6px 14px;font-size:10px;font-weight:700;color:var(--pip2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:28px;background:rgba(45,157,232,0.05)}
 h1{font-size:76px;font-weight:800;letter-spacing:-.05em;line-height:.9;color:var(--tx);margin-bottom:24px}
-h1 em{font-style:normal;background:linear-gradient(135deg,var(--pip2),var(--pip),var(--pip3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:inline-block}
-.sub{font-size:17px;color:var(--tx2);line-height:1.65;max-width:460px;margin-bottom:40px;font-weight:400}
-.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:56px}
-.btnp{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;padding:15px 34px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3);transition:all .2s;letter-spacing:.02em;text-decoration:none;display:inline-flex;align-items:center;position:relative;overflow:hidden}
+h1 em{font-style:normal;background:linear-gradient(135deg,var(--pip2),var(--pip),var(--pip3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{font-size:17px;color:var(--tx2);line-height:1.65;max-width:460px;margin-bottom:40px}
+.actions{display:flex;gap:12px;margin-bottom:56px;flex-wrap:wrap}
+.btnp{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;padding:15px 34px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;box-shadow:0 0 32px rgba(45,157,232,0.3);transition:all .2s}
 .btnp:hover{background:var(--pip2);box-shadow:0 0 56px rgba(45,157,232,0.5);transform:translateY(-2px)}
-.btng{background:none;color:var(--tx2);border:1px solid var(--bor2);font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;padding:15px 34px;border-radius:8px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center}
+.btng{background:none;color:var(--tx2);border:1px solid var(--bor2);font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;padding:15px 34px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;transition:all .2s}
 .btng:hover{border-color:var(--pip);color:var(--tx)}
 .stats{display:flex;gap:40px}
 .stat{border-left:1px solid var(--bor2);padding-left:20px}
-.stn{font-size:28px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;line-height:1}
+.stn{font-size:28px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace;line-height:1}
 .stn span{color:var(--pip2)}
 .stl{font-size:11px;color:var(--tx3);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.1em}
-.hr{position:relative;display:flex;align-items:center;justify-content:center}
-.pc{position:relative;display:flex;flex-direction:column;align-items:center}
-.ring{position:absolute;border-radius:50%;border:1px solid rgba(45,157,232,0.12);animation:rp 4s ease-in-out infinite}
-.ring1{width:380px;height:380px;animation-delay:0s}
-.ring2{width:280px;height:280px;border-color:rgba(45,157,232,0.18);animation-delay:1s}
-.ring3{width:200px;height:200px;background:radial-gradient(circle,rgba(45,157,232,0.12) 0%,transparent 70%);border:none;animation-delay:2s;filter:blur(8px)}
-@keyframes rp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.6}}
-.pip{display:none}
-@keyframes pf{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-18px) rotate(2deg)}}
-.pipl{margin-top:20px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);position:relative;z-index:1}
-.badge{position:absolute;background:var(--sur);border:1px solid var(--bor2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--tx2);white-space:nowrap;z-index:2}
-.b1{top:-20px;right:-50px;animation:bf 6s ease-in-out infinite}
-.b2{bottom:20px;left:-70px;animation:bf 6s ease-in-out infinite 3s}
-@keyframes bf{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+/* Demo widget */
+.dw{background:#060c14;border-radius:14px;overflow:hidden;border:1px solid rgba(45,157,232,0.2);box-shadow:0 0 80px rgba(45,157,232,0.08),0 24px 64px rgba(0,0,0,0.6)}
+.dw-bar{background:#0a1220;padding:13px 18px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(45,157,232,0.08)}
+.dw-dot{width:10px;height:10px;border-radius:50%}
+.dw-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-left:8px;letter-spacing:.04em}
+.dw-search{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(45,157,232,0.07)}
+.dw-icon{width:16px;height:16px;border:1.5px solid var(--pip);border-radius:50%;position:relative;flex-shrink:0}
+.dw-icon::after{content:'';position:absolute;bottom:-4px;right:-3px;width:5px;height:1.5px;background:var(--pip);transform:rotate(45deg);border-radius:1px}
+.dw-input{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);flex:1}
+.dw-cur{display:inline-block;width:2px;height:13px;background:var(--pip);margin-left:1px;vertical-align:middle;animation:cur .8s step-end infinite}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+.dw-scanning{padding:12px 20px;border-bottom:1px solid rgba(45,157,232,0.07)}
+.dw-scan-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dw-scan-dot{width:6px;height:6px;border-radius:50%;background:var(--pip);animation:sdot 1.2s ease-in-out infinite;flex-shrink:0}
+@keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+.dw-scan-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)}
+.dw-prog{height:2px;background:rgba(45,157,232,0.08);border-radius:1px;overflow:hidden}
+.dw-prog-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width .35s ease}
+.dw-res{padding:20px}
+.dw-res-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.dw-name{font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-.02em;margin-bottom:3px}
+.dw-meta{font-size:11px;color:var(--tx3)}
+.dw-score{font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--pip2);line-height:1;letter-spacing:-.04em;text-align:right}
+.dw-tag{font-size:9px;font-weight:700;color:var(--pip2);letter-spacing:.12em;text-transform:uppercase;text-align:right;margin-top:2px}
+.dw-scorebar{height:2px;background:rgba(45,157,232,0.1);border-radius:1px;margin-bottom:16px;overflow:hidden}
+.dw-scorebar-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.dw-sigs{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.dw-sig{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--tx2);font-family:'Outfit',sans-serif;opacity:0;transform:translateX(-5px);transition:opacity .35s,transform .35s}
+.dw-sig.on{opacity:1;transform:translateX(0)}
+.dw-sigdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.g{background:var(--grn)}.a{background:var(--amb)}
+.dw-pitch{background:var(--sur2);border-left:2px solid var(--pip);padding:12px 14px;border-radius:0 6px 6px 0;opacity:0;transform:translateY(4px);transition:opacity .4s,transform .4s}
+.dw-pitch.on{opacity:1;transform:translateY(0)}
+.dw-pitch-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--pip2);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+.dw-pitch-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.75;min-height:52px}
+/* Marquee */
 .mq{border-top:1px solid var(--bor);border-bottom:1px solid var(--bor);overflow:hidden;background:rgba(6,12,20,0.7);padding:14px 0;position:relative;z-index:1}
 .mqt{display:flex;animation:mq 24s linear infinite;white-space:nowrap}
 .mqi{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);flex-shrink:0;padding:0 32px;display:flex;align-items:center;gap:10px;border-right:1px solid var(--bor)}
 .mqd{width:4px;height:4px;border-radius:50%;background:var(--pip);flex-shrink:0}
 @keyframes mq{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* Sections */
 .sec{position:relative;z-index:1;padding:120px 48px;max-width:1240px;margin:0 auto}
 .slbl{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--pip2);margin-bottom:14px}
 h2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:var(--tx);max-width:580px;margin-bottom:16px}
 .ssub{font-size:16px;color:var(--tx2);line-height:1.7;max-width:460px;margin-bottom:64px}
+/* Feature grid */
 .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bor)}
 .fc{background:var(--bg);padding:40px 32px;transition:background .2s;position:relative;overflow:hidden;cursor:default}
 .fc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--pip),transparent);transform:scaleX(0);transition:transform .5s;transform-origin:center}
-.fc:hover{background:var(--sur)}
-.fc:hover::before{transform:scaleX(1)}
+.fc:hover{background:var(--sur)}.fc:hover::before{transform:scaleX(1)}
 .fn{font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.12em;font-family:'JetBrains Mono',monospace;margin-bottom:20px}
 .ft{font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--tx);margin-bottom:10px}
 .fd{font-size:14px;color:var(--tx2);line-height:1.7}
-.dw{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
+/* Demo card */
+.dw2{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
 .dc{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:48px;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;position:relative;overflow:hidden}
 .dc::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,rgba(45,157,232,0.06) 0%,transparent 70%);pointer-events:none}
 .de{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.16em;margin-bottom:8px}
@@ -3848,13 +3868,23 @@ h2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:va
 .pl{font-size:9px;font-weight:700;color:var(--pip2);text-transform:uppercase;letter-spacing:.18em;margin-bottom:10px;margin-top:24px}
 .pb{background:var(--sur2);border-left:2px solid var(--pip);padding:14px 16px;border-radius:0 6px 6px 0;font-size:12px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.85}
 .sgl{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
-.sg{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bor);font-size:13px}
-.sg:last-of-type{border:none}
-.sn2{color:var(--tx2)}.sgy{color:#10b981;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}.sgn{color:var(--tx3);font-size:10px;font-family:'JetBrains Mono',monospace}
+.sg{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bor);font-size:13px}.sg:last-of-type{border:none}
+.sn2{color:var(--tx2)}.sgy{color:var(--grn);font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}.sgn{color:var(--tx3);font-size:10px;font-family:'JetBrains Mono',monospace}
 .fl2{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.18em;margin:20px 0 12px}
 .fr{display:flex;gap:12px;align-items:center;background:var(--sur2);border:1px solid var(--bor);border-radius:6px;padding:10px 14px;margin-bottom:6px}
 .fa{width:30px;height:30px;border-radius:50%;background:rgba(45,157,232,0.1);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--pip2);flex-shrink:0}
-.fn2{font-size:13px;font-weight:600;color:var(--tx)}.fr2{font-size:10px;color:var(--tx3);margin-top:1px}
+/* Who its for */
+.for-pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.for-pill{border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)}
+/* Waitlist */
+.wl{position:relative;z-index:1;padding:0 48px 80px;max-width:1240px;margin:0 auto}
+.wl-card{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:56px 48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.wl-input{width:100%;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:'Outfit',sans-serif;font-size:14px;padding:13px 18px;outline:none;border-radius:8px;transition:border-color .2s}
+.wl-input:focus{border-color:rgba(45,157,232,0.5)}
+.wl-row{display:flex;gap:8px;margin-bottom:10px}
+.wl-btn{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:13px 24px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:all .2s}
+.wl-btn:hover{background:var(--pip2)}
+/* Pricing */
 .ps{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
 .pg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .prc{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:32px;position:relative;transition:all .2s}
@@ -3865,17 +3895,19 @@ h2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:va
 .pp{font-size:44px;font-weight:700;color:var(--tx);letter-spacing:-.04em;line-height:1;font-family:'JetBrains Mono',monospace}
 .pper{font-size:14px;color:var(--tx3);font-family:'Outfit',sans-serif;font-weight:400}
 .pd{font-size:13px;color:var(--tx3);margin:12px 0 22px;line-height:1.6}
-.pb2{width:100%;background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:12px;border-radius:6px;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(45,157,232,0.2);letter-spacing:.02em}
+.pb2{width:100%;background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:12px;border-radius:6px;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(45,157,232,0.2)}
 .pb2:hover{background:var(--pip2);box-shadow:0 0 32px rgba(45,157,232,0.4)}
 .pb2.out{background:none;border:1px solid var(--bor2);color:var(--tx2);box-shadow:none}
 .pb2.out:hover{border-color:var(--pip);color:var(--pip2)}
 .pfl{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:9px}
 .pfl li{font-size:13px;color:var(--tx2);display:flex;gap:8px;align-items:baseline;line-height:1.4}
 .pfl li::before{content:'—';color:var(--pip2);font-weight:700;flex-shrink:0}
+/* CTA */
 .ctaw{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
 .ctac{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:80px 48px;text-align:center;position:relative;overflow:hidden}
 .ctac::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(45,157,232,0.06) 0%,transparent 70%);pointer-events:none}
-.cpip_old{width:100px;height:100px;object-fit:contain;margin:0 auto 24px;display:block;animation:pf 5s ease-in-out infinite;transform:translateZ(0);will-change:transform}
+.cpip{width:90px;height:90px;object-fit:contain;margin:0 auto 24px;display:block;animation:pf 5s ease-in-out infinite;transform:translateZ(0);will-change:transform}
+@keyframes pf{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-14px) rotate(2deg)}}
 .ch2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:var(--tx);margin-bottom:16px}
 .cs{font-size:17px;color:var(--tx2);margin-bottom:36px;line-height:1.6}
 .cn{font-size:12px;color:var(--tx3);margin-top:14px}
@@ -3884,177 +3916,116 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 .fls{display:flex;gap:24px}
 .fl{font-size:12px;color:var(--tx3);text-decoration:none;transition:color .15s}
 .fl:hover{color:var(--pip2)}
-
-.demo-widget{background:#060c14;border-radius:14px;overflow:hidden;width:460px;border:1px solid rgba(45,157,232,0.18);box-shadow:0 0 80px rgba(45,157,232,0.07),0 24px 64px rgba(0,0,0,0.6)}
-.dw-titlebar{background:#0a1220;padding:13px 18px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(45,157,232,0.08)}
-.dw-dot{width:10px;height:10px;border-radius:50%}
-.dw-tbar-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-left:8px;letter-spacing:.04em}
-.dw-search-row{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(45,157,232,0.07);background:#060c14}
-.dw-search-icon{width:16px;height:16px;border:1.5px solid var(--pip);border-radius:50%;position:relative;flex-shrink:0}
-.dw-search-icon::after{content:'';position:absolute;bottom:-4px;right:-3px;width:5px;height:1.5px;background:var(--pip);transform:rotate(45deg);border-radius:1px}
-.dw-search-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);flex:1}
-.dw-cursor{display:inline-block;width:2px;height:13px;background:var(--pip);margin-left:1px;vertical-align:middle;animation:dw-blink .8s step-end infinite}
-@keyframes dw-blink{0%,100%{opacity:1}50%{opacity:0}}
-.dw-status-row{padding:12px 20px;display:flex;align-items:center;gap:8px}
-.dw-status-dot{width:6px;height:6px;border-radius:50%;background:var(--pip);animation:dw-pulse 1.2s ease-in-out infinite;flex-shrink:0}
-@keyframes dw-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
-.dw-status-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)}
-.dw-prog-track{height:2px;background:rgba(45,157,232,0.08);margin:0 20px 14px;border-radius:1px;overflow:hidden}
-.dw-prog-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width .3s ease}
-.dw-result{padding:20px}
-.dw-result-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
-.dw-co-name{font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-.02em;margin-bottom:3px;font-family:'Outfit',sans-serif}
-.dw-co-meta{font-size:11px;color:var(--tx3);font-family:'Outfit',sans-serif}
-.dw-score-block{text-align:right}
-.dw-score-num{font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--pip2);line-height:1;letter-spacing:-.04em}
-.dw-score-tag{font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;color:var(--pip2);letter-spacing:.12em;text-transform:uppercase;text-align:right;margin-top:1px}
-.dw-bar-track{height:2px;background:rgba(45,157,232,0.1);border-radius:1px;margin-bottom:16px;overflow:hidden}
-.dw-bar-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
-.dw-signals{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
-.dw-sig{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--tx2);opacity:0;transform:translateX(-5px);transition:opacity .35s ease,transform .35s ease;font-family:'Outfit',sans-serif}
-.dw-sig.show{opacity:1;transform:translateX(0)}
-.dw-sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.dw-sdot.green{background:#10b981}.dw-sdot.amber{background:var(--amb)}
-.dw-pitch{background:var(--sur2);border-left:2px solid var(--pip);padding:12px 14px;border-radius:0 6px 6px 0;opacity:0;transform:translateY(4px);transition:opacity .4s ease,transform .4s ease}
-.dw-pitch.show{opacity:1;transform:translateY(0)}
-.dw-pitch-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--pip2);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
-.dw-pitch-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.75;min-height:52px}
-
-.demo-widget{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;overflow:hidden;width:460px;box-shadow:0 0 60px rgba(45,157,232,0.08)}
-.dw-header{display:flex;align-items:center;gap:6px;padding:12px 16px;background:var(--sur2);border-bottom:1px solid var(--bor)}
-.dw-dot{width:10px;height:10px;border-radius:50%}
-.dw-dot-red{background:#ff5f57}
-.dw-dot-yellow{background:#febc2e}
-.dw-dot-green{background:#28c840}
-.dw-title{font-size:11px;color:var(--tx3);margin-left:6px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
-.dw-search{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--bor)}
-.dw-search-icon{color:var(--pip2);font-size:16px}
-.dw-search-text{font-size:14px;color:var(--tx);font-weight:500;font-family:'JetBrains Mono',monospace}
-.dw-search-cursor{color:var(--pip);animation:blink-cur .8s step-end infinite;font-family:'JetBrains Mono',monospace;font-size:16px}
-@keyframes blink-cur{0%,100%{opacity:1}50%{opacity:0}}
-.dw-progress{padding:14px 20px;border-bottom:1px solid var(--bor)}
-.dw-progress-bar{height:2px;background:var(--bor);border-radius:1px;overflow:hidden;margin-bottom:8px}
-.dw-progress-bar::after{content:'';display:block;height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;animation:prog 2s ease-out forwards}
-@keyframes prog{0%{width:0}100%{width:100%}}
-.dw-progress-label{font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace;animation:label-cycle 2s steps(1) infinite}
-.dw-result{padding:20px}
-.dw-result-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
-.dw-company{font-size:16px;font-weight:700;color:var(--tx);letter-spacing:-.02em;margin-bottom:3px}
-.dw-meta{font-size:11px;color:var(--tx3)}
-.dw-score-wrap{text-align:center}
-.dw-score{font-size:48px;font-weight:800;color:var(--pip2);line-height:1;font-family:'JetBrains Mono',monospace;letter-spacing:-.04em}
-.dw-score-label{font-size:9px;font-weight:800;color:var(--pip2);letter-spacing:.14em;text-align:center;text-transform:uppercase}
-.dw-bar-wrap{height:3px;background:var(--bor);border-radius:2px;margin-bottom:16px;overflow:hidden}
-.dw-bar-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:2px;width:0;transition:width 1.5s ease-out}
-.dw-signals{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
-.dw-signal{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:8px;transition:opacity .4s}
-.dw-sig-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.dw-sig-dot.green{background:#10b981}
-.dw-sig-dot.yellow{background:var(--amb)}
-.dw-pitch-wrap{background:var(--sur2);border-left:2px solid var(--pip);padding:12px 14px;border-radius:0 6px 6px 0;transition:opacity .5s}
-.dw-pitch-label{font-size:8px;font-weight:700;color:var(--pip2);text-transform:uppercase;letter-spacing:.16em;margin-bottom:6px}
-.dw-pitch-text{font-size:11px;color:var(--tx2);line-height:1.75;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
-<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+<div class="orb o1"></div><div class="orb o2"></div>
 <div class="grid"></div>
 <nav>
   <a href="/" class="nlogo"><div class="ndot"></div>Scout</a>
   <div class="nlinks">
     <a href="#features" class="nlink">Features</a>
     <a href="#pricing" class="nlink">Pricing</a>
-    <a href="/app" class="nlink">App</a>
+    <a href="#waitlist" class="nlink">Early access</a>
     <a href="/app" class="ncta">Start free</a>
   </div>
 </nav>
+
 <section class="hero">
   <div>
-    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px"></div>AI-powered client acquisition</div>
+    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div>AI-powered client acquisition</div>
     <h1>Find your<br><em>next client</em></h1>
-    <p class="sub">Stop wasting hours on companies that aren't ready to hire. Scout tells you in 8 seconds whether a company needs marketing leadership — and writes your first line of outreach.</p>
+    <p class="sub">Research any company to get a full GTM profile, score, and pitch opener. Built for fractional CMOs and marketing agencies.</p>
     <div class="actions">
       <a href="/app" class="btnp">Get started free</a>
-      <a href="#CALENDAR_LINK" target="_blank" class="btng" id="book-call-btn">Book a call</a>
+      <a href="#CALENDAR_LINK" target="_blank" class="btng">Book a call</a>
     </div>
     <div class="stats">
       <div class="stat"><div class="stn">8<span>s</span></div><div class="stl">To full GTM profile</div></div>
-      <div class="stat"><div class="stn">0<span>-100</span></div><div class="stl">GTM Score</div></div>
+      <div class="stat"><div class="stn">0<span>–100</span></div><div class="stl">GTM Score</div></div>
       <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl">From free</div></div>
     </div>
   </div>
-  <div class="hr">
-    <div class="demo-widget">
-      <div class="dw-titlebar">
+  <div>
+    <div class="dw">
+      <div class="dw-bar">
         <div class="dw-dot" style="background:#ff5f57"></div>
         <div class="dw-dot" style="background:#febc2e"></div>
         <div class="dw-dot" style="background:#28c840"></div>
-        <span class="dw-tbar-lbl">scout — research</span>
+        <span class="dw-lbl">scout — research</span>
       </div>
-      <div class="dw-search-row">
-        <div class="dw-search-icon"></div>
-        <div class="dw-search-text"><span id="dw-typed"></span><span class="dw-cursor" id="dw-cur"></span></div>
+      <div class="dw-search">
+        <div class="dw-icon"></div>
+        <div class="dw-input"><span id="tp"></span><span class="dw-cur" id="cr"></span></div>
       </div>
-      <div id="dw-status" style="display:none">
-        <div class="dw-status-row"><div class="dw-status-dot"></div><span class="dw-status-txt" id="dw-stxt">Scanning funding data...</span></div>
-        <div class="dw-prog-track"><div class="dw-prog-fill" id="dw-pfill"></div></div>
-      </div>
-      <div class="dw-result" id="dw-result" style="display:none">
-        <div class="dw-result-head">
-          <div><div class="dw-co-name" id="dw-name">Ambience Healthcare</div><div class="dw-co-meta" id="dw-meta">Series B · Healthcare AI · SF</div></div>
-          <div class="dw-score-block"><div class="dw-score-num" id="dw-score">0</div><div class="dw-score-tag" id="dw-score-tag">Hot Lead</div></div>
+      <div id="sc-wrap" style="display:none">
+        <div class="dw-scanning">
+          <div class="dw-scan-row"><div class="dw-scan-dot"></div><span class="dw-scan-txt" id="sc-txt">Scanning funding data...</span></div>
+          <div class="dw-prog"><div class="dw-prog-fill" id="pf2"></div></div>
         </div>
-        <div class="dw-bar-track"><div class="dw-bar-fill" id="dw-bfill"></div></div>
-        <div class="dw-signals">
-          <div class="dw-sig" id="dws0"><div class="dw-sdot green"></div><span></span></div>
-          <div class="dw-sig" id="dws1"><div class="dw-sdot green"></div><span></span></div>
-          <div class="dw-sig" id="dws2"><div class="dw-sdot green"></div><span></span></div>
-          <div class="dw-sig" id="dws3"><div class="dw-sdot amber"></div><span></span></div>
+      </div>
+      <div class="dw-res" id="res" style="display:none">
+        <div class="dw-res-top">
+          <div><div class="dw-name" id="rn"></div><div class="dw-meta" id="rm"></div></div>
+          <div><div class="dw-score" id="rs">0</div><div class="dw-tag" id="rt">Hot Lead</div></div>
         </div>
-        <div class="dw-pitch" id="dw-pitch">
+        <div class="dw-scorebar"><div class="dw-scorebar-fill" id="rb2"></div></div>
+        <div class="dw-sigs">
+          <div class="dw-sig" id="sig0"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig1"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig2"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig3"><div class="dw-sigdot a"></div><span></span></div>
+        </div>
+        <div class="dw-pitch" id="pt">
           <div class="dw-pitch-lbl">AI pitch opener</div>
-          <div class="dw-pitch-txt" id="dw-ptxt"></div>
+          <div class="dw-pitch-txt" id="ptx"></div>
         </div>
       </div>
     </div>
   </div>
 </section>
+
 <div class="mq">
   <div class="mqt">
     <span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span><span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span>
   </div>
 </div>
+
 <section style="position:relative;z-index:1;padding:80px 48px 0;max-width:1240px;margin:0 auto;text-align:center">
   <p style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);margin-bottom:24px">Built for</p>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <div style="border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)">Fractional CMOs</div>
-    <div style="border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)">Marketing Agencies</div>
-    <div style="border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)">Growth Consultants</div>
-    <div style="border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)">B2B Sales Teams</div>
-    <div style="border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)">Freelance Marketers</div>
+  <div class="for-pills">
+    <div class="for-pill">Fractional CMOs</div>
+    <div class="for-pill">Marketing Agencies</div>
+    <div class="for-pill">Growth Consultants</div>
+    <div class="for-pill">B2B Sales Teams</div>
+    <div class="for-pill">Freelance Marketers</div>
   </div>
 </section>
+
 <section class="sec" id="features">
   <div class="slbl">What Scout does</div>
-  <h2>Stop researching. Start closing.</h2>
+  <h2>Stop researching.<br>Start closing.</h2>
   <p class="ssub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
   <div class="fg">
-    <div class="fc"><div class="fn">01</div><div class="ft">Know before you pitch</div><p class="fd">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter out time-wasters before you write a word.</p></div>
-    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room — funding news, team gaps, recent hires — and writes a pitch opener that references something real. Response rates go up when you sound like you did your homework.</p></div>
-    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans TechCrunch and funding databases daily. Hot companies land in your Inbox automatically — just approve or dismiss. Your pipeline fills itself.</p></div>
-    <div class="fc"><div class="fn">04</div><div class="ft">Never lose track</div><p class="fd">Track every prospect from first research to signed contract. See exactly where every deal stands and what needs attention today.</p></div>
-    <div class="fc"><div class="fn">05</div><div class="ft">Two businesses, one tool</div><p class="fd">Not just prospecting for clients — Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. One tool for both sides of your business.</p></div>
-    <div class="fc"><div class="fn">06</div><div class="ft">Your digital pitch deck</div><p class="fd">Build a profile that tells your story — services, case studies, results. Share a link with prospects so they can see your track record before you even get on a call.</p></div>
+    <div class="fc"><div class="fn">01</div><div class="ft">Know before you pitch</div><p class="fd">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
+    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room — funding news, team gaps, recent hires — and writes a pitch opener that references something real.</p></div>
+    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans funding databases daily. Hot companies land in your Inbox automatically — just approve or dismiss.</p></div>
+    <div class="fc"><div class="fn">04</div><div class="ft">Never lose track</div><p class="fd">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
+    <div class="fc"><div class="fn">05</div><div class="ft">Two businesses, one tool</div><p class="fd">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
+    <div class="fc"><div class="fn">06</div><div class="ft">Your digital pitch deck</div><p class="fd">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
   </div>
 </section>
-<div class="dw" id="demo">
+
+<div class="dw2" id="demo">
   <div class="dc">
     <div>
-      <div class="de">Live example</div><div class="dn">Ambience Healthcare</div><div class="dm">Series B &middot; Healthcare AI &middot; San Francisco</div>
+      <div class="de">Live example</div>
+      <div class="dn">Ambience Healthcare</div>
+      <div class="dm">Series B · Healthcare AI · San Francisco</div>
       <div class="sc">87</div><div class="stag">Hot Lead</div>
       <div class="sbar"><div class="sf"></div></div>
       <div class="pl">AI Pitch Opener</div>
-      <div class="pb">Saw the Series B announcement &mdash; congrats on the raise. Most companies at your stage don't hire a full-time CMO until Series C, but the pipeline pressure is real now. I work with 3 other healthcare SaaS companies in exactly this position...</div>
+      <div class="pb">Saw the Series B — congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap and hit ARR targets within 6 months...</div>
     </div>
     <div>
       <div class="sgl">GTM Signals</div>
@@ -4064,28 +4035,30 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       <div class="sg"><span class="sn2">Pre-launch or early stage</span><span class="sgn">NO</span></div>
       <div class="sg"><span class="sn2">Has agency already</span><span class="sgn">NO</span></div>
       <div class="fl2">Founders</div>
-      <div class="fr"><div class="fa">JK</div><div><div class="fn2">James Kim</div><div class="fr2">CEO &amp; Co-founder</div></div></div>
-      <div class="fr"><div class="fa">SR</div><div><div class="fn2">Sara Reyes</div><div class="fr2">CTO &amp; Co-founder</div></div></div>
+      <div class="fr"><div class="fa">JK</div><div><div style="font-size:13px;font-weight:600;color:var(--tx)">James Kim</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">CEO &amp; Co-founder</div></div></div>
+      <div class="fr"><div class="fa">SR</div><div><div style="font-size:13px;font-weight:600;color:var(--tx)">Sara Reyes</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">CTO &amp; Co-founder</div></div></div>
     </div>
   </div>
 </div>
-<div style="position:relative;z-index:1;padding:0 48px 80px;max-width:1240px;margin:0 auto" id="waitlist">
-  <div style="background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:56px 48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center">
+
+<div class="wl" id="waitlist">
+  <div class="wl-card">
     <div>
       <div class="slbl">Early access</div>
       <h2 style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
-      <p style="font-size:15px;color:var(--tx2);line-height:1.7;margin-bottom:0">Be first to know when new features drop. No spam — just Scout updates and occasional GTM tips from Pip.</p>
+      <p style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam — just Scout updates and GTM tips from Pip.</p>
     </div>
     <div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="email" id="wl-email" placeholder="you@agency.com" style="flex:1;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:14px;padding:13px 18px;outline:none;border-radius:8px;transition:border-color .2s" onfocus="this.style.borderColor='rgba(45,157,232,0.5)'" onblur="this.style.borderColor='rgba(45,157,232,0.2)'">
-        <button onclick="submitWaitlist()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;padding:13px 24px;border-radius:8px;cursor:pointer;white-space:nowrap;box-shadow:0 0 24px rgba(45,157,232,0.25);transition:all .2s" onmouseover="this.style.background='#5bc4f5'" onmouseout="this.style.background='#2d9de8'">Join waitlist</button>
+      <div class="wl-row">
+        <input type="email" id="wl-email" class="wl-input" placeholder="you@agency.com">
+        <button class="wl-btn" onclick="joinWaitlist()">Join waitlist</button>
       </div>
-      <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:Outfit,sans-serif"></div>
-      <p style="font-size:11px;color:var(--tx3);margin-top:10px;font-family:Outfit,sans-serif">Already 140+ fractional CMOs and agencies signed up.</p>
+      <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:'Outfit',sans-serif"></div>
+      <p style="font-size:11px;color:var(--tx3);margin-top:10px">Already 140+ fractional CMOs and agencies signed up.</p>
     </div>
   </div>
 </div>
+
 <div class="ps" id="pricing">
   <div style="text-align:center;margin-bottom:56px">
     <div class="slbl" style="text-align:center">Pricing</div>
@@ -4098,20 +4071,22 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <div class="prc"><div class="pn">Agency</div><div class="pp">$99<span class="pper">/mo</span></div><div class="pd">For agencies managing multiple clients.</div><button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button><ul class="pfl"><li>Everything in Pro</li><li>5 team members</li><li>100 lead fetches</li><li>White-label pitches</li></ul></div>
   </div>
 </div>
+
 <div class="ctaw">
   <div class="ctac">
     <img class="cpip" src="data:image/png;base64,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" alt="Pip">
     <div class="ch2">Your next client<br>is already funded.</div>
     <p class="cs">They just raised. They have no CMO. They need you.<br>Scout finds them before your competitors do.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-      <a href="/app" class="btnp" style="display:inline-flex;font-size:16px;padding:16px 44px">Start researching free</a>
-      <a href="#CALENDAR_LINK" target="_blank" class="btng" style="display:inline-flex;font-size:16px;padding:16px 44px">Book a call with Cara</a>
+      <a href="/app" class="btnp" style="font-size:16px;padding:16px 44px">Start researching free</a>
+      <a href="#CALENDAR_LINK" target="_blank" class="btng" style="font-size:16px;padding:16px 44px">Book a call with Cara</a>
     </div>
-    <div class="cn">No credit card required &middot; Free forever tier available</div>
+    <div class="cn">No credit card required · Free forever tier available</div>
   </div>
 </div>
+
 <footer>
-  <div class="flo">Scout &middot; scout-ai.io</div>
+  <div class="flo">Scout · scout-ai.io</div>
   <div class="fls">
     <a href="/legal#terms" class="fl">Terms</a>
     <a href="/legal#privacy" class="fl">Privacy</a>
@@ -4119,229 +4094,105 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="/app" class="fl">Go to app</a>
   </div>
 </footer>
+
 <script>
-(function(){
-  var steps = ['Scanning funding data...','Checking team on LinkedIn...','Analysing hiring signals...','Generating pitch opener...'];
-  var stepIdx = 0;
-  var phase = 0; // 0=typing, 1=searching, 2=results
-  
-  function startAnimation(){
-    setTimeout(function(){
-      // Show progress
-      document.getElementById('progress-wrap').style.display='block';
-      document.getElementById('cursor').style.display='none';
-      
-      // Cycle progress labels
-      var labelEl = document.getElementById('progress-label');
-      var labelTimer = setInterval(function(){
-        stepIdx = (stepIdx+1) % steps.length;
-        labelEl.textContent = steps[stepIdx];
-      }, 600);
-      
+var cos=[
+  {n:'Ambience Healthcare',m:'Series B · Healthcare AI · SF',s:87,
+   sigs:['Recently funded — $70M Series B','No CMO listed on LinkedIn','3 open marketing roles','Has PR agency, no growth lead'],
+   dots:['g','g','g','a'],
+   p:"Saw the Series B — congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap..."},
+  {n:'Fathom Video',m:'Series A · AI Productivity · New York',s:79,
+   sigs:['Raised $46M 8 weeks ago','Marketing team of 2','Actively hiring demand gen','No head of growth'],
+   dots:['g','g','g','a'],
+   p:"Noticed Fathom just closed the Series A — impressive traction. With a 2-person marketing team and demand gen role open, the timing for fractional support is usually right about now..."},
+  {n:'Cohere',m:'Series C · Enterprise AI · Toronto',s:61,
+   sigs:['$270M raised, 18 months ago','CMO hired 6 months back','Growing marketing team','Strong content presence'],
+   dots:['a','a','g','g'],
+   p:"Cohere’s been building out the marketing org since the Series C — strong moves. If there’s a gap in the enterprise GTM motion, happy to share what’s worked for similar API-first companies..."}
+];
+var ci=0;
+
+function run(c){
+  var tp=document.getElementById('tp');
+  var cr=document.getElementById('cr');
+  var scw=document.getElementById('sc-wrap');
+  var res=document.getElementById('res');
+  var pf2=document.getElementById('pf2');
+  var rs=document.getElementById('rs');
+  var rb2=document.getElementById('rb2');
+  var ptx=document.getElementById('ptx');
+  var pt=document.getElementById('pt');
+  var sct=document.getElementById('sc-txt');
+  if(!tp)return;
+  // reset
+  tp.textContent='';cr.style.display='inline-block';
+  scw.style.display='none';res.style.display='none';
+  pf2.style.transition='none';pf2.style.width='0';
+  setTimeout(function(){pf2.style.transition='width .35s ease';},50);
+  rs.textContent='0';
+  rb2.style.transition='none';rb2.style.width='0';
+  setTimeout(function(){rb2.style.transition='width 1.2s cubic-bezier(.4,0,.2,1)';},50);
+  ptx.textContent='';pt.classList.remove('on');
+  [0,1,2,3].forEach(function(i){
+    var el=document.getElementById('sig'+i);
+    el.classList.remove('on');
+    el.querySelector('.dw-sigdot').className='dw-sigdot '+c.dots[i];
+    el.querySelector('span').textContent=c.sigs[i];
+  });
+  document.getElementById('rn').textContent=c.n;
+  document.getElementById('rm').textContent=c.m;
+  document.getElementById('rt').textContent=c.s>=75?'Hot Lead':c.s>=55?'Warm Lead':'Cold Lead';
+  // type
+  var i=0;
+  var tt=setInterval(function(){
+    tp.textContent=c.n.substring(0,i+1);i++;
+    if(i>=c.n.length){
+      clearInterval(tt);cr.style.display='none';
       setTimeout(function(){
-        clearInterval(labelTimer);
-        document.getElementById('progress-wrap').style.display='none';
-        
-        // Show result card
-        var card = document.getElementById('result-card');
-        card.style.display='block';
-        
-        // Animate score counting up
-        var scoreEl = document.getElementById('score-num');
-        var barEl = document.getElementById('score-bar');
-        var count = 0;
-        var target = 87;
-        var scoreTimer = setInterval(function(){
-          count += 3;
-          if(count >= target){ count = target; clearInterval(scoreTimer); }
-          scoreEl.textContent = count;
-        }, 30);
-        
-        // Animate bar
-        setTimeout(function(){ barEl.style.width = '87%'; }, 100);
-        
-        // Reveal signals one by one
-        setTimeout(function(){ document.getElementById('s1').style.opacity='1'; }, 400);
-        setTimeout(function(){ document.getElementById('s2').style.opacity='1'; }, 800);
-        setTimeout(function(){ document.getElementById('s3').style.opacity='1'; }, 1200);
-        setTimeout(function(){ document.getElementById('s4').style.opacity='1'; }, 1600);
-        
-        // Type pitch
-        setTimeout(function(){
-          document.getElementById('pitch-wrap').style.opacity='1';
-          var pitch = "Saw the Series B — congrats. Most companies skip the CMO hire until C, but the pipeline pressure hits now. Happy to share how I've helped 3 similar healthcare SaaS teams...";
-          var pitchEl = document.getElementById('pitch-text');
-          var i = 0;
-          var typeTimer = setInterval(function(){
-            i += 2;
-            pitchEl.textContent = pitch.substring(0, i);
-            if(i >= pitch.length){ 
-              clearInterval(typeTimer);
-              // Restart after delay
-              setTimeout(function(){ restartAnimation(); }, 4000);
-            }
-          }, 30);
-        }, 2200);
-        
-      }, 2500);
-    }, 1800);
-  }
-  
-  function restartAnimation(){
-    // Reset everything
-    document.getElementById('result-card').style.display='none';
-    document.getElementById('cursor').style.display='';
-    document.getElementById('score-num').textContent='0';
-    document.getElementById('score-bar').style.width='0';
-    document.getElementById('pitch-text').textContent='';
-    document.getElementById('pitch-wrap').style.opacity='0';
-    ['s1','s2','s3','s4'].forEach(function(id){ document.getElementById(id).style.opacity='0'; });
-    
-    // Recreate progress bar animation by cloning
-    var pw = document.getElementById('progress-wrap');
-    var pb = document.getElementById('progress-bar');
-    var newPb = pb.cloneNode(true);
-    pb.parentNode.replaceChild(newPb, pb);
-    document.getElementById('progress-bar');
-    
-    startAnimation();
-  }
-  
-  startAnimation();
-})();
-</script>
-<script>
-(function(){
-  var score = 0;
-  var targetScore = 87;
-  var barEl = document.getElementById('mockbar');
-  var scoreEl = document.getElementById('mockscore');
-  var tagEl = document.getElementById('mocktag');
-  var pitchWrap = document.getElementById('pitchwrap');
-  var pitchEl = document.getElementById('pitchtext');
-  var foundersEl = document.getElementById('mockfounders');
-  var signals = [
-    {id:'s1', val:'YES', cls:'sig-yes'},
-    {id:'s2', val:'YES', cls:'sig-yes'},
-    {id:'s3', val:'YES', cls:'sig-yes'},
-    {id:'s4', val:'NO',  cls:'sig-no'}
-  ];
-  var pitch = "Saw the Series B announcement — congrats on the raise. Most companies at your stage don't hire a full-time CMO until Series C, but the pipeline pressure is real now...";
-  var started = false;
-
-  function startAnim(){
-    if(started) return;
-    started = true;
-    // Count up score and fill bar simultaneously
-    var duration = 1800;
-    var start = Date.now();
-    var timer = setInterval(function(){
-      var elapsed = Date.now() - start;
-      var progress = Math.min(elapsed / duration, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      var current = Math.round(eased * targetScore);
-      scoreEl.textContent = current;
-      if(barEl) barEl.style.width = (eased * 87) + '%';
-      if(progress >= 1){
-        clearInterval(timer);
-        if(tagEl){ tagEl.textContent = 'Hot Lead'; tagEl.classList.add('hot'); }
-        // Reveal signals one by one
-        signals.forEach(function(s, i){
-          setTimeout(function(){
-            var el = document.getElementById(s.id);
-            if(el){
-              var span = el.querySelector('.sig-wait');
-              if(span){ span.className = s.cls; span.textContent = s.val; }
-            }
-          }, i * 200);
-        });
-        // Type pitch
-        setTimeout(function(){
-          if(pitchWrap) pitchWrap.classList.add('show');
-          var i = 0;
-          var t = setInterval(function(){
-            if(i < pitch.length){
-              pitchEl.textContent += pitch[i]; i++;
-            } else {
-              clearInterval(t);
-              // Show founders
+        scw.style.display='block';
+        var labs=['Scanning funding data...','Checking LinkedIn team...','Analysing hiring signals...','Writing pitch opener...'];
+        var li=0;sct.textContent=labs[0];
+        var prog=0;
+        var pt2=setInterval(function(){
+          prog+=2.2;pf2.style.width=Math.min(prog,96)+'%';
+          if(prog>22&&li===0){li=1;sct.textContent=labs[1];}
+          if(prog>50&&li===1){li=2;sct.textContent=labs[2];}
+          if(prog>78&&li===2){li=3;sct.textContent=labs[3];}
+          if(prog>=100){
+            clearInterval(pt2);pf2.style.width='100%';
+            setTimeout(function(){
+              scw.style.display='none';res.style.display='block';
+              var cnt=0;
+              var st=setInterval(function(){cnt+=3;if(cnt>=c.s){cnt=c.s;clearInterval(st);}rs.textContent=cnt;},22);
+              setTimeout(function(){rb2.style.width=c.s+'%';},80);
+              [0,1,2,3].forEach(function(i){setTimeout(function(){document.getElementById('sig'+i).classList.add('on');},300+i*200);});
               setTimeout(function(){
-                if(foundersEl) foundersEl.classList.add('show');
-              }, 300);
-              // Restart after pause
-              setTimeout(function(){
-                resetAndReplay();
-              }, 4000);
-            }
-          }, 18);
-        }, 600);
-      }
-    }, 16);
-  }
+                pt.classList.add('on');
+                var txt=c.p;var j=0;
+                var wt=setInterval(function(){j+=3;ptx.textContent=txt.substring(0,j);if(j>=txt.length){clearInterval(wt);setTimeout(function(){ci=(ci+1)%cos.length;run(cos[ci]);},3500);}},20);
+              },1300);
+            },280);
+          }
+        },38);
+      },500);
+    }
+  },52);
+}
 
-  function resetAndReplay(){
-    scoreEl.textContent = '0';
-    if(barEl) barEl.style.width = '0%';
-    if(tagEl){ tagEl.textContent = 'Analysing...'; tagEl.classList.remove('hot'); }
-    signals.forEach(function(s){
-      var el = document.getElementById(s.id);
-      if(el){ var span = el.querySelector('.sig-yes,.sig-no,.sig-wait'); if(span){ span.className='sig-wait'; span.textContent='—'; } }
-    });
-    if(pitchWrap) pitchWrap.classList.remove('show');
-    if(pitchEl) pitchEl.textContent = '';
-    if(foundersEl) foundersEl.classList.remove('show');
-    started = false;
-    setTimeout(startAnim, 800);
-  }
+run(cos[0]);
 
-  // Start when in viewport
-  var card = document.getElementById('mockcard');
-  if('IntersectionObserver' in window){
-    var obs = new IntersectionObserver(function(entries){
-      if(entries[0].isIntersecting){ startAnim(); obs.disconnect(); }
-    }, {threshold:0.3});
-    if(card) obs.observe(card);
-  } else {
-    setTimeout(startAnim, 1000);
-  }
-})();
+function joinWaitlist(){
+  var e=document.getElementById('wl-email').value.trim();
+  var m=document.getElementById('wl-msg');
+  if(!e||!e.includes('@')){m.style.color='#ef4444';m.textContent='Please enter a valid email.';return;}
+  m.style.color='#5bc4f5';m.textContent="You’re on the list! We’ll be in touch.";
+  document.getElementById('wl-email').value='';
+  fetch('/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})}).catch(function(){});
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement===document.getElementById('wl-email'))joinWaitlist();});
 </script>
 </body>
-</html  <div class="hr">
-    <div class="demo-widget">
-      <div class="dw-titlebar">
-        <div class="dw-dot" style="background:#ff5f57"></div>
-        <div class="dw-dot" style="background:#febc2e"></div>
-        <div class="dw-dot" style="background:#28c840"></div>
-        <span class="dw-tbar-lbl">scout — research</span>
-      </div>
-      <div class="dw-search-row">
-        <div class="dw-search-icon"></div>
-        <div class="dw-search-text"><span id="dw-typed"></span><span class="dw-cursor" id="dw-cur"></span></div>
-      </div>
-      <div id="dw-status" style="display:none">
-        <div class="dw-status-row"><div class="dw-status-dot"></div><span class="dw-status-txt" id="dw-stxt">Scanning funding data...</span></div>
-        <div class="dw-prog-track"><div class="dw-prog-fill" id="dw-pfill"></div></div>
-      </div>
-      <div class="dw-result" id="dw-result" style="display:none">
-        <div class="dw-result-head">
-          <div><div class="dw-co-name" id="dw-name">Ambience Healthcare</div><div class="dw-co-meta" id="dw-meta">Series B &middot; Healthcare AI &middot; SF</div></div>
-          <div class="dw-score-block"><div class="dw-score-num" id="dw-score">0</div><div class="dw-score-tag">Hot Lead</div></div>
-        </div>
-        <div class="dw-bar-track"><div class="dw-bar-fill" id="dw-bfill"></div></div>
-        <div class="dw-signals" id="dw-sigs">
-          <div class="dw-sig" id="dws0"><div class="dw-sdot green"></div><span></span></div>
-          <div class="dw-sig" id="dws1"><div class="dw-sdot green"></div><span></span></div>
-          <div class="dw-sig" id="dws2"><div class="dw-sdot green"></div><span></span></div>
-          <div class="dw-sig" id="dws3"><div class="dw-sdot amber"></div><span></span></div>
-        </div>
-        <div class="dw-pitch" id="dw-pitch">
-          <div class="dw-pitch-lbl">AI pitch opener</div>
-          <div class="dw-pitch-txt" id="dw-ptxt"></div>
-        </div>
-      </div>
-    </div>
-  </div>>'''
+</html>'''
 
 LEGAL_HTML = '''<!DOCTYPE html>
 <html lang="en">
