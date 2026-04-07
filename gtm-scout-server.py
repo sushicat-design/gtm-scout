@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#V27
+#V28
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -1706,9 +1706,14 @@ function updateCreditsBar(){
   var plan = t.plan||'free';
   var lim = TIER_LIMITS[plan];
   var barEl = document.getElementById('credits-bar');
-  if(!barEl) return;
-  if(plan !== 'free'){ barEl.style.display='none'; return; }
-  barEl.style.display='flex';
+  var upBtn = document.getElementById('upgrade-btn');
+  if(plan !== 'free'){
+    if(barEl) barEl.style.display='none';
+    if(upBtn) upBtn.style.display='none';
+    return;
+  }
+  if(barEl) barEl.style.display='flex';
+  if(upBtn) upBtn.style.display='';
   var used = t.research_used||0;
   var pct = Math.min(100, Math.round(used/lim.research*100));
   document.getElementById('credits-fill').style.width = pct+'%';
@@ -1736,8 +1741,8 @@ function selectTier(plan){
   }
   // Redirect to Stripe checkout
   var urls = {
-    pro: 'https://buy.stripe.com/REPLACE_PRO_LINK',
-    agency: 'https://buy.stripe.com/REPLACE_AGENCY_LINK'
+    pro: 'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
+    agency: 'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'
   };
   window.open(urls[plan], '_blank');
   closePricing();
@@ -2078,8 +2083,258 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "</div>"
   "</div>\n"
 
+  "<footer style='border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px'>"
+  "<span style='font-size:11px;color:var(--tx3)'>&#169; 2026 Scout · Sushicat Ventures LLC</span>"
+  "<div style='display:flex;gap:20px;align-items:center'>"
+    "<a href='/legal#terms' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Terms of Service</a>"
+    "<a href='/legal#privacy' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Privacy Policy</a>"
+    "<a href='mailto:hello@scout.so' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Contact</a>"
+    "<button onclick='showPricing()' style='font-size:11px;color:var(--pip);background:none;border:none;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700;padding:0'>&#9889; Upgrade</button>"
+  "</div>"
+"</footer>\n"
   "<script>" + JS + "</script>\n"
   "</body>\n</html>\n")
+
+LEGAL_HTML = '''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scout — Terms of Service & Privacy Policy</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--pip:#2d9de8;--bg:#07090f;--sur:#0c1018;--bor:#1c2333;--tx:#e2e8f0;--tx2:#8896aa;--tx3:#445566;}
+body{background:var(--bg);color:var(--tx);font-family:'Nunito',sans-serif;font-size:15px;line-height:1.8}
+.wrap{max-width:780px;margin:0 auto;padding:60px 32px}
+.topbar{background:rgba(7,9,15,0.97);border-bottom:1px solid var(--bor);padding:14px 32px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.topbar-logo{font-size:18px;font-weight:800;letter-spacing:-.03em;color:var(--tx)}
+.topbar-logo span{color:var(--pip)}
+nav{display:flex;gap:24px;margin-left:auto}
+nav a{font-size:13px;color:var(--tx3);text-decoration:none;font-weight:600}
+nav a:hover{color:var(--pip)}
+h1{font-size:38px;font-weight:800;letter-spacing:-.04em;margin-bottom:8px;color:var(--tx)}
+.meta{font-size:12px;color:var(--tx3);margin-bottom:48px;padding-bottom:24px;border-bottom:1px solid var(--bor)}
+h2{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:40px 0 14px;color:var(--tx)}
+h3{font-size:16px;font-weight:700;margin:24px 0 10px;color:var(--tx2)}
+p{color:var(--tx2);margin-bottom:14px}
+ul,ol{color:var(--tx2);padding-left:24px;margin-bottom:14px}
+li{margin-bottom:6px}
+a{color:var(--pip);text-decoration:none}
+a:hover{text-decoration:underline}
+.divider{border:none;border-top:1px solid var(--bor);margin:64px 0}
+.highlight{background:rgba(45,157,232,0.08);border:1px solid rgba(45,157,232,0.2);border-radius:8px;padding:16px 20px;margin:20px 0}
+.highlight p{margin:0;font-size:13px;color:var(--tx2)}
+strong{color:var(--tx);font-weight:700}
+.toc{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:24px;margin-bottom:40px}
+.toc h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3)}
+.toc ol{margin:0}
+.toc li{font-size:13px;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">Scout<span>.</span></span>
+  <nav>
+    <a href="#terms">Terms of Service</a>
+    <a href="#privacy">Privacy Policy</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+<!-- TERMS OF SERVICE -->
+<div id="terms">
+<h1>Terms of Service</h1>
+<div class="meta">Last updated: April 7, 2026 &nbsp;·&nbsp; Effective immediately</div>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#t1">Acceptance of Terms</a></li>
+    <li><a href="#t2">Description of Service</a></li>
+    <li><a href="#t3">Account Registration</a></li>
+    <li><a href="#t4">Subscription Plans and Billing</a></li>
+    <li><a href="#t5">Free Tier and Credits</a></li>
+    <li><a href="#t6">Acceptable Use</a></li>
+    <li><a href="#t7">Intellectual Property</a></li>
+    <li><a href="#t8">AI-Generated Content</a></li>
+    <li><a href="#t9">Data and Privacy</a></li>
+    <li><a href="#t10">Termination</a></li>
+    <li><a href="#t11">Disclaimers and Limitation of Liability</a></li>
+    <li><a href="#t12">Governing Law</a></li>
+    <li><a href="#t13">Contact</a></li>
+  </ol>
+</div>
+
+<h2 id="t1">1. Acceptance of Terms</h2>
+<p>By accessing or using Scout ("the Service", "Scout", "we", "us"), operated by Sushicat Ventures, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.</p>
+<p>We may update these terms at any time. Continued use of the Service after changes constitutes acceptance of the updated terms. We will notify active subscribers of material changes by email.</p>
+
+<h2 id="t2">2. Description of Service</h2>
+<p>Scout is a SaaS platform that provides AI-powered company research, lead scoring, pitch generation, and pipeline management tools for marketing professionals. Scout also includes Pip Hunt, a job intelligence feature that surfaces open marketing and design leadership roles.</p>
+<p>The Service uses artificial intelligence to generate research, scores, and content. All AI-generated content is provided for informational purposes and should be independently verified before use.</p>
+
+<h2 id="t3">3. Account Registration</h2>
+<p>You must provide accurate information when creating an account. You are responsible for maintaining the security of your account and for all activity under your account. Notify us immediately at <a href="mailto:hello@scout.so">hello@scout.so</a> if you suspect unauthorised access.</p>
+<p>You must be at least 18 years old to use the Service. By registering, you confirm you meet this requirement.</p>
+
+<h2 id="t4">4. Subscription Plans and Billing</h2>
+<p>Scout offers the following subscription plans:</p>
+<ul>
+  <li><strong>Free:</strong> Limited usage as described on the pricing page, no charge</li>
+  <li><strong>Pro:</strong> $29.00 USD per month, billed monthly</li>
+  <li><strong>Agency:</strong> $99.00 USD per month, billed monthly</li>
+</ul>
+<p>Payments are processed by Stripe. By subscribing, you authorise us to charge your payment method on a recurring monthly basis until you cancel. All prices are in USD and exclude applicable taxes.</p>
+<p><strong>Cancellation:</strong> You may cancel your subscription at any time via your account settings or by contacting us. Cancellation takes effect at the end of your current billing period. We do not offer refunds for partial months.</p>
+<p><strong>Price changes:</strong> We will give at least 30 days' notice before changing subscription prices. Your continued use after the change date constitutes acceptance.</p>
+
+<h2 id="t5">5. Free Tier and Credits</h2>
+<p>Free tier users receive 5 company research credits per calendar month. Credits reset on the first of each month and do not roll over.</p>
+<p>Additional credits may be earned by contributing to the community job board (e.g. tagging companies known to be hiring). Earned credits expire at end of month and are subject to fair use limits. We reserve the right to modify the credits earning system at any time.</p>
+
+<h2 id="t6">6. Acceptable Use</h2>
+<p>You agree not to use Scout to:</p>
+<ul>
+  <li>Scrape, harvest, or systematically collect data for resale or redistribution</li>
+  <li>Send unsolicited commercial messages (spam) using content generated by Scout</li>
+  <li>Misrepresent your identity or affiliation when using AI-generated pitch content</li>
+  <li>Attempt to reverse engineer, decompile, or extract the underlying AI prompts or systems</li>
+  <li>Use the Service for any illegal purpose or in violation of any applicable law</li>
+  <li>Share your account credentials with others (Agency plan users may add up to 5 team members via the designated team feature)</li>
+</ul>
+<p>We reserve the right to suspend or terminate accounts that violate these terms without notice.</p>
+
+<h2 id="t7">7. Intellectual Property</h2>
+<p>Scout and its original content, features, and functionality are owned by Sushicat Ventures and protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our written permission.</p>
+<p>Content you create using Scout (notes, case studies, profile information) remains yours. You grant us a limited licence to store and process this content to provide the Service.</p>
+<p>AI-generated research, scores, and pitch content produced by Scout is provided to you for your personal business use. You may use this content in your own outreach and communications.</p>
+
+<h2 id="t8">8. AI-Generated Content</h2>
+<div class="highlight">
+  <p><strong>Important:</strong> Scout uses AI to generate company research, GTM scores, and pitch openers. This content is automatically generated and may contain inaccuracies, outdated information, or errors. It should not be relied upon as professional advice. Always verify AI-generated information before acting on it.</p>
+</div>
+<p>We do not guarantee the accuracy, completeness, or fitness for purpose of any AI-generated content. Scores and assessments are indicators only and do not constitute financial, legal, or business advice.</p>
+
+<h2 id="t9">9. Data and Privacy</h2>
+<p>Your use of the Service is also governed by our Privacy Policy below. By using Scout, you consent to the collection and use of information as described therein.</p>
+<p>Company data researched through Scout is sourced from publicly available information and AI training data. We do not sell your personal data to third parties.</p>
+
+<h2 id="t10">10. Termination</h2>
+<p>We may suspend or terminate your account at any time for violations of these Terms. You may delete your account at any time. Upon termination, your data will be retained for 30 days before deletion, except where we are required by law to retain it longer.</p>
+
+<h2 id="t11">11. Disclaimers and Limitation of Liability</h2>
+<p>The Service is provided "as is" without warranties of any kind, express or implied. We do not warrant that the Service will be uninterrupted, error-free, or free of viruses.</p>
+<p>To the maximum extent permitted by law, Sushicat Ventures shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service, even if we have been advised of the possibility of such damages.</p>
+<p>Our total liability to you for any claims arising from use of the Service shall not exceed the amount you paid us in the 3 months preceding the claim.</p>
+
+<h2 id="t12">12. Governing Law</h2>
+<p>These Terms are governed by the laws of Spain, without regard to conflict of law principles. Any disputes shall be subject to the exclusive jurisdiction of the courts of Madrid, Spain.</p>
+
+<h2 id="t13">13. Contact</h2>
+<p>For questions about these Terms, contact us at: <a href="mailto:hello@scout.so">hello@scout.so</a></p>
+</div>
+
+<hr class="divider">
+
+<!-- PRIVACY POLICY -->
+<div id="privacy">
+<h1>Privacy Policy</h1>
+<div class="meta">Last updated: April 7, 2026 &nbsp;·&nbsp; Effective immediately</div>
+
+<p>This Privacy Policy explains how Scout, operated by Sushicat Ventures ("we", "us", "our"), collects, uses, and protects your personal information when you use our Service.</p>
+
+<div class="highlight">
+  <p>The short version: We collect only what we need to run the Service. We don't sell your data. We use Stripe for payments (they have their own privacy policy). You can delete your data at any time.</p>
+</div>
+
+<h2>1. Information We Collect</h2>
+
+<h3>Information you provide directly</h3>
+<ul>
+  <li>Name and agency/company name</li>
+  <li>Email address (at signup and payment)</li>
+  <li>Profile information (tagline, LinkedIn URL, bio, services, case studies)</li>
+  <li>Notes and pipeline data you enter about prospects</li>
+  <li>Account type preference (Agency/Freelance, Personal, or Hiring)</li>
+</ul>
+
+<h3>Information collected automatically</h3>
+<ul>
+  <li>Usage data (which features you use, research queries submitted)</li>
+  <li>Browser type and approximate location (for service delivery)</li>
+  <li>Session data stored in your browser's localStorage</li>
+</ul>
+
+<h3>Payment information</h3>
+<p>We use Stripe to process payments. We do not store your card details. Stripe's privacy policy governs payment data: <a href="https://stripe.com/privacy" target="_blank">stripe.com/privacy</a></p>
+
+<h2>2. How We Use Your Information</h2>
+<ul>
+  <li>To provide, operate, and improve the Service</li>
+  <li>To process payments and manage your subscription</li>
+  <li>To personalise your experience (e.g. profile information shown in the app)</li>
+  <li>To send you service-related emails (account updates, billing notifications)</li>
+  <li>To enforce our Terms of Service</li>
+  <li>To comply with legal obligations</li>
+</ul>
+<p>We do not use your data to train AI models. Your company research queries are sent to Anthropic's Claude API solely for the purpose of generating your research results.</p>
+
+<h2>3. Data Storage</h2>
+<p>Your lead data and profile information is stored in a private GitHub Gist associated with your Scout deployment. Profile preferences are stored in your browser's localStorage. We use Railway for application hosting.</p>
+<p>All data is stored in the United States (Railway's us-west2 region). If you are located in the EU/EEA, your data is transferred to the US under standard data processing terms.</p>
+
+<h2>4. Third-Party Services</h2>
+<p>Scout uses the following third-party services:</p>
+<ul>
+  <li><strong>Anthropic (Claude API)</strong> — AI research generation. <a href="https://www.anthropic.com/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>Stripe</strong> — Payment processing. <a href="https://stripe.com/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>Railway</strong> — Application hosting. <a href="https://railway.app/legal/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>GitHub</strong> — Data persistence (private Gist). <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank">Privacy policy</a></li>
+  <li><strong>Google Fonts</strong> — Typography. <a href="https://policies.google.com/privacy" target="_blank">Privacy policy</a></li>
+</ul>
+
+<h2>5. Your Rights (GDPR)</h2>
+<p>If you are in the EU/EEA, you have the following rights:</p>
+<ul>
+  <li><strong>Access:</strong> Request a copy of your personal data</li>
+  <li><strong>Rectification:</strong> Correct inaccurate data</li>
+  <li><strong>Erasure:</strong> Request deletion of your data ("right to be forgotten")</li>
+  <li><strong>Portability:</strong> Receive your data in a portable format</li>
+  <li><strong>Objection:</strong> Object to processing of your data</li>
+  <li><strong>Restriction:</strong> Request restriction of processing</li>
+</ul>
+<p>To exercise any of these rights, email <a href="mailto:hello@scout.so">hello@scout.so</a>. We will respond within 30 days.</p>
+
+<h2>6. Cookies</h2>
+<p>Scout does not use tracking cookies. We use browser localStorage for storing your session preferences and lead data. This data is stored locally on your device and is not transmitted to advertising networks.</p>
+
+<h2>7. Data Retention</h2>
+<p>We retain your personal data for as long as your account is active. If you delete your account, we will delete your personal data within 30 days, except where we are required by law to retain it (e.g. billing records, which are retained for 7 years for tax purposes).</p>
+
+<h2>8. Children's Privacy</h2>
+<p>Scout is not directed at children under 18. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, contact us and we will delete it.</p>
+
+<h2>9. Changes to This Policy</h2>
+<p>We may update this Privacy Policy periodically. We will notify active subscribers of material changes by email at least 14 days before they take effect. Continued use of the Service constitutes acceptance.</p>
+
+<h2>10. Contact &amp; Data Controller</h2>
+<p><strong>Data Controller:</strong> Sushicat Ventures<br>
+<strong>Email:</strong> <a href="mailto:hello@scout.so">hello@scout.so</a><br>
+<strong>Location:</strong> Madrid, Spain</p>
+
+</div>
+
+<div style="margin-top:64px;padding-top:32px;border-top:1px solid var(--bor);font-size:12px;color:var(--tx3);text-align:center">
+  Scout · Sushicat Ventures · Madrid, Spain · <a href="mailto:hello@scout.so">hello@scout.so</a>
+</div>
+
+</div>
+</body>
+</html>
+'''
 
 
 PIN_HTML = '''<!DOCTYPE html>
