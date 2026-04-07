@@ -3627,7 +3627,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "</button>"
       "</div>"
       "<div id='ob-details' style='display:none'>"
-        "<div class='modal-field'><label class='modal-label' id='ob-name-label'>Your name or agency</label><input class='modal-input' id='ob-name' placeholder='e.g. Cara Moschetti'></div>"
+        "<div class='modal-field'><label class='modal-label' id='ob-name-label'>Your name or agency</label><input class='modal-input' id='ob-name' placeholder='e.g. Jane Smith'></div>"
         "<div class='modal-field'><label class='modal-label' id='ob-tagline-label'>What you specialise in</label><input class='modal-input' id='ob-tagline' placeholder='e.g. Fractional CMO for AI startups'></div>"
         "<div class='modal-field'><label class='modal-label'>LinkedIn URL</label><input class='modal-input' id='ob-linkedin' placeholder='https://linkedin.com/in/yourname'></div>"
         "<div class='modal-field'><label class='modal-label' id='ob-looking-label'>What type of clients are you looking for?</label><input class='modal-input' id='ob-looking' placeholder='e.g. Series A-B AI startups, no CMO'></div>"
@@ -3698,15 +3698,11 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "</div>"
       "<div class='pricing-note'>"
         "Cancel anytime &nbsp;&#183;&nbsp; Secure payments via Stripe &nbsp;&#183;&nbsp; "
-        "<a href='#' onclick='closePricing()'>Maybe later</a><br><br>"
-        "<span style='color:var(--tx3)'>Just need a bit more? Top up credits without a subscription:</span><br>"
-        "<a href='https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02' target='_blank'>20 credits — $9</a>"
-        " &nbsp;&#183;&nbsp; "
-        "<a href='https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03' target='_blank'>50 credits — $19</a>"
+        "<a href='#' onclick='closePricing()'>Maybe later</a>"
       "</div>\n"
 
   "<footer style='border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px'>"
-  "<span style='font-size:11px;color:var(--tx3)'>&#169; 2026 Scout · Sushicat Ventures LLC</span>"
+  "<span style='font-size:11px;color:var(--tx3)'>&#169; 2026 Scout</span>"
   "<div style='display:flex;gap:20px;align-items:center'>"
     "<a href='/legal#terms' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Terms of Service</a>"
     "<a href='/legal#privacy' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Privacy Policy</a>"
@@ -3718,9 +3714,9 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div class='modal-title'>Edit Profile</div>"
       "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:4px'>Identity</div>"
       "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        "<div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='Cara Moschetti'></div>"
+        "<div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='e.g. Jane Smith'></div>"
         "<div class='modal-field'><label class='modal-label'>Email</label><input class='modal-input' id='pm-email' placeholder='you@yoursite.com'></div>"
-        "<div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Sushicat Ventures'></div>"
+        "<div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Scout'></div>"
         "<div class='modal-field'><label class='modal-label'>Your Role</label><input class='modal-input' id='pm-role' placeholder='Fractional CMO'></div>"
         "<div class='modal-field'><label class='modal-label'>Location</label><input class='modal-input' id='pm-location' placeholder='New York, USA'></div>"
         "<div class='modal-field'><label class='modal-label'>Years Experience</label><input class='modal-input' id='pm-experience' placeholder='10+'></div>"
@@ -4112,7 +4108,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <p class="cs">They just raised. They have no CMO. They need you.<br>Scout finds them before your competitors do.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <a href="/app" class="btnp" style="font-size:16px;padding:16px 44px">Start researching free</a>
-      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng" style="font-size:16px;padding:16px 44px">Book a call with Cara</a>
+      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng" style="font-size:16px;padding:16px 44px">Book a call</a>
     </div>
     <div class="cn">No credit card required · Free forever tier available</div>
   </div>
@@ -4301,7 +4297,7 @@ strong{color:var(--tx);font-weight:700}
 </div>
 
 <h2 id="t1">1. Acceptance of Terms</h2>
-<p>By accessing or using Scout ("the Service", "Scout", "we", "us"), operated by Sushicat Ventures, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.</p>
+<p>By accessing or using Scout ("the Service", "Scout", "we", "us"), operated by Scout, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.</p>
 <p>We may update these terms at any time. Continued use of the Service after changes constitutes acceptance of the updated terms. We will notify active subscribers of material changes by email.</p>
 
 <h2 id="t2">2. Description of Service</h2>
@@ -4340,7 +4336,7 @@ strong{color:var(--tx);font-weight:700}
 <p>We reserve the right to suspend or terminate accounts that violate these terms without notice.</p>
 
 <h2 id="t7">7. Intellectual Property</h2>
-<p>Scout and its original content, features, and functionality are owned by Sushicat Ventures and protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our written permission.</p>
+<p>Scout and its original content, features, and functionality are owned by Scout and protected by intellectual property laws. You may not reproduce, distribute, or create derivative works without our written permission.</p>
 <p>Content you create using Scout (notes, case studies, profile information) remains yours. You grant us a limited licence to store and process this content to provide the Service.</p>
 <p>AI-generated research, scores, and pitch content produced by Scout is provided to you for your personal business use. You may use this content in your own outreach and communications.</p>
 
@@ -4359,7 +4355,7 @@ strong{color:var(--tx);font-weight:700}
 
 <h2 id="t11">11. Disclaimers and Limitation of Liability</h2>
 <p>The Service is provided "as is" without warranties of any kind, express or implied. We do not warrant that the Service will be uninterrupted, error-free, or free of viruses.</p>
-<p>To the maximum extent permitted by law, Sushicat Ventures shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service, even if we have been advised of the possibility of such damages.</p>
+<p>To the maximum extent permitted by law, Scout shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service, even if we have been advised of the possibility of such damages.</p>
 <p>Our total liability to you for any claims arising from use of the Service shall not exceed the amount you paid us in the 3 months preceding the claim.</p>
 
 <h2 id="t12">12. Governing Law</h2>
@@ -4376,7 +4372,7 @@ strong{color:var(--tx);font-weight:700}
 <h1>Privacy Policy</h1>
 <div class="meta">Last updated: April 7, 2026 &nbsp;·&nbsp; Effective immediately</div>
 
-<p>This Privacy Policy explains how Scout, operated by Sushicat Ventures ("we", "us", "our"), collects, uses, and protects your personal information when you use our Service.</p>
+<p>This Privacy Policy explains how Scout, operated by Scout ("we", "us", "our"), collects, uses, and protects your personal information when you use our Service.</p>
 
 <div class="highlight">
   <p>The short version: We collect only what we need to run the Service. We don't sell your data. We use Stripe for payments (they have their own privacy policy). You can delete your data at any time.</p>
@@ -4453,14 +4449,14 @@ strong{color:var(--tx);font-weight:700}
 <p>We may update this Privacy Policy periodically. We will notify active subscribers of material changes by email at least 14 days before they take effect. Continued use of the Service constitutes acceptance.</p>
 
 <h2>10. Contact &amp; Data Controller</h2>
-<p><strong>Data Controller:</strong> Sushicat Ventures<br>
+<p><strong>Data Controller:</strong> Scout<br>
 <strong>Email:</strong> <a href="mailto:hello@scout-ai.io">hello@scout-ai.io</a><br>
 <strong>Location:</strong> Madrid, Spain</p>
 
 </div>
 
 <div style="margin-top:64px;padding-top:32px;border-top:1px solid var(--bor);font-size:12px;color:var(--tx3);text-align:center">
-  Scout · Sushicat Ventures · Madrid, Spain · <a href="mailto:hello@scout-ai.io">hello@scout-ai.io</a>
+  Scout · Madrid, Spain · <a href="mailto:hello@scout-ai.io">hello@scout-ai.io</a>
 </div>
 
 </div>
