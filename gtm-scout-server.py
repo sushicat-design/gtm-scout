@@ -3700,9 +3700,9 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "Cancel anytime &nbsp;&#183;&nbsp; Secure payments via Stripe &nbsp;&#183;&nbsp; "
         "<a href='#' onclick='closePricing()'>Maybe later</a><br><br>"
         "<span style='color:var(--tx3)'>Just need a bit more? Top up credits without a subscription:</span><br>"
-        "<a href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01' target='_blank'>20 credits — $9</a>"
+        "<a href='https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02' target='_blank'>20 credits — $9</a>"
         " &nbsp;&#183;&nbsp; "
-        "<a href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01' target='_blank'>50 credits — $19</a>"
+        "<a href='https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03' target='_blank'>50 credits — $19</a>"
       "</div>\n"
 
   "<footer style='border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px'>"
@@ -4049,6 +4049,27 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       <div class="fl2">Founders</div>
       <div class="fr"><div class="fa">JK</div><div><div style="font-size:13px;font-weight:600;color:var(--tx)">James Kim</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">CEO &amp; Co-founder</div></div></div>
       <div class="fr"><div class="fa">SR</div><div><div style="font-size:13px;font-weight:600;color:var(--tx)">Sara Reyes</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">CTO &amp; Co-founder</div></div></div>
+    </div>
+  </div>
+
+  <!-- Top-up credits -->
+  <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Just need a few more credits?</div>
+      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
+      </a>
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+      </a>
     </div>
   </div>
 </div>
