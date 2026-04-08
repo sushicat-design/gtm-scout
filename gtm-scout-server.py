@@ -758,6 +758,8 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .ld-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .ld-section{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:18px}
 .ld-section-title{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px}
+#ob-splash{display:none;opacity:0;position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto;}
+#ob-splash.active{display:flex;}
 """
 
 JS = """
@@ -1853,7 +1855,14 @@ function onboardingSkip(){
 
 
 var OB_PLAN = 'pro';
+
 function obStep(n){
+  [1,2,3].forEach(function(i){
+    var el = document.getElementById('ob-step'+i);
+    if(el) el.style.display = (i===n) ? 'block' : 'none';
+  });
+}
+function scoutStep(n){
   [1,2,3].forEach(function(i){
     var el=document.getElementById('ob-step'+i);
     if(el) el.style.display=(i===n?'block':'none');
@@ -2109,7 +2118,6 @@ function profileCopyShare(){
   if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Share Profile';},2000);}
 }
 
-var obStep = 1; // 1=type select, 2=details
 
 function obSelectType(type){
   PROFILE.accountType = type;
@@ -2308,7 +2316,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var sp = document.getElementById('ob-splash');
     if(sp){
       sp.style.display='flex';
-      if(typeof obStep === 'function') obStep(1);
+      obStep(1);;
       setTimeout(function(){ sp.style.opacity='1'; },50);
     }
   }, 200);
@@ -2711,43 +2719,6 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "</div>"
   "</div>\n"
 
-  
-
-  "<div id='ob-splash' style='display:none;opacity:0;position:fixed;inset:0;background:#020408;z-index:10000;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto;'>"
-  "<div id='ob-step1' style='text-align:center'>"
-    "<div style='display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:36px'>"
-      "<div class='ndot' style='width:10px;height:10px'></div>"
-      "<span style='font-size:14px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span>"
-    "</div>"
-    "<img src='data:image/png;base64,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' style='width:80px;height:80px;object-fit:contain;margin-bottom:20px'>"
-    "<div style='font-size:30px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif'>Find your next client.</div>"
-    "<div style='font-size:14px;color:#7da8c8;max-width:360px;line-height:1.65;margin-bottom:36px'>AI lead generation for fractional CMOs and marketing agencies.</div>"
-    "<button onclick='obStep(2)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 48px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)'>Get started &#8594;</button>"
-    "<div style='margin-top:14px'><button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Skip for now</button></div>"
-  "</div>"
-  "<div id='ob-step2' style='display:none;width:100%;max-width:420px'>"
-    "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:24px'><div class='ndot'></div><span style='font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
-    "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Set up your profile</div>"
-    "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Personalises your pitch openers.</div>"
-    "<div style='display:flex;flex-direction:column;gap:10px'>"
-      "<input class='modal-input' id='ob-name' placeholder='Your name or agency' style='font-size:15px;padding:14px 18px'>"
-      "<input class='modal-input' id='ob-tagline' placeholder='What you specialise in' style='font-size:14px;padding:13px 18px'>"
-      "<input class='modal-input' id='ob-linkedin' placeholder='LinkedIn URL (optional)' style='font-size:14px;padding:13px 18px'>"
-      "<button onclick='obStep(3)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-top:4px'>Continue &#8594;</button>"
-      "<button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline;padding:4px'>Skip for now</button>"
-    "</div>"
-  "</div>"
-  "<div id='ob-step3' style='display:none;width:100%;max-width:540px'>"
-    "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:24px'><div class='ndot'></div><span style='font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
-    "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Choose your plan</div>"
-    "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Start free. Upgrade anytime.</div>"
-    "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px'>"
-      "<div onclick='obChoosePlan(\"free\")' class='ob-plan-card' id='opc-free'><div class='ob-plan-name'>Free</div><div class='ob-plan-price'>$0</div><div class='ob-plan-desc'>5 researches/mo</div></div>"
-      "<div onclick='obChoosePlan(\"pro\")' class='ob-plan-card ob-plan-hot selected' id='opc-pro'><div class='ob-plan-badge'>Popular</div><div class='ob-plan-name'>Pro</div><div class='ob-plan-price'>$29<span>/mo</span></div><div class='ob-plan-desc'>Unlimited research</div></div>"
-      "<div onclick='obChoosePlan(\"agency\")' class='ob-plan-card' id='opc-agency'><div class='ob-plan-name'>Agency</div><div class='ob-plan-price'>$99<span>/mo</span></div><div class='ob-plan-desc'>5 team members</div></div>"
-    "</div>"
-    "<button id='ob-enter-btn' onclick='obFinish()' style='width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)'>Enter Scout &#8594;</button>"
-  "</div>"
   "</div>"
 
   "<div class='modal-overlay' id='onboarding-overlay'>"
@@ -3747,7 +3718,43 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Backspace') del();
 });
 </script>
-</body>
+
+"<div id='ob-splash' style='display:none;opacity:0;position:fixed;inset:0;background:#020408 !important;z-index:10000;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto;'>"
+  "<div id='ob-step1' style='text-align:center'>"
+    "<div style='display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:36px'>"
+      "<div class='ndot' style='width:10px;height:10px'></div>"
+      "<span style='font-size:14px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span>"
+    "</div>"
+    "<img src='data:image/png;base64,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' style='width:80px;height:80px;object-fit:contain;margin-bottom:20px'>"
+    "<div style='font-size:30px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif'>Find your next client.</div>"
+    "<div style='font-size:14px;color:#7da8c8;max-width:360px;line-height:1.65;margin-bottom:36px'>AI lead generation for fractional CMOs and marketing agencies.</div>"
+    "<button onclick='scoutStep(2)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 48px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)'>Get started &#8594;</button>"
+    "<div style='margin-top:14px'><button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Skip for now</button></div>"
+  "</div>"
+  "<div id='ob-step2' style='display:none;width:100%;max-width:420px'>"
+    "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:24px'><div class='ndot'></div><span style='font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
+    "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Set up your profile</div>"
+    "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Personalises your pitch openers.</div>"
+    "<div style='display:flex;flex-direction:column;gap:10px'>"
+      "<input class='modal-input' id='ob-name' placeholder='Your name or agency' style='font-size:15px;padding:14px 18px'>"
+      "<input class='modal-input' id='ob-tagline' placeholder='What you specialise in' style='font-size:14px;padding:13px 18px'>"
+      "<input class='modal-input' id='ob-linkedin' placeholder='LinkedIn URL (optional)' style='font-size:14px;padding:13px 18px'>"
+      "<button onclick='scoutStep(3)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-top:4px'>Continue &#8594;</button>"
+      "<button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline;padding:4px'>Skip for now</button>"
+    "</div>"
+  "</div>"
+  "<div id='ob-step3' style='display:none;width:100%;max-width:540px'>"
+    "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:24px'><div class='ndot'></div><span style='font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
+    "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Choose your plan</div>"
+    "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Start free. Upgrade anytime.</div>"
+    "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px'>"
+      "<div onclick='obChoosePlan(\"free\")' class='ob-plan-card' id='opc-free'><div class='ob-plan-name'>Free</div><div class='ob-plan-price'>$0</div><div class='ob-plan-desc'>5 researches/mo</div></div>"
+      "<div onclick='obChoosePlan(\"pro\")' class='ob-plan-card ob-plan-hot selected' id='opc-pro'><div class='ob-plan-badge'>Popular</div><div class='ob-plan-name'>Pro</div><div class='ob-plan-price'>$29<span>/mo</span></div><div class='ob-plan-desc'>Unlimited research</div></div>"
+      "<div onclick='obChoosePlan(\"agency\")' class='ob-plan-card' id='opc-agency'><div class='ob-plan-name'>Agency</div><div class='ob-plan-price'>$99<span>/mo</span></div><div class='ob-plan-desc'>5 team members</div></div>"
+    "</div>"
+    "<button id='ob-enter-btn' onclick='obFinish()' style='width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)'>Enter Scout &#8594;</button>"
+  "</div>"
+  </body>
 </html>'''
 
 class Handler(http.server.BaseHTTPRequestHandler):
