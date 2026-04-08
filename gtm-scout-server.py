@@ -1881,6 +1881,7 @@ function obFinish(){
     window.open(urls[OB_PLAN],'_blank');
   }
   obSkip();
+  renderTopbar();
 }
 
 // ── PROFILE ──────────────────────────────────────────────────────────────────
@@ -2376,160 +2377,77 @@ function obStep(n){
   });
 }
 
-document.addEventListener('DOMContentLoaded',function(){
-  console.log('SCOUT v3 loaded - build 20260408');
-  setPage('dashboard');
+
+function renderTopbar(){
+  var hasAccount = false;
+  try{ var p=JSON.parse(localStorage.getItem('scout_profile')||'{}'); hasAccount=!!(p.name); }catch(e){}
+  var right = document.getElementById('topbar-right');
+  if(!right) return;
+  if(hasAccount){
+    right.innerHTML =
+      '<button onclick="updateCreditsBar()" id="credits-bar" style="display:none;align-items:center;gap:8px;background:none;border:none;cursor:default">' +
+        '<div style="width:80px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden">' +
+          '<div id="credits-fill" style="height:100%;background:var(--pip);border-radius:2px;transition:width .3s;width:0%"></div>' +
+        '</div>' +
+        '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>' +
+      '</button>' +
+      '<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>' +
+      '<button data-action="open-profile" style="width:30px;height:30px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif" title="Profile">' +
+        (PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : 'P') +
+      '</button>';
+  } else {
+    right.innerHTML =
+      '<button onclick="createAndShowSplash()" style="background:#2d9de8;color:#fff;border:none;font-size:12px;font-weight:700;padding:7px 18px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Sign up free</button>';
+  }
   updateCreditsBar();
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  console.log('SCOUT v4 loaded');
   load();
+  updateCreditsBar();
 
-  // Build and show splash EVERY visit
-  setTimeout(createAndShowSplash, 100);
+  // Show dashboard immediately
+  var hasAccount = false;
+  try{ var p=JSON.parse(localStorage.getItem('scout_profile')||'{}'); hasAccount=!!(p.name); }catch(e){}
+  setPage('dashboard');
+  renderTopbar();
 
-  // Global click delegation
+  // Show signup prompt after 15 seconds if no account
+  if(!hasAccount){
+    setTimeout(createAndShowSplash, 15000);
+  }
+
+  // Click delegation
   document.addEventListener('click', function(e){
-    var target = e.target.closest('[data-action]') || e.target;
-    var action = target.getAttribute('data-action');
+    var t = e.target.closest('[data-action]') || e.target;
+    var action = t ? t.getAttribute('data-action') : null;
     if(!action) return;
-    if(action === 'open-lead'){
-      var id = target.getAttribute('data-id');
-      if(id) openLeadDetail(id);
-      return;
-    }
-    if(action === 'approve-inbox'){
-      var id = target.getAttribute('data-id');
-      if(id) approveInboxCard(id);
-      return;
-    }
-    if(action === 'set-status'){
-      var id = target.getAttribute('data-id');
-      var status = target.getAttribute('data-status');
-      if(id && status) updateLeadStatus(id, status);
-      return;
-    }
-    if(action === 'set-status'){
-      var id = target.getAttribute('data-id');
-      var status = target.getAttribute('data-status');
-      if(id && status) updateLeadStatus(id, status);
-      return;
-    }
-    if(action === 'copy-pitch'){
-      var el = document.getElementById('ld-pitch-text');
-      if(el){ navigator.clipboard.writeText(el.textContent); target.textContent='Copied!'; setTimeout(function(){target.textContent='Copy pitch';},1800); }
-      return;
-    }
-  });
-  // Legacy profile edit delegation
-  document.addEventListener('click', function(e){
-    var target = e.target.closest('[data-action]');
-    if(!target) target = e.target;
-    var action = target.getAttribute('data-action');
-    if(action === 'copy-pitch'){
-      var el = document.getElementById('ld-pitch-text');
-      if(el){ navigator.clipboard.writeText(el.textContent); target.textContent='Copied!'; setTimeout(function(){target.textContent='Copy pitch';},1800); }
-      return;
-    }
-    if(action === 'set-status'){
-      var id = target.getAttribute('data-id');
-      var status = target.getAttribute('data-status');
-      if(id && status){ updateLeadStatus(id, status); }
-      return;
-    }
-    if(action === 'open-lead'){
-      var id = target.getAttribute('data-id');
-      if(id) openLeadDetail(id);
-      return;
-    }
-    if(action === 'copy-pitch'){
-      var pitchEl = target.closest('.ld-section') ? target.closest('.ld-section').querySelector('#ld-pitch') : document.getElementById('ld-pitch');
-      if(!pitchEl){ pitchEl = document.getElementById('ld-pitch'); }
-      if(pitchEl){ navigator.clipboard.writeText(pitchEl.textContent); target.textContent='Copied!'; setTimeout(function(){target.textContent='Copy pitch';},1800); }
-      return;
-    }
-    if(action === 'approve-inbox'){
-      var id = target.getAttribute('data-id');
-      if(id) approveInboxCard(id);
-      return;
-    }
-    if(action === 'copy-pitch'){
-      var pitch = decodeURIComponent(target.getAttribute('data-pitch')||'');
-      navigator.clipboard.writeText(pitch);
-      var orig = target.textContent;
-      target.textContent = 'Copied!';
-      setTimeout(function(){ target.textContent = orig; }, 1800);
-      return;
-    }
-  });
-  // Profile edit delegation
-  document.addEventListener('click', function(e){
-    if(e.target && e.target.getAttribute('data-action')==='edit-profile'){
-      openProfileModal();
-    }
+    if(action==='open-lead'){ var id=t.getAttribute('data-id'); if(id) openLeadDetail(id); return; }
+    if(action==='approve-inbox'){ var id=t.getAttribute('data-id'); if(id) approveInboxCard(id); return; }
+    if(action==='set-status'){ var id=t.getAttribute('data-id'); var st=t.getAttribute('data-status'); if(id&&st) updateLeadStatus(id,st); return; }
+    if(action==='copy-pitch'){ var el=document.getElementById('ld-pitch-text'); if(el){navigator.clipboard.writeText(el.textContent);t.textContent='Copied!';setTimeout(function(){t.textContent='Copy pitch';},1800);} return; }
+    if(action==='edit-profile'){ openProfileModal(); return; }
+    if(action==='open-profile'){ navTo('profile'); return; }
   });
 
-  // Search page
-  var rb = document.getElementById('rb');
-  if(rb) rb.onclick = go;
-  var ci = document.getElementById('ci');
-  if(ci) ci.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
-  var btog = document.getElementById('btog');
-  if(btog) btog.onclick = function(){ showPanel('bpanel'); };
-  var itog = document.getElementById('itog');
-  if(itog) itog.onclick = function(){ showPanel('ipanel'); };
-  var brb = document.getElementById('brb');
-  if(brb) brb.onclick = bulk;
-  var iib = document.getElementById('iib');
-  if(iib) iib.onclick = importJSON;
-
-  // Fetch
-  var fb = document.getElementById('fetch-btn');
-  if(fb) fb.onclick = fetchLeads;
-  var rsb = document.getElementById('res-sel-btn');
-  if(rsb) rsb.onclick = researchSelected;
-  document.querySelectorAll('.src-pill').forEach(function(p){
-    p.onclick=function(){
-      var s=p.getAttribute('data-src');
-      var i=activeSources.indexOf(s);
-      if(i>=0){activeSources.splice(i,1);p.classList.remove('on');}
-      else{activeSources.push(s);p.classList.add('on');}
-    };
-  });
-
-  // Leads toolbar
-  document.querySelectorAll('.fb').forEach(function(b){
-    b.onclick=function(){
-      fil=b.getAttribute('data-f');
-      document.querySelectorAll('.fb').forEach(function(x){x.classList.remove('on');});
-      b.classList.add('on');
-      renderLeads();
-    };
-  });
-
-  // CSV export
-  var csvbtn = document.getElementById('csvbtn');
+  // Search inputs
+  var rb=document.getElementById('rb'); if(rb) rb.onclick=go;
+  var ci=document.getElementById('ci'); if(ci) ci.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  var brb=document.getElementById('brb'); if(brb) brb.onclick=bulk;
+  var fb=document.getElementById('fetch-btn'); if(fb) fb.onclick=fetchLeads;
+  var rsb=document.getElementById('res-sel-btn'); if(rsb) rsb.onclick=researchSelected;
+  var btog=document.getElementById('btog'); if(btog) btog.onclick=function(){showPanel('bpanel');};
+  var csvbtn=document.getElementById('csvbtn');
   if(csvbtn) csvbtn.onclick=function(){
-    var h=['Company','Sector','Stage','Funding','HQ','Score','Label','Status','Why Fit','Pitch','Contact'];
+    var h=['Company','Sector','Stage','Funding','HQ','Score','Label','Status','Pitch'];
     var rows=DB.map(function(r){
       function e(v){var s=String(v==null?'':v).replace(/"/g,'""');return s.indexOf(',')>=0?'"'+s+'"':s;}
-      return[r.company,r.sector,r.stage,r.funding_amount,r.hq,r.gtm_readiness_score,r.gtm_label,r.outreach_status,r.why_fit,r.pitch_opener,r.best_contact_title||r.decision_maker].map(e).join(',');
+      return[r.company,r.sector,r.stage,r.funding_amount,r.hq,r.gtm_readiness_score,r.gtm_label,r.outreach_status,r.pitch_opener].map(e).join(',');
     });
-    var csv=[h.join(',')].concat(rows).join(String.fromCharCode(10));
-    var blob=new Blob([csv],{type:'text/csv'});
-    var a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='scout-leads.csv';
-    a.click();
+    var blob=new Blob([[h.join(',')].concat(rows).join(String.fromCharCode(10))],{type:'text/csv'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='scout-leads.csv';a.click();
   };
-
-  var clrbtn = document.getElementById('clrbtn');
-  if(clrbtn) clrbtn.onclick=function(){
-    if(confirm('Clear all saved leads?')){DB=[];save();updateBadges();renderLeads();}
-  };
-
-  // Keyboard shortcut: Enter on waitlist
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Enter'&&document.activeElement===document.getElementById('wl-email'))
-      if(typeof joinWaitlist==='function') joinWaitlist();
-  });
 });
 
 """
@@ -2548,7 +2466,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div class='ndot'></div>"
       "<span class='logo-text'>Scout</span>"
     "</button>"
-    "<div class='topbar-right'>"
+    "<div id='topbar-right' class='topbar-right'>"
       "<button onclick='showPricing()' id='upgrade-btn' style='background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Nunito,sans-serif'> Upgrade</button>"
     "<span class='save-ind' id='save-ind'></span>"
       "<button class='hamburger' onclick='openSidebar()' title='Menu'>"
