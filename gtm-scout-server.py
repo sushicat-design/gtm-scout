@@ -2307,6 +2307,7 @@ function maybeShowUpsell(){
 
 
 document.addEventListener('DOMContentLoaded',function(){
+  console.log('SCOUT v3 loaded - build 20260408');
   setPage('dashboard');
   updateCreditsBar();
   load();
@@ -2315,9 +2316,8 @@ document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){
     var sp = document.getElementById('ob-splash');
     if(sp){
-      sp.style.display='flex';
-      obStep(1);;
-      setTimeout(function(){ sp.style.opacity='1'; },50);
+      sp.style.cssText = 'display:flex !important;opacity:1 !important;position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
+      obStep(1);
     }
   }, 200);
 
