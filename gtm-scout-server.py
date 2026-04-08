@@ -760,6 +760,11 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .ld-section-title{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px}
 #ob-splash{display:none;opacity:0;position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto;}
 #ob-splash.active{display:flex;}
+.sourcer-search-card{background:var(--sur2);border:1px solid var(--bor);border-radius:8px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sourcer-search-str{font-size:12px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.5;flex:1;word-break:break-all}
+.sourcer-copy-btn{background:var(--pip);color:#fff;border:none;font-size:10px;font-weight:700;padding:5px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;flex-shrink:0}
+.candidate-card{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.candidate-inmail{font-size:12px;color:var(--tx2);line-height:1.6;margin-top:10px;padding:10px;background:var(--sur);border-radius:6px;border:1px solid var(--bor)}
 """
 
 JS = """
@@ -2403,6 +2408,107 @@ function renderTopbar(){
   updateCreditsBar();
 }
 
+
+var SOURCER_MODE = 'hunt';
+var SOURCER_JD = '';
+var SOURCER_CANDIDATES = [];
+
+function phSetMode(mode){
+  SOURCER_MODE = mode;
+  var act = 'background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer';
+  var inact = 'background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer';
+  var hb=document.getElementById('ph-mode-hunt'), sb=document.getElementById('ph-mode-source');
+  if(hb) hb.style.cssText = mode==='hunt' ? act : inact;
+  if(sb) sb.style.cssText = mode==='source' ? act : inact;
+  var sp=document.getElementById('sourcer-panel');
+  var tabs=document.querySelector('.ph-tabs');
+  var jg=document.getElementById('ph-jobs-grid');
+  var sg=document.getElementById('ph-saved-grid');
+  if(sp) sp.style.display = mode==='source' ? 'block' : 'none';
+  if(tabs) tabs.style.display = mode==='hunt' ? '' : 'none';
+  if(jg) jg.style.display = mode==='hunt' ? '' : 'none';
+  if(sg) sg.style.display = mode==='hunt' ? '' : 'none';
+}
+
+function sourcerRun(){
+  var jd=(document.getElementById('sourcer-jd')||{value:''}).value.trim();
+  if(!jd){alert('Please enter a job description or requirements.');return;}
+  SOURCER_JD=jd;
+  var status=document.getElementById('sourcer-status');
+  if(status)status.textContent='Generating search strings...';
+  var sys='You are a Boolean search expert for LinkedIn recruiting. Generate 5 X-Ray Google search strings to find candidates on LinkedIn for this role. Return ONLY a JSON array of strings. Each uses site:linkedin.com/in plus relevant keywords. Vary: job title, skills, companies to poach from, seniority+location, broad. No markdown, just the JSON array.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:'',company:jd,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    var searches=[];
+    if(a>=0&&b>a){try{searches=JSON.parse(t.slice(a,b+1));}catch(e){}}
+    if(!searches.length){if(status)status.textContent='Try again';return;}
+    var sec=document.getElementById('sourcer-search-section');
+    var cont=document.getElementById('sourcer-searches');
+    if(sec)sec.style.display='block';
+    if(cont){
+      cont.innerHTML=searches.map(function(s){
+        var enc=encodeURIComponent(s);
+        return '<div class="sourcer-search-card" data-search="'+enc+'">'+
+          '<div class="sourcer-search-str">'+s+'</div>'+
+          '<button class="sourcer-copy-btn" data-action="copy-search">Copy</button>'+
+          '</div>';
+      }).join('');
+    }
+    var cs=document.getElementById('sourcer-candidates-section');
+    if(cs)cs.style.display='block';
+    if(status){status.textContent=searches.length+' search strings ready';setTimeout(function(){status.textContent='';},3000);}
+  }).catch(function(e){if(status)status.textContent='Error: '+e.message;});
+}
+
+function sourcerScore(){
+  var paste=(document.getElementById('sourcer-paste')||{value:''}).value.trim();
+  if(!paste){alert('Paste candidate names and roles first.');return;}
+  if(!SOURCER_JD){alert('Run a search first so I have the JD context.');return;}
+  var status=document.getElementById('sourcer-status');
+  if(status)status.textContent='Scoring candidates...';
+  var sys='You are a recruiting AI. Score each candidate 0-100 for fit and write a personalised 3-sentence LinkedIn InMail. Return ONLY a JSON array. Each object: name, role, company, score (number), fit_reason (1 sentence), inmail (3 sentences, personalised). No markdown.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:'',company:'JD:'+String.fromCharCode(10)+SOURCER_JD+String.fromCharCode(10)+String.fromCharCode(10)+'Candidates:'+String.fromCharCode(10)+paste,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    if(a>=0&&b>a){try{SOURCER_CANDIDATES=JSON.parse(t.slice(a,b+1));}catch(e){}}
+    sourcerRenderCandidates();
+    if(status){status.textContent=SOURCER_CANDIDATES.length+' candidates scored';setTimeout(function(){status.textContent='';},3000);}
+  }).catch(function(e){if(status)status.textContent='Error: '+e.message;});
+}
+
+function sourcerRenderCandidates(){
+  var cont=document.getElementById('sourcer-results');
+  if(!cont||!SOURCER_CANDIDATES.length)return;
+  var sorted=SOURCER_CANDIDATES.slice().sort(function(a,b){return(b.score||0)-(a.score||0);});
+  cont.innerHTML=sorted.map(function(c){
+    var n=c.score||0;
+    var col=n>=75?'var(--pip2)':n>=50?'var(--amb)':'var(--tx3)';
+    var enc=encodeURIComponent(c.inmail||'');
+    return '<div class="candidate-card">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'+
+        '<div style="flex:1">'+
+          '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:2px">'+(c.name||'')+'</div>'+
+          '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">'+(c.role||'')+(c.company?' at '+c.company:'')+'</div>'+
+          '<div style="font-size:12px;color:var(--tx2)">'+(c.fit_reason||'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0">'+
+          '<div style="font-size:28px;font-weight:800;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1;color:'+col+'">'+n+'</div>'+
+          '<div style="font-size:10px;color:var(--tx3)">fit</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="candidate-inmail">'+(c.inmail||'')+'</div>'+
+      '<button data-action="copy-inmail" data-inmail="'+enc+'" style="margin-top:8px;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:700;padding:5px 14px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Copy InMail</button>'+
+    '</div>';
+  }).join('');
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v5 loaded');
   load();
@@ -2434,6 +2540,16 @@ document.addEventListener('DOMContentLoaded',function(){
     if(action==='copy-pitch'){ var el=document.getElementById('ld-pitch-text'); if(el){navigator.clipboard.writeText(el.textContent);t.textContent='Copied!';setTimeout(function(){t.textContent='Copy pitch';},1800);} return; }
     if(action==='edit-profile'){ openProfileModal(); return; }
     if(action==='open-profile'){ navTo('profile'); return; }
+    if(action==='copy-search'){
+      var card=t.closest('[data-search]');
+      if(card){navigator.clipboard.writeText(decodeURIComponent(card.getAttribute('data-search')));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy';},1500);}
+      return;
+    }
+    if(action==='copy-inmail'){
+      var enc2=t.getAttribute('data-inmail');
+      if(enc2){navigator.clipboard.writeText(decodeURIComponent(enc2));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy InMail';},1500);}
+      return;
+    }
   });
 
   // Search inputs
@@ -2603,6 +2719,10 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
 
   "<div class='page' id='page-piphunt'>"
     "<div class='ph-header'><h2><img src='data:image/png;base64,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' style='width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:8px'>Pip Hunt</h2><span style='font-size:13px;color:var(--tx3)'>Spot hiring signals. Research the company. Land the client or the role.</span></div>"
+  "<div style='display:flex;gap:0;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:3px;margin-bottom:16px;width:fit-content'>"
+  "<button id='ph-mode-hunt' onclick='phSetMode(\"hunt\")' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer'>Find Jobs</button>"
+  "<button id='ph-mode-source' onclick='phSetMode(\"source\")' style='background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer'>Source Candidates</button>"
+  "</div>"
     "<div class='ph-tabs'>"
       "<button class='ph-tab active' data-cat='cmo' onclick='phSetCategory(\"cmo\")'>Client Leads — CMO Roles</button>"
       "<button class='ph-tab' data-cat='design' onclick='phSetCategory(\"design\")'>Design Leadership Roles</button>"
@@ -2638,6 +2758,25 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div class='modal' style='position:relative'>"
       "<button class='modal-close' onclick='closeFetchModal()'>✕</button>"
       "<div class='modal-title'> Fetch New Leads</div>"
+  "<div id='sourcer-panel' style='display:none'>"
+  "<div style='background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px'>"
+  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px'>Job Description or Requirements</div>"
+  "<textarea id='sourcer-jd' placeholder='Paste a JD or describe the role and skills needed' style='width:100%;min-height:120px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box'></textarea>"
+  "<div style='display:flex;gap:10px;margin-top:10px;align-items:center'>"
+  "<button onclick='sourcerRun()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer'>Source Candidates &#8594;</button>"
+  "<span id='sourcer-status' style='font-size:12px;color:var(--tx3)'></span>"
+  "</div></div>"
+  "<div id='sourcer-search-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px'>"
+  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'>LinkedIn X-Ray Search Strings</div>"
+  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Copy these into Google to find candidates on LinkedIn.</div>"
+  "<div id='sourcer-searches'></div></div>"
+  "<div id='sourcer-candidates-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px'>"
+  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px'>Score Candidates</div>"
+  "<textarea id='sourcer-paste' placeholder='Paste candidate names and roles, one per line' style='width:100%;min-height:90px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px'></textarea>"
+  "<button onclick='sourcerScore()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:8px 20px;border-radius:6px;cursor:pointer;margin-bottom:12px'>Score &amp; Write InMails</button>"
+  "<div id='sourcer-results'></div></div>"
+  "</div>"
+
       "<div class='modal-sub'>Pull recently funded companies — researched and sent to your Inbox</div>"
       "<div class='src-pills' style='margin-bottom:14px'>"
         "<div class='src-pill on' data-src='techcrunch'>TechCrunch</div>"
