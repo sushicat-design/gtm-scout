@@ -1855,19 +1855,6 @@ function onboardingSkip(){
 
 
 var OB_PLAN = 'pro';
-
-function obStep(n){
-  [1,2,3].forEach(function(i){
-    var el = document.getElementById('ob-step'+i);
-    if(el) el.style.display = (i===n) ? 'block' : 'none';
-  });
-}
-function scoutStep(n){
-  [1,2,3].forEach(function(i){
-    var el=document.getElementById('ob-step'+i);
-    if(el) el.style.display=(i===n?'block':'none');
-  });
-}
 function obChoosePlan(plan){
   OB_PLAN=plan;
   ['free','pro','agency'].forEach(function(p){
@@ -1879,7 +1866,7 @@ function obChoosePlan(plan){
 }
 function obSkip(){
   var sp=document.getElementById('ob-splash');
-  if(sp){sp.style.opacity='0';setTimeout(function(){sp.style.display='none';},400);}
+  if(sp){sp.style.opacity='0';setTimeout(function(){sp.remove();},400);}
 }
 function obFinish(){
   var name=(document.getElementById('ob-name')||{value:''}).value.trim();
@@ -2307,20 +2294,96 @@ function maybeShowUpsell(){
 
 
 
+
+function createAndShowSplash(){
+  var old = document.getElementById('ob-splash');
+  if(old) old.remove();
+  var sp = document.createElement('div');
+  sp.id = 'ob-splash';
+  sp.style.cssText = 'display:flex;opacity:0;position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;transition:opacity .4s ease';
+  var dot = '<div style="width:8px;height:8px;border-radius:50%;background:#2d9de8;box-shadow:0 0 14px #2d9de8"></div>';
+  var logo = '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:28px">'+dot+'<span style="font-size:13px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif">Scout</span></div>';
+  sp.innerHTML =
+    '<div id="ob-step1" style="text-align:center;max-width:480px">'+logo+
+      '<div style="font-size:32px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif">Find your next client.</div>'+
+      '<div style="font-size:15px;color:#7da8c8;max-width:340px;line-height:1.65;margin:0 auto 32px">AI lead generation for fractional CMOs and marketing agencies.</div>'+
+      '<button id="ob-start-btn" style="background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 52px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)">\u2192 Get started</button>'+
+      '<div style="margin-top:14px"><button id="ob-skip1" style="background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline">Skip for now</button></div>'+
+    '</div>'+
+    '<div id="ob-step2" style="display:none;width:100%;max-width:400px">'+logo+
+      '<div style="font-size:22px;font-weight:800;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center">Set up your profile</div>'+
+      '<div style="font-size:13px;color:#7da8c8;margin-bottom:18px;text-align:center">Personalises your pitch openers.</div>'+
+      '<input id="ob-name" placeholder="Your name or agency" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:15px;padding:14px 18px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">'+
+      '<input id="ob-tagline" placeholder="What you specialise in" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 18px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">'+
+      '<input id="ob-linkedin" placeholder="LinkedIn URL (optional)" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 18px;border-radius:8px;outline:none;display:block;margin-bottom:14px;box-sizing:border-box">'+
+      '<button id="ob-cont-btn" style="width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-bottom:8px">Continue \u2192</button>'+
+      '<button id="ob-skip2" style="width:100%;background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline;padding:6px">Skip for now</button>'+
+    '</div>'+
+    '<div id="ob-step3" style="display:none;width:100%;max-width:520px">'+logo+
+      '<div style="font-size:22px;font-weight:800;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center">Choose your plan</div>'+
+      '<div style="font-size:13px;color:#7da8c8;margin-bottom:18px;text-align:center">Start free. Upgrade anytime.</div>'+
+      '<div id="ob-plans" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'+
+        '<div id="opc-free" style="background:#060c14;border:1px solid rgba(45,157,232,0.15);border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;transition:border .15s">'+
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4a7a9a;margin-bottom:8px">Free</div>'+
+          '<div style="font-size:26px;font-weight:800;color:#eef4ff;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1">$0</div>'+
+          '<div style="font-size:11px;color:#4a7a9a;margin-top:6px">5 researches/mo</div>'+
+        '</div>'+
+        '<div id="opc-pro" style="background:#060c14;border:2px solid #2d9de8;border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;position:relative;transition:border .15s">'+
+          '<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#2d9de8;color:#fff;font-size:9px;font-weight:700;padding:2px 12px;border-radius:4px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em">Popular</div>'+
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4a7a9a;margin-bottom:8px">Pro</div>'+
+          '<div style="font-size:26px;font-weight:800;color:#eef4ff;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1">$29<span style="font-size:13px;color:#4a7a9a;font-family:Outfit,sans-serif;font-weight:400">/mo</span></div>'+
+          '<div style="font-size:11px;color:#4a7a9a;margin-top:6px">Unlimited research</div>'+
+        '</div>'+
+        '<div id="opc-agency" style="background:#060c14;border:1px solid rgba(45,157,232,0.15);border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;transition:border .15s">'+
+          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4a7a9a;margin-bottom:8px">Agency</div>'+
+          '<div style="font-size:26px;font-weight:800;color:#eef4ff;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1">$99<span style="font-size:13px;color:#4a7a9a;font-family:Outfit,sans-serif;font-weight:400">/mo</span></div>'+
+          '<div style="font-size:11px;color:#4a7a9a;margin-top:6px">5 team members</div>'+
+        '</div>'+
+      '</div>'+
+      '<button id="ob-enter-btn" style="width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)">Enter Scout \u2192</button>'+
+    '</div>';
+  document.body.appendChild(sp);
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ sp.style.opacity='1'; }); });
+  setTimeout(function(){
+    var btn = document.getElementById('ob-start-btn');
+    if(btn) btn.onclick = function(){ obStep(2); };
+    var sk1 = document.getElementById('ob-skip1');
+    if(sk1) sk1.onclick = obSkip;
+    var cont = document.getElementById('ob-cont-btn');
+    if(cont) cont.onclick = function(){ obStep(3); };
+    var sk2 = document.getElementById('ob-skip2');
+    if(sk2) sk2.onclick = obSkip;
+    var enter = document.getElementById('ob-enter-btn');
+    if(enter) enter.onclick = obFinish;
+    ['free','pro','agency'].forEach(function(p){
+      var el = document.getElementById('opc-'+p);
+      if(el) el.onclick = function(){
+        OB_PLAN = p;
+        ['free','pro','agency'].forEach(function(x){
+          var d = document.getElementById('opc-'+x);
+          if(d) d.style.border = (x===p) ? '2px solid #2d9de8' : '1px solid rgba(45,157,232,0.15)';
+        });
+      };
+    });
+    obStep(1);
+  }, 50);
+}
+
+function obStep(n){
+  [1,2,3].forEach(function(i){
+    var el = document.getElementById('ob-step'+i);
+    if(el) el.style.display = (i===n) ? 'block' : 'none';
+  });
+}
+
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v3 loaded - build 20260408');
   setPage('dashboard');
   updateCreditsBar();
   load();
 
-  // Show onboarding splash EVERY visit
-  setTimeout(function(){
-    var sp = document.getElementById('ob-splash');
-    if(sp){
-      sp.style.cssText = 'display:flex !important;opacity:1 !important;position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
-      obStep(1);
-    }
-  }, 200);
+  // Build and show splash EVERY visit
+  setTimeout(createAndShowSplash, 100);
 
   // Global click delegation
   document.addEventListener('click', function(e){
