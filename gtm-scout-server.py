@@ -2453,6 +2453,12 @@ function renderTopbar(){
   updateCreditsBar();
   // Wire avatar button to toggle dropdown
   setTimeout(function(){
+    // Wire data-nav items
+    var wrap = document.getElementById('profile-menu-wrap');
+    if(wrap) wrap.addEventListener('click', function(e){
+      var nav = e.target.closest('[data-nav]');
+      if(nav){ closeProfileMenu(); navTo(nav.getAttribute('data-nav')); }
+    });
     var btn=document.getElementById('profile-avatar-btn');
     if(btn) btn.onclick=function(e){
       e.stopPropagation();
@@ -2946,6 +2952,25 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="#pricing" class="nlink">Pricing</a>
     <a href="#waitlist" class="nlink">Early access</a>
   </div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <a href="/app" id="nav-signin" class="nlink" style="font-weight:700">Sign in</a>
+    <a href="/app" id="nav-startfree" class="ncta" style="display:none">Start free</a>
+  </div>
+  <script>
+    (function(){
+      try{
+        var t=localStorage.getItem('sb_token');
+        var si=document.getElementById('nav-signin');
+        var sf=document.getElementById('nav-startfree');
+        if(!t){
+          if(si) si.textContent='Start free';
+          if(sf){ sf.style.display='none'; }
+        } else {
+          if(si){ si.textContent='Sign in'; si.style.display='block'; }
+        }
+      }catch(e){}
+    })();
+  </script>
 </nav>
 
 <section class="hero">
@@ -2954,7 +2979,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <h1>Your next<br><em>best lead</em></h1>
     <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds — so you spend time closing, not researching.</p>
     <div class="actions">
-      <a href="/app" class="btnp">Open Scout</a>
+      <a href="/app" class="btnp">Discover Scout</a>
       <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng">Book a call</a>
     </div>
     <div class="stats">
@@ -3033,59 +3058,70 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
   </div>
 </section>
 
-<div class="dw2" id="demo">
-  <div class="dc">
-    <div>
-      <div class="de">Live example</div>
-      <div class="dn">Ambience Healthcare</div>
-      <div class="dm">Series B · Healthcare AI · San Francisco</div>
-      <div class="sc">87</div><div class="stag">Hot Lead</div>
-      <div class="sbar"><div class="sf"></div></div>
-      <div class="pl">AI Pitch Opener</div>
-      <div class="pb">Saw the Series B — congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap and hit ARR targets within 6 months...</div>
-    </div>
-    <div>
-      <div class="sgl">GTM Signals</div>
-      <div class="sg"><span class="sn2">Recently funded</span><span class="sgy">YES</span></div>
-      <div class="sg"><span class="sn2">No CMO on team</span><span class="sgy">YES</span></div>
-      <div class="sg"><span class="sn2">Hiring marketing roles</span><span class="sgy">YES</span></div>
-      <div class="sg"><span class="sn2">Pre-launch or early stage</span><span class="sgn">NO</span></div>
-      <div class="sg"><span class="sn2">Has agency already</span><span class="sgn">NO</span></div>
-      <div class="fl2">Founders</div>
-      <div class="fr"><div class="fa">JK</div><div><div style="font-size:13px;font-weight:600;color:var(--tx)">James Kim</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">CEO &amp; Co-founder</div></div></div>
-      <div class="fr"><div class="fa">SR</div><div><div style="font-size:13px;font-weight:600;color:var(--tx)">Sara Reyes</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">CTO &amp; Co-founder</div></div></div>
-    </div>
-  </div>
 
 <div class="ps" id="pricing">
   <div style="text-align:center;margin-bottom:56px">
     <div class="slbl" style="text-align:center">Pricing</div>
-    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Simple, transparent pricing</h2>
-    <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
+    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
+    <p style="font-size:16px;color:var(--tx2)">Every plan includes a real AI research call per credit. No fluff.</p>
   </div>
   <div class="pg">
-    <div class="prc"><div class="pn">Free</div><div class="pp">$0<span class="pper">/mo</span></div><div class="pd">Try Scout and see if it fits.</div><button class="pb2 out" onclick="location.href='/app'">Get started</button><ul class="pfl"><li>5 researches/month</li><li>2 lead fetches</li><li>Inbox &amp; Pipeline</li></ul></div>
-    <div class="prc hot"><div class="pbdg">Most popular</div><div class="pn">Pro</div><div class="pp">$29<span class="pper">/mo</span></div><div class="pd">For freelancers actively prospecting.</div><button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button><ul class="pfl"><li>Unlimited research</li><li>20 lead fetches/month</li><li>Pip Hunt job search</li><li>CSV export</li></ul></div>
-    <div class="prc"><div class="pn">Agency</div><div class="pp">$99<span class="pper">/mo</span></div><div class="pd">For agencies managing multiple clients.</div><button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button><ul class="pfl"><li>Everything in Pro</li><li>5 team members</li><li>100 lead fetches</li><li>White-label pitches</li></ul></div>
+    <div class="prc">
+      <div class="pn">Starter</div>
+      <div class="pp">$19<span class="pper">/mo</span></div>
+      <div class="pd">For consultants testing the waters.</div>
+      <button class="pb2 out" onclick="location.href='/app'">Get started</button>
+      <ul class="pfl">
+        <li>50 researches/month</li>
+        <li>5 lead fetches</li>
+        <li>Dashboard &amp; Pipeline</li>
+        <li>Email support</li>
+      </ul>
+    </div>
+    <div class="prc hot">
+      <div class="pbdg">Most popular</div>
+      <div class="pn">Pro</div>
+      <div class="pp">$49<span class="pper">/mo</span></div>
+      <div class="pd">For active prospectors closing deals.</div>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button>
+      <ul class="pfl">
+        <li>300 researches/month</li>
+        <li>30 lead fetches/month</li>
+        <li>Pip Hunt job &amp; candidate sourcing</li>
+        <li>CSV export</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="prc">
+      <div class="pn">Agency</div>
+      <div class="pp">$149<span class="pper">/mo</span></div>
+      <div class="pd">For teams running multiple client pipelines.</div>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button>
+      <ul class="pfl">
+        <li>1,000 researches/month</li>
+        <li>5 team members</li>
+        <li>100 lead fetches</li>
+        <li>White-label pitch openers</li>
+        <li>Dedicated support</li>
+      </ul>
+    </div>
   </div>
-
-<!-- Top-up credits -->
   <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
     <div>
-      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Just need a few more credits?</div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
       <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
-        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
-        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
-        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
-      </a>
-      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
-        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
-        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;cursor:pointer">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$12</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
-        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.24 each</span>
+      </a>
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;position:relative">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$25</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">120 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.21 each</span>
       </a>
     </div>
   </div>
