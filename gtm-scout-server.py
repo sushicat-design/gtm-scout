@@ -1174,39 +1174,35 @@ function renderLeadDetail(r){
   var c = sc(n);
   var g = r.gtm_signals||{};
   var ff = Array.isArray(r.founders)?r.founders:[];
-  var site = r.website ? (String(r.website).indexOf('http')===0 ? r.website : 'https://'+r.website) : '';
+  var site = r.website?(String(r.website).indexOf('http')===0?r.website:'https://'+r.website):'';
   var statusColors = {not_contacted:'var(--tx3)',contacted:'var(--amb)',in_talks:'var(--pip)',closed:'var(--grn)'};
   var statusLabels = {not_contacted:'Not Contacted',contacted:'Contacted',in_talks:'In Talks',closed:'Closed'};
   var curStatus = r.outreach_status||'not_contacted';
-
-  var sigsHtml = [['recently_funded','Recently funded'],['no_cmo','No CMO'],
+  var signals = [['recently_funded','Recently funded'],['no_cmo','No CMO'],
     ['pre_launch_or_early','Pre-launch'],['has_product','Has product'],
-    ['small_team','Small team'],['marketing_gap_visible','Marketing gap']]
-    .map(function(x){
-      var v=g[x[0]],cls=v===true?'sy':v===false?'sn':'su',t=v===true?'Yes':v===false?'No':'?';
-      return '<div class="sig-row"><span style="color:var(--tx2);font-size:12px">'+x[1]+'</span><span class="'+cls+'">'+t+'</span></div>';
-    }).join('');
-
+    ['small_team','Small team'],['marketing_gap_visible','Marketing gap']];
+  var sigsHtml = signals.map(function(x){
+    var v=g[x[0]],cls=v===true?'sy':v===false?'sn':'su',t=v===true?'Yes':v===false?'No':'?';
+    return '<div class="sig-row"><span style="color:var(--tx2);font-size:12px">'+x[1]+'</span><span class="'+cls+'">'+t+'</span></div>';
+  }).join('');
   var foundersHtml = ff.length ? ff.map(function(f){
     var ini=String(f.name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
     return '<div class="founder-row"><div class="fav">'+ini+'</div><div><div class="fname">'+(f.name||'')+'</div><div class="frole">'+(f.role||'')+'</div></div></div>';
   }).join('') : '<span style="color:var(--tx3);font-size:13px">Unknown</span>';
-
-  var statusBtns = ['not_contacted','contacted','in_talks','closed'].map(function(s){
-    var active = curStatus===s;
-    var col = statusColors[s];
-    return '<button data-action="set-status" data-lead-id="'+r._id+'" data-status="'+s+'" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid '+col+';color:'+col+';background:'+(active?col+'22':'none')+'">'+statusLabels[s]+'</button>';
+  var detailPairs = [['Funding',r.funding_amount],['Stage',r.stage],['Team',r.employee_count],['HQ',r.hq]];
+  var detailHtml = detailPairs.filter(function(x){return x[1];}).map(function(x){
+    return '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">'+x[0]+'</div><div style="font-size:13px;color:var(--tx);font-weight:600;margin-top:2px">'+x[1]+'</div></div>';
   }).join('');
-
-  var detailItems = [['Funding',r.funding_amount],['Stage',r.stage],['Team',r.employee_count],['HQ',r.hq]]
-    .filter(function(x){return x[1];})
-    .map(function(x){return '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">'+x[0]+'</div><div style="font-size:13px;color:var(--tx);font-weight:600;margin-top:2px">'+x[1]+'</div></div>';})
-    .join('');
-
+  var statusBtns = ['not_contacted','contacted','in_talks','closed'].map(function(s){
+    var active=curStatus===s;
+    var col=statusColors[s];
+    return '<button data-action="set-status" data-id="'+r._id+'" data-status="'+s+'" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid '+col+';color:'+col+';background:'+(active?col+'22':'none')+'">'+statusLabels[s]+'</button>';
+  }).join('');
+  var companyLink = site ? ' <a href="'+site+'" target="_blank" style="font-size:12px;color:var(--pip);text-decoration:none;border:1px solid var(--bor2);padding:2px 8px;border-radius:4px">visit</a>' : '';
   cont.innerHTML =
     '<div class="ld-header">'+
       '<div>'+
-        '<div class="ld-name">'+(r.company||'')+(site?' <a href="'+site+'" target="_blank" style="font-size:12px;color:var(--pip);text-decoration:none;border:1px solid var(--bor2);padding:2px 8px;border-radius:4px">visit</a>':'')+'</div>'+
+        '<div class="ld-name">'+(r.company||'')+companyLink+'</div>'+
         '<div class="ld-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+(r.hq?' · '+r.hq:'')+'</div>'+
       '</div>'+
       '<div style="text-align:right">'+
@@ -1217,8 +1213,8 @@ function renderLeadDetail(r){
     '<div class="ld-grid">'+
       '<div class="ld-section">'+
         '<div class="ld-section-title">Pitch Opener</div>'+
-        '<div id="ld-pitch-text-'+r._id+'" style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">'+(r.pitch_opener||'—')+'</div>'+
-        '<button data-action="copy-pitch" data-lead-id="'+r._id+'" style="background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:8px 18px;border-radius:var(--r);cursor:pointer;font-family:Outfit,sans-serif">Copy pitch</button>'+
+        '<div id="ld-pitch-text" style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">'+(r.pitch_opener||'—')+'</div>'+
+        '<button data-action="copy-pitch" style="background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:8px 18px;border-radius:var(--r);cursor:pointer;font-family:Outfit,sans-serif">Copy pitch</button>'+
       '</div>'+
       '<div>'+
         '<div class="ld-section" style="margin-bottom:12px">'+
@@ -1227,31 +1223,30 @@ function renderLeadDetail(r){
         '</div>'+
         '<div class="ld-section">'+
           '<div class="ld-section-title">Details</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+detailItems+'</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+detailHtml+'</div>'+
         '</div>'+
       '</div>'+
       '<div class="ld-section">'+
-        '<div class="ld-section-title">GTM Signals</div>'+
-        sigsHtml+
+        '<div class="ld-section-title">GTM Signals</div>'+sigsHtml+
       '</div>'+
       '<div class="ld-section">'+
-        '<div class="ld-section-title">Founders</div>'+
-        foundersHtml+
+        '<div class="ld-section-title">Founders</div>'+foundersHtml+
       '</div>'+
     '</div>'+
-    '<div class="ld-section" style="margin-top:12px">'+
+    '<div class="ld-section" style="margin:12px 0">'+
       '<div class="ld-section-title">Notes</div>'+
-      '<textarea class="notes-area" id="ld-notes-'+r._id+'" placeholder="Add notes..." style="width:100%;min-height:80px">'+(r._notes||'')+'</textarea>'+
+      '<textarea id="ld-notes" placeholder="Add notes..." style="width:100%;min-height:80px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:10px;border-radius:var(--r);resize:vertical;outline:none">'+(r._notes||'')+'</textarea>'+
     '</div>';
-
+  // Wire notes
   setTimeout(function(){
-    var ta = document.getElementById('ld-notes-'+r._id);
-    if(ta) ta.addEventListener('input', function(){
-      r._notes = ta.value;
-      clearTimeout(r._nt);
-      r._nt = setTimeout(function(){ save(); }, 800);
+    var ta = document.getElementById('ld-notes');
+    if(ta) ta.addEventListener('input',function(){
+      r._notes=ta.value; clearTimeout(r._nt);
+      r._nt=setTimeout(function(){save();},800);
     });
-  }, 50);
+  },50);
+  // Store current lead for delegation
+  window._currentLead = r;
 }
 
 function updateLeadStatus(id, status){
