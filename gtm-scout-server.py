@@ -1523,9 +1523,10 @@ var PH_SYS_CMO = "You are a JSON API. Search the web for open job postings right
 var PH_SYS_DESIGN = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: Head of Design, VP Design, Creative Director, Brand Director, Head of Brand at funded tech and AI startups. Return 6-8 real current openings only.";
 
 function phSetCategory(cat){
-  phCategory = cat;
-  document.querySelectorAll('.ph-tab').forEach(function(t){
-    t.classList.toggle('active', t.getAttribute('data-cat')===cat);
+  phCategory=cat;
+  document.querySelectorAll('.ph-tab').forEach(function(b){
+    var on=b.getAttribute('data-cat')===cat;
+    b.style.cssText='background:'+(on?'var(--pip)':'var(--sur2)')+';color:'+(on?'#fff':'var(--tx3)')+';border:1px solid '+(on?'var(--pip)':'var(--bor2)')+';font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif';
   });
   phRenderJobs();
 }
@@ -1839,56 +1840,8 @@ function closeFetchModal(){
 }
 
 
-function onboardingSave(){
-  var n = (document.getElementById("ob-name")||{value:""}).value.trim();
-  if(!n){ if(document.getElementById("ob-name")) document.getElementById("ob-name").focus(); return; }
-  PROFILE.name = n;
-  PROFILE.tagline = (document.getElementById("ob-tagline")||{value:""}).value.trim();
-  PROFILE.linkedin = (document.getElementById("ob-linkedin")||{value:""}).value.trim();
-  try{ localStorage.setItem("scout_profile", JSON.stringify(PROFILE)); }catch(e){}
-  var sp = document.getElementById("ob-splash");
-  if(sp){ sp.style.opacity="0"; setTimeout(function(){ sp.style.display="none"; },400); }
-  var ov = document.getElementById("onboarding-overlay");
-  if(ov) ov.classList.remove("open");
-}
-function onboardingSkip(){
-  var sp = document.getElementById("ob-splash");
-  if(sp){ sp.style.opacity="0"; setTimeout(function(){ sp.style.display="none"; },400); }
-  var ov = document.getElementById("onboarding-overlay");
-  if(ov) ov.classList.remove("open");
-}
 
 
-var OB_PLAN = 'pro';
-function obChoosePlan(plan){
-  OB_PLAN=plan;
-  ['free','pro','agency'].forEach(function(p){
-    var el=document.getElementById('opc-'+p);
-    if(el) el.classList.toggle('selected',p===plan);
-  });
-  var btn=document.getElementById('ob-enter-btn');
-  if(btn) btn.textContent=(plan==='free'?'Start free →':'Continue to payment →');
-}
-function obSkip(){
-  var sp=document.getElementById('ob-splash');
-  if(sp){sp.style.opacity='0';setTimeout(function(){sp.remove();},400);}
-}
-function obFinish(){
-  var name=(document.getElementById('ob-name')||{value:''}).value.trim();
-  if(name){
-    PROFILE.name=name;
-    PROFILE.tagline=(document.getElementById('ob-tagline')||{value:''}).value.trim();
-    PROFILE.linkedin=(document.getElementById('ob-linkedin')||{value:''}).value.trim();
-    try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
-  }
-  if(OB_PLAN!=='free'){
-    var urls={pro:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',agency:'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'};
-    window.open(urls[OB_PLAN],'_blank');
-  }
-  obSkip();
-  // Reload so the app initialises properly with the new account
-  setTimeout(function(){ window.location.reload(); }, 300);
-}
 
 // ── PROFILE ──────────────────────────────────────────────────────────────────
 var PROFILE = {
@@ -2113,31 +2066,6 @@ function profileCopyShare(){
 }
 
 
-function obSelectType(type){
-  PROFILE.accountType = type;
-  // Highlight selected
-  document.querySelectorAll('.ob-type-btn').forEach(function(b){
-    b.classList.toggle('selected', b.getAttribute('data-type')===type);
-  });
-  document.getElementById('ob-details').style.display = 'block';
-  // Update labels based on type
-  var nameLbl = document.getElementById('ob-name-label');
-  var tLbl = document.getElementById('ob-tagline-label');
-  var lookLbl = document.getElementById('ob-looking-label');
-  if(type==='agency'||type==='freelance'){
-    nameLbl.textContent = 'Your name or agency';
-    tLbl.textContent = 'What you specialise in';
-    lookLbl.textContent = 'What type of clients are you looking for?';
-  } else if(type==='hiring'){
-    nameLbl.textContent = 'Company name';
-    tLbl.textContent = 'Industry / sector';
-    lookLbl.textContent = 'What marketing role are you hiring for?';
-  } else {
-    nameLbl.textContent = 'Your name';
-    tLbl.textContent = 'Your current role / title';
-    lookLbl.textContent = 'What kind of opportunities are you looking for?';
-  }
-}
 
 
 
@@ -2302,111 +2230,9 @@ function maybeShowUpsell(){
 
 
 
-function createAndShowSplash(){
-  var old = document.getElementById('ob-splash');
-  if(old) old.remove();
-  var sp = document.createElement('div');
-  sp.id = 'ob-splash';
-  sp.style.cssText = 'display:flex;opacity:0;position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;transition:opacity .4s ease';
-  var dot = '<div style="width:8px;height:8px;border-radius:50%;background:#2d9de8;box-shadow:0 0 14px #2d9de8"></div>';
-  var logo = '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:28px">'+dot+'<span style="font-size:13px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif">Scout</span></div>';
-  sp.innerHTML =
-    '<div id="ob-step1" style="text-align:center;max-width:480px">'+logo+
-      '<div style="font-size:32px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif">Find your next client.</div>'+
-      '<div style="font-size:15px;color:#7da8c8;max-width:340px;line-height:1.65;margin:0 auto 32px">AI lead generation for fractional CMOs and marketing agencies.</div>'+
-      '<button id="ob-start-btn" style="background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 52px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)">\u2192 Get started</button>'+
-      '<div style="margin-top:14px"><button id="ob-skip1" style="background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline">Skip for now</button></div>'+
-    '</div>'+
-    '<div id="ob-step2" style="display:none;width:100%;max-width:400px">'+logo+
-      '<div style="font-size:22px;font-weight:800;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center">Set up your profile</div>'+
-      '<div style="font-size:13px;color:#7da8c8;margin-bottom:18px;text-align:center">Personalises your pitch openers.</div>'+
-      '<input id="ob-name" placeholder="Your name or agency" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:15px;padding:14px 18px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">'+
-      '<input id="ob-tagline" placeholder="What you specialise in" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 18px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">'+
-      '<input id="ob-linkedin" placeholder="LinkedIn URL (optional)" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 18px;border-radius:8px;outline:none;display:block;margin-bottom:14px;box-sizing:border-box">'+
-      '<button id="ob-cont-btn" style="width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-bottom:8px">Continue \u2192</button>'+
-      '<button id="ob-skip2" style="width:100%;background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline;padding:6px">Skip for now</button>'+
-    '</div>'+
-    '<div id="ob-step3" style="display:none;width:100%;max-width:520px">'+logo+
-      '<div style="font-size:22px;font-weight:800;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center">Choose your plan</div>'+
-      '<div style="font-size:13px;color:#7da8c8;margin-bottom:18px;text-align:center">Start free. Upgrade anytime.</div>'+
-      '<div id="ob-plans" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'+
-        '<div id="opc-free" style="background:#060c14;border:1px solid rgba(45,157,232,0.15);border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;transition:border .15s">'+
-          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4a7a9a;margin-bottom:8px">Free</div>'+
-          '<div style="font-size:26px;font-weight:800;color:#eef4ff;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1">$0</div>'+
-          '<div style="font-size:11px;color:#4a7a9a;margin-top:6px">5 researches/mo</div>'+
-        '</div>'+
-        '<div id="opc-pro" style="background:#060c14;border:2px solid #2d9de8;border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;position:relative;transition:border .15s">'+
-          '<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#2d9de8;color:#fff;font-size:9px;font-weight:700;padding:2px 12px;border-radius:4px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em">Popular</div>'+
-          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4a7a9a;margin-bottom:8px">Pro</div>'+
-          '<div style="font-size:26px;font-weight:800;color:#eef4ff;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1">$29<span style="font-size:13px;color:#4a7a9a;font-family:Outfit,sans-serif;font-weight:400">/mo</span></div>'+
-          '<div style="font-size:11px;color:#4a7a9a;margin-top:6px">Unlimited research</div>'+
-        '</div>'+
-        '<div id="opc-agency" style="background:#060c14;border:1px solid rgba(45,157,232,0.15);border-radius:10px;padding:20px 14px;text-align:center;cursor:pointer;transition:border .15s">'+
-          '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#4a7a9a;margin-bottom:8px">Agency</div>'+
-          '<div style="font-size:26px;font-weight:800;color:#eef4ff;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1">$99<span style="font-size:13px;color:#4a7a9a;font-family:Outfit,sans-serif;font-weight:400">/mo</span></div>'+
-          '<div style="font-size:11px;color:#4a7a9a;margin-top:6px">5 team members</div>'+
-        '</div>'+
-      '</div>'+
-      '<button id="ob-enter-btn" style="width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)">Enter Scout \u2192</button>'+
-    '</div>';
-  document.body.appendChild(sp);
-  requestAnimationFrame(function(){ requestAnimationFrame(function(){ sp.style.opacity='1'; }); });
-  setTimeout(function(){
-    var btn = document.getElementById('ob-start-btn');
-    if(btn) btn.onclick = function(){ obStep(2); };
-    var sk1 = document.getElementById('ob-skip1');
-    if(sk1) sk1.onclick = obSkip;
-    var cont = document.getElementById('ob-cont-btn');
-    if(cont) cont.onclick = function(){ obStep(3); };
-    var sk2 = document.getElementById('ob-skip2');
-    if(sk2) sk2.onclick = obSkip;
-    var enter = document.getElementById('ob-enter-btn');
-    if(enter) enter.onclick = obFinish;
-    ['free','pro','agency'].forEach(function(p){
-      var el = document.getElementById('opc-'+p);
-      if(el) el.onclick = function(){
-        OB_PLAN = p;
-        ['free','pro','agency'].forEach(function(x){
-          var d = document.getElementById('opc-'+x);
-          if(d) d.style.border = (x===p) ? '2px solid #2d9de8' : '1px solid rgba(45,157,232,0.15)';
-        });
-      };
-    });
-    obStep(1);
-  }, 50);
-}
-
-function obStep(n){
-  [1,2,3].forEach(function(i){
-    var el = document.getElementById('ob-step'+i);
-    if(el) el.style.display = (i===n) ? 'block' : 'none';
-  });
-}
 
 
-function renderTopbar(){
-  var hasAccount = false;
-  try{ var p=JSON.parse(localStorage.getItem('scout_profile')||'{}'); hasAccount=!!(p.name); }catch(e){}
-  var right = document.getElementById('topbar-right');
-  if(!right) return;
-  if(hasAccount){
-    right.innerHTML =
-      '<button onclick="updateCreditsBar()" id="credits-bar" style="display:none;align-items:center;gap:8px;background:none;border:none;cursor:default">' +
-        '<div style="width:80px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden">' +
-          '<div id="credits-fill" style="height:100%;background:var(--pip);border-radius:2px;transition:width .3s;width:0%"></div>' +
-        '</div>' +
-        '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>' +
-      '</button>' +
-      '<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>' +
-      '<button data-action="open-profile" style="width:30px;height:30px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif" title="Profile">' +
-        (PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : 'P') +
-      '</button>';
-  } else {
-    right.innerHTML =
-      '<button onclick="createAndShowSplash()" style="background:#2d9de8;color:#fff;border:none;font-size:12px;font-weight:700;padding:7px 18px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Sign up free</button>';
-  }
-  updateCreditsBar();
-}
+
 
 
 var SOURCER_MODE = 'hunt';
@@ -2414,20 +2240,18 @@ var SOURCER_JD = '';
 var SOURCER_CANDIDATES = [];
 
 function phSetMode(mode){
-  SOURCER_MODE = mode;
-  var act = 'background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer';
-  var inact = 'background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer';
-  var hb=document.getElementById('ph-mode-hunt'), sb=document.getElementById('ph-mode-source');
-  if(hb) hb.style.cssText = mode==='hunt' ? act : inact;
-  if(sb) sb.style.cssText = mode==='source' ? act : inact;
-  var sp=document.getElementById('sourcer-panel');
-  var tabs=document.querySelector('.ph-tabs');
-  var jg=document.getElementById('ph-jobs-grid');
-  var sg=document.getElementById('ph-saved-grid');
-  if(sp) sp.style.display = mode==='source' ? 'block' : 'none';
-  if(tabs) tabs.style.display = mode==='hunt' ? '' : 'none';
-  if(jg) jg.style.display = mode==='hunt' ? '' : 'none';
-  if(sg) sg.style.display = mode==='hunt' ? '' : 'none';
+  SOURCER_MODE=mode;
+  var act='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:5px;cursor:pointer';
+  var inact='background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:5px;cursor:pointer';
+  var hb=document.getElementById('ph-mode-hunt'),sb=document.getElementById('ph-mode-source');
+  if(hb)hb.style.cssText=mode==='hunt'?act:inact;
+  if(sb)sb.style.cssText=mode==='source'?act:inact;
+  var hd=document.getElementById('ph-hunt-mode'),sd=document.getElementById('ph-source-mode');
+  if(hd)hd.style.display=mode==='hunt'?'block':'none';
+  if(sd)sd.style.display=mode==='source'?'block':'none';
+  var t=document.getElementById('ph-mode-title'),s=document.getElementById('ph-mode-sub');
+  if(t)t.textContent=mode==='hunt'?'Find your next role':'Source candidates';
+  if(s)s.textContent=mode==='hunt'?'Spot open positions at funded startups. Research before you apply.':'Paste a JD, get LinkedIn search strings, score candidates, write InMails.';
 }
 
 function sourcerRun(){
@@ -2509,71 +2333,143 @@ function sourcerRenderCandidates(){
   }).join('');
 }
 
-document.addEventListener('DOMContentLoaded',function(){
-  console.log('SCOUT v5 loaded');
-  load();
 
-  // Check if user has an account
-  var hasAccount = false;
-  try{ var p=JSON.parse(localStorage.getItem('scout_profile')||'{}'); hasAccount=!!(p.name); }catch(e){}
+var SUPA_URL = 'https://lisamrtqlpjpkftncfzg.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxpc2FtcnRxbHBqcGtmdG5jZnpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NzQ1MzYsImV4cCI6MjA5MTI1MDUzNn0.QM4Yl9oTt2nfUqmdpboPk9Xbr_qCYPHIUYSgz6E_2HE';
+var SUPA_USER = null;
 
-  if(!hasAccount){
-    // No account - show signup splash immediately, block everything else
-    createAndShowSplash();
-    return;
-  }
-
-  // Has account - load app normally
-  profileLoad();
-  updateCreditsBar();
-  setPage('dashboard');
-  renderTopbar();
-
-  // Click delegation
-  document.addEventListener('click', function(e){
-    var t = e.target.closest('[data-action]') || e.target;
-    var action = t ? t.getAttribute('data-action') : null;
-    if(!action) return;
-    if(action==='open-lead'){ var id=t.getAttribute('data-id'); if(id) openLeadDetail(id); return; }
-    if(action==='approve-inbox'){ var id=t.getAttribute('data-id'); if(id) approveInboxCard(id); return; }
-    if(action==='set-status'){ var id=t.getAttribute('data-id'); var st=t.getAttribute('data-status'); if(id&&st) updateLeadStatus(id,st); return; }
-    if(action==='copy-pitch'){ var el=document.getElementById('ld-pitch-text'); if(el){navigator.clipboard.writeText(el.textContent);t.textContent='Copied!';setTimeout(function(){t.textContent='Copy pitch';},1800);} return; }
-    if(action==='edit-profile'){ openProfileModal(); return; }
-    if(action==='open-profile'){ navTo('profile'); return; }
-    if(action==='copy-search'){
-      var card=t.closest('[data-search]');
-      if(card){navigator.clipboard.writeText(decodeURIComponent(card.getAttribute('data-search')));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy';},1500);}
-      return;
-    }
-    if(action==='copy-inmail'){
-      var enc2=t.getAttribute('data-inmail');
-      if(enc2){navigator.clipboard.writeText(decodeURIComponent(enc2));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy InMail';},1500);}
-      return;
-    }
+function supaPost(path, body) {
+  var token = localStorage.getItem('sb_token');
+  var h = {'apikey':SUPA_KEY,'Content-Type':'application/json'};
+  if(token) h['Authorization'] = 'Bearer '+token;
+  return fetch(SUPA_URL+path,{method:'POST',headers:h,body:JSON.stringify(body)}).then(function(r){return r.json();});
+}
+function authGetUser(){var u=localStorage.getItem('sb_user');if(u){try{return JSON.parse(u);}catch(e){}}return null;}
+function authSignOut(){
+  var h={'apikey':SUPA_KEY};var t=localStorage.getItem('sb_token');if(t)h['Authorization']='Bearer '+t;
+  fetch(SUPA_URL+'/auth/v1/logout',{method:'POST',headers:h});
+  localStorage.removeItem('sb_token');localStorage.removeItem('sb_user');SUPA_USER=null;
+  showAuthScreen('login');
+}
+function showAuthScreen(mode){
+  mode=mode||'signup';var old=document.getElementById('auth-screen');if(old)old.remove();
+  var sc=document.createElement('div');sc.id='auth-screen';
+  sc.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;overflow-y:auto';
+  var isS=mode==='signup';
+  sc.innerHTML='<div style="width:100%;max-width:400px">'+
+    '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px">'+
+      '<div style="width:8px;height:8px;border-radius:50%;background:#2d9de8;box-shadow:0 0 16px #2d9de8"></div>'+
+      '<span style="font-size:13px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif">Scout</span>'+
+    '</div>'+
+    '<div style="display:flex;background:rgba(255,255,255,0.05);border-radius:8px;padding:3px;margin-bottom:28px">'+
+      '<button data-auth="login" style="flex:1;padding:9px;border:none;border-radius:6px;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:'+(isS?'none':'#2d9de8')+';color:'+(isS?'#4a7a9a':'#fff')+'">Sign in</button>'+
+      '<button data-auth="signup" style="flex:1;padding:9px;border:none;border-radius:6px;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:'+(isS?'#2d9de8':'none')+';color:'+(isS?'#fff':'#4a7a9a')+'">Create account</button>'+
+    '</div>'+
+    (isS?'<input id="auth-name" placeholder="Your name" autocomplete="name" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 16px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">':'')+
+    '<input id="auth-email" type="email" placeholder="Email address" autocomplete="email" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 16px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">'+
+    '<input id="auth-pass" type="password" placeholder="Password (min 6 chars)" autocomplete="'+(isS?'new-password':'current-password')+'" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 16px;border-radius:8px;outline:none;display:block;margin-bottom:6px;box-sizing:border-box">'+
+    '<div id="auth-error" style="font-size:12px;color:#f87171;min-height:18px;margin-bottom:10px;padding-left:2px"></div>'+
+    '<button id="auth-btn"  style="width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)">'+
+      (isS?'Create my account &rarr;':'Sign in &rarr;')+
+    '</button>'+
+    '<div style="margin-top:20px;text-align:center;font-size:12px;color:#2a4a6a">'+
+      (isS?'Already have an account? <button data-auth="login" style="background:none;border:none;color:#2d9de8;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px">Sign in</button>':
+           'No account? <button data-auth="signup" style="background:none;border:none;color:#2d9de8;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px">Create one free</button>')+
+    '</div></div>';
+  document.body.appendChild(sc);
+  sc.addEventListener('click',function(e){
+    var authMode=e.target.getAttribute('data-auth');
+    if(authMode) showAuthScreen(authMode);
   });
-
-  // Search inputs
-  var rb=document.getElementById('rb'); if(rb) rb.onclick=go;
-  var ci=document.getElementById('ci'); if(ci) ci.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
-  var brb=document.getElementById('brb'); if(brb) brb.onclick=bulk;
-  var fb=document.getElementById('fetch-btn'); if(fb) fb.onclick=fetchLeads;
-  var rsb=document.getElementById('res-sel-btn'); if(rsb) rsb.onclick=researchSelected;
-  var btog=document.getElementById('btog'); if(btog) btog.onclick=function(){showPanel('bpanel');};
-  var csvbtn=document.getElementById('csvbtn');
-  if(csvbtn) csvbtn.onclick=function(){
-    var h=['Company','Sector','Stage','Funding','HQ','Score','Label','Status','Pitch'];
-    var rows=DB.map(function(r){
-      function e(v){var s=String(v==null?'':v).replace(/"/g,'""');return s.indexOf(',')>=0?'"'+s+'"':s;}
-      return[r.company,r.sector,r.stage,r.funding_amount,r.hq,r.gtm_readiness_score,r.gtm_label,r.outreach_status,r.pitch_opener].map(e).join(',');
+  setTimeout(function(){
+    var first=document.getElementById(isS?'auth-name':'auth-email');if(first)first.focus();
+    ['auth-name','auth-email','auth-pass'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')authSubmit(mode);});
     });
-    var blob=new Blob([[h.join(',')].concat(rows).join(String.fromCharCode(10))],{type:'text/csv'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='scout-leads.csv';a.click();
-  };
-  var clrbtn=document.getElementById('clrbtn');
-  if(clrbtn) clrbtn.onclick=function(){
-    if(confirm('Clear all saved leads?')){DB=[];save();updateBadges();renderLeads();}
-  };
+    var authBtn=document.getElementById('auth-btn');
+    if(authBtn) authBtn.onclick=function(){authSubmit(mode);};
+  },50);
+}
+function authSubmit(mode){
+  var email=(document.getElementById('auth-email')||{value:''}).value.trim();
+  var pass=(document.getElementById('auth-pass')||{value:''}).value;
+  var errEl=document.getElementById('auth-error'),btn=document.getElementById('auth-btn');
+  if(!email||!pass){if(errEl)errEl.textContent='Please fill in all fields';return;}
+  if(btn){btn.disabled=true;btn.textContent=mode==='signup'?'Creating...':'Signing in...';}
+  if(errEl)errEl.textContent='';
+  if(mode==='signup'){
+    var name=(document.getElementById('auth-name')||{value:''}).value.trim()||email.split('@')[0];
+    supaPost('/auth/v1/signup',{email:email,password:pass,data:{name:name}}).then(function(d){
+      if(d.error){if(errEl)errEl.textContent=d.error.message;if(btn){btn.disabled=false;btn.textContent='Create my account';}return;}
+      if(d.access_token){
+        localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
+        SUPA_USER=d.user;PROFILE.name=name;PROFILE.email=email;
+        try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+        authSuccess();
+      } else {
+        var sc=document.getElementById('auth-screen');
+        if(sc)sc.innerHTML='<div style="text-align:center;color:#eef4ff;font-family:Outfit,sans-serif;padding:40px 24px;max-width:400px"><div style="font-size:48px;margin-bottom:16px">&#9993;</div><div style="font-size:20px;font-weight:700;margin-bottom:10px">Check your email</div><div style="font-size:14px;color:#7da8c8;line-height:1.6">Confirmation sent to <b>'+email+'</b>. Click it then sign in.</div><button data-auth="login" style="margin-top:24px;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;cursor:pointer">Sign in</button></div>';
+      }
+    }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Create my account';}});
+  } else {
+    supaPost('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(d){
+      if(d.error){if(errEl)errEl.textContent=d.error.message||'Invalid credentials';if(btn){btn.disabled=false;btn.textContent='Sign in';}return;}
+      localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
+      SUPA_USER=d.user;
+      if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;PROFILE.email=d.user.email||email;try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}}
+      authSuccess();
+    }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Sign in';}});
+  }
+}
+function authSuccess(){
+  var sc=document.getElementById('auth-screen');
+  if(sc){sc.style.opacity='0';sc.style.transition='opacity .3s';setTimeout(function(){sc.remove();initApp();},300);}
+  else{initApp();}
+}
+function renderTopbar(){
+  var right=document.getElementById('topbar-right');if(!right)return;profileLoad();
+  var plan=(function(){try{return JSON.parse(localStorage.getItem('scout_tier')||'{}').plan||'free';}catch(e){return 'free';}})();
+  right.innerHTML=
+    '<div id="credits-bar" style="display:none;align-items:center;gap:8px">'+
+      '<div style="width:70px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden"><div id="credits-fill" style="height:100%;background:var(--pip);width:0%;border-radius:2px;transition:width .3s"></div></div>'+
+      '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>'+
+    '</div>'+
+    (plan==='free'?'<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>':'')+
+    '<button data-action="open-profile" style="width:30px;height:30px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif" title="Profile">'+
+      (PROFILE.name?PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase():'ME')+
+    '</button>'+
+    '<button onclick="authSignOut()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:2px 6px;opacity:.6" title="Sign out">&#8594;</button>';
+  updateCreditsBar();
+}
+function initApp(){
+  load();profileLoad();updateCreditsBar();setPage('dashboard');renderTopbar();
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-action]')||e.target;
+    var a=t?t.getAttribute('data-action'):null;if(!a)return;
+    if(a==='open-lead'){var id=t.getAttribute('data-id');if(id)openLeadDetail(id);return;}
+    if(a==='approve-inbox'){var id=t.getAttribute('data-id');if(id)approveInboxCard(id);return;}
+    if(a==='set-status'){var id=t.getAttribute('data-id');var st=t.getAttribute('data-status');if(id&&st)updateLeadStatus(id,st);return;}
+    if(a==='copy-pitch'){var el=document.getElementById('ld-pitch-text');if(el){navigator.clipboard.writeText(el.textContent);t.textContent='Copied!';setTimeout(function(){t.textContent='Copy pitch';},1800);}return;}
+    if(a==='edit-profile'){openProfileModal();return;}
+    if(a==='open-profile'){navTo('profile');return;}
+    if(a==='copy-search'){var c=t.closest('[data-search]');if(c){navigator.clipboard.writeText(decodeURIComponent(c.getAttribute('data-search')));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy';},1500);}return;}
+    if(a==='copy-inmail'){var enc=t.getAttribute('data-inmail');if(enc){navigator.clipboard.writeText(decodeURIComponent(enc));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy InMail';},1500);}return;}
+  });
+  var rb=document.getElementById('rb');if(rb)rb.onclick=go;
+  var ci=document.getElementById('ci');if(ci)ci.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  var brb=document.getElementById('brb');if(brb)brb.onclick=bulk;
+  var fb=document.getElementById('fetch-btn');if(fb)fb.onclick=fetchLeads;
+  var rsb=document.getElementById('res-sel-btn');if(rsb)rsb.onclick=researchSelected;
+  var btog=document.getElementById('btog');if(btog)btog.onclick=function(){showPanel('bpanel');};
+}
+document.addEventListener('DOMContentLoaded',function(){
+  console.log('SCOUT v6 loaded');
+  var token=localStorage.getItem('sb_token'),user=authGetUser();
+  if(token&&user){SUPA_USER=user;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
+  else{showAuthScreen('signup');}
 });
+
+function authGoTo(mode){ showAuthScreen(mode); }
 
 """
 
@@ -2718,303 +2614,62 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</div>\n"
 
   "<div class='page' id='page-piphunt'>"
-    "<div class='ph-header'><h2><img src='data:image/png;base64,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' style='width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:8px'>Pip Hunt</h2><span style='font-size:13px;color:var(--tx3)'>Spot hiring signals. Research the company. Land the client or the role.</span></div>"
-  "<div style='display:flex;gap:0;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:3px;margin-bottom:16px;width:fit-content'>"
-  "<button id='ph-mode-hunt' onclick='phSetMode(\"hunt\")' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer'>Find Jobs</button>"
-  "<button id='ph-mode-source' onclick='phSetMode(\"source\")' style='background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 18px;border-radius:6px;cursor:pointer'>Source Candidates</button>"
+  "<div style='padding:20px 24px 0'>"
+  "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px'>"
+  "<div>"
+  "<div id='ph-mode-title' style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--tx)'>Find your next role</div>"
+  "<div id='ph-mode-sub' style='font-size:13px;color:var(--tx3);margin-top:3px'>Spot open positions at funded startups. Research before you apply.</div>"
   "</div>"
-    "<div class='ph-tabs'>"
-      "<button class='ph-tab active' data-cat='cmo' onclick='phSetCategory(\"cmo\")'>Client Leads — CMO Roles</button>"
-      "<button class='ph-tab' data-cat='design' onclick='phSetCategory(\"design\")'>Design Leadership Roles</button>"
-    "</div>"
-    "<div style='background:var(--sur2);border:1px solid var(--bor2);border-radius:var(--r);padding:18px 20px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px'>"
-    "<div>"
-      "<div style='font-size:10px;font-weight:700;color:var(--pip2);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px'>Find clients</div>"
-      "<div style='font-size:13px;color:var(--tx);font-weight:600;margin-bottom:4px'>Companies hiring marketing leadership</div>"
-      "<div style='font-size:12px;color:var(--tx3)'>A company posting for a CMO or Head of Marketing is a warm lead. They know they need help. Research them in Scout and pitch before someone else does.</div>"
-    "</div>"
-    "<div style='border-left:1px solid var(--bor);padding-left:16px'>"
-      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px'>Find your next role</div>"
-      "<div style='font-size:13px;color:var(--tx);font-weight:600;margin-bottom:4px'>CMO & marketing leader openings</div>"
-      "<div style='font-size:12px;color:var(--tx3)'>Looking for your next full-time or fractional role? Pip Hunt surfaces real openings at funded companies. Save jobs, track applications, and research the company before you apply.</div>"
-    "</div>"
+  "<div style='display:flex;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:3px;gap:2px'>"
+  "<button id='ph-mode-hunt' onclick='phSetMode(\"hunt\")' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:5px;cursor:pointer'>Find Jobs</button>"
+  "<button id='ph-mode-source' onclick='phSetMode(\"source\")' style='background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:5px;cursor:pointer'>Source Candidates</button>"
   "</div>"
-  "<div class='ph-controls'>"
-      "<button class='ph-filter' data-filter='remote' onclick='phToggleFilter(\"remote\")'>Remote only</button>"
-      "<button class='ph-filter' data-filter='startup' onclick='phToggleFilter(\"startup\")'>AI / Tech</button>"
-      "<button class='ph-filter' data-filter='week' onclick='phToggleFilter(\"week\")'>This week</button>"
-      "<button class='ph-fetch-btn' id='ph-fetch-btn' onclick='phFetch()'> Search Jobs</button>"
-      "<span class='ph-status' id='ph-status'></span>"
-    "</div>"
-    "<div class='ph-grid' id='ph-jobs-grid'></div>"
-    "<div id='ph-saved-section' style='display:none'>"
-      "<div class='ph-saved-list'><h3>Saved Jobs</h3></div>"
-      "<div class='ph-grid' id='ph-saved-grid'></div>"
-    "</div>"
-  "</div>\n"
-
-
-  "<div class='modal-overlay' id='fetch-modal' onclick='if(event.target===this)closeFetchModal()'>"
-    "<div class='modal' style='position:relative'>"
-      "<button class='modal-close' onclick='closeFetchModal()'>✕</button>"
-      "<div class='modal-title'> Fetch New Leads</div>"
-  "<div id='sourcer-panel' style='display:none'>"
-  "<div style='background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px'>"
-  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px'>Job Description or Requirements</div>"
-  "<textarea id='sourcer-jd' placeholder='Paste a JD or describe the role and skills needed' style='width:100%;min-height:120px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box'></textarea>"
+  "</div>"
+  "</div>"
+  "<div id='ph-hunt-mode' style='padding:0 24px 24px'>"
+  "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px'>"
+  "<button class='ph-tab active' data-cat='cmo' onclick='phSetCategory(\"cmo\")' style='background:var(--pip);color:#fff;border:1px solid var(--pip);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>CMO / VP Marketing</button>"
+  "<button class='ph-tab' data-cat='design' onclick='phSetCategory(\"design\")' style='background:var(--sur2);color:var(--tx3);border:1px solid var(--bor2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Design Leadership</button>"
+  "<button class='ph-tab' data-cat='fractional' onclick='phSetCategory(\"fractional\")' style='background:var(--sur2);color:var(--tx3);border:1px solid var(--bor2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Fractional Roles</button>"
+  "</div>"
+  "<div style='display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap'>"
+  "<button class='ph-filter' data-filter='remote' onclick='phToggleFilter(\"remote\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Remote only</button>"
+  "<button class='ph-filter' data-filter='startup' onclick='phToggleFilter(\"startup\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>AI / Tech</button>"
+  "<button class='ph-filter' data-filter='week' onclick='phToggleFilter(\"week\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>This week</button>"
+  "<button id='ph-fetch-btn' onclick='phFetch()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:8px 20px;border-radius:8px;cursor:pointer;margin-left:auto'>Search Jobs</button>"
+  "<span id='ph-status' style='font-size:12px;color:var(--tx3)'></span>"
+  "</div>"
+  "<div class='ph-grid' id='ph-jobs-grid'></div>"
+  "<div id='ph-saved-section' style='margin-top:24px;display:none'>"
+  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px'>Saved Roles</div>"
+  "<div class='ph-grid' id='ph-saved-grid'></div>"
+  "</div>"
+  "</div>"
+  "<div id='ph-source-mode' style='display:none;padding:0 24px 24px'>"
+  "<div style='background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:14px'>"
+  "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px'>Describe the role</div>"
+  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste a job description or write the skills and level needed. Scout generates LinkedIn X-Ray search strings and scores candidates you find.</div>"
+  "<textarea id='sourcer-jd' placeholder='Senior Product Designer, 5yr, B2B SaaS, Figma, remote OK' style='width:100%;min-height:110px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box'></textarea>"
   "<div style='display:flex;gap:10px;margin-top:10px;align-items:center'>"
-  "<button onclick='sourcerRun()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer'>Source Candidates &#8594;</button>"
+  "<button onclick='sourcerRun()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer'>Generate search strings</button>"
   "<span id='sourcer-status' style='font-size:12px;color:var(--tx3)'></span>"
-  "</div></div>"
-  "<div id='sourcer-search-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px'>"
-  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'>LinkedIn X-Ray Search Strings</div>"
-  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Copy these into Google to find candidates on LinkedIn.</div>"
-  "<div id='sourcer-searches'></div></div>"
-  "<div id='sourcer-candidates-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px'>"
-  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px'>Score Candidates</div>"
-  "<textarea id='sourcer-paste' placeholder='Paste candidate names and roles, one per line' style='width:100%;min-height:90px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px'></textarea>"
-  "<button onclick='sourcerScore()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:8px 20px;border-radius:6px;cursor:pointer;margin-bottom:12px'>Score &amp; Write InMails</button>"
-  "<div id='sourcer-results'></div></div>"
   "</div>"
-
-      "<div class='modal-sub'>Pull recently funded companies — researched and sent to your Inbox</div>"
-      "<div class='src-pills' style='margin-bottom:14px'>"
-        "<div class='src-pill on' data-src='techcrunch'>TechCrunch</div>"
-        "<div class='src-pill on' data-src='blockworks'>Blockworks</div>"
-        "<div class='src-pill on' data-src='theblock'>The Block</div>"
-        "<div class='src-pill' data-src='cryptofunding'>Crypto Funding</div>"
-        "<div class='src-pill on' data-src='producthunt'>ProductHunt</div>"
-        "<div class='src-pill on' data-src='linkedinjobs'>LinkedIn Jobs</div>"
-      "</div>"
-      "<div id='fetch-ldg' style='margin-top:0;padding-top:0;border-top:none'><div class='spinner'></div><span>Searching funding news...</span></div>"
-      "<div id='fetch-err'></div>"
-      "<div id='fetch-results' style='margin-top:0;padding-top:0;border-top:none'>"
-        "<div style='font-size:11px;color:var(--tx3);margin-bottom:8px'>Select to research → sent to Inbox:</div>"
-        "<div class='fetch-list' id='fetch-list'></div>"
-        "<div style='display:flex;align-items:center;gap:8px;margin-top:8px'>"
-          "<button id='res-sel-btn' class='modal-btn primary'>Research Selected →</button>"
-          "<span id='fetch-count' style='font-size:11px;color:var(--tx3)'></span>"
-        "</div>"
-      "</div>"
-      "<div class='modal-footer'>"
-        "<button class='modal-btn secondary' onclick='closeFetchModal()'>Cancel</button>"
-        "<button class='modal-btn primary' id='fetch-btn'>Search Funding News →</button>"
-      "</div>"
-    "</div>"
-  "</div>\n"
-
-  "<div id='fetch-modal' style='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center'>"
-    "<div style='background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:28px;width:560px;max-width:90vw;max-height:80vh;overflow-y:auto'>"
-      "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:16px'>"
-        "<div><div style='font-size:15px;font-weight:800;color:var(--pip)'>Fetch Funded Startups</div>"
-        "<div style='font-size:12px;color:var(--tx3);margin-top:2px'>Pull recent raises → research → send to Inbox</div></div>"
-        "<button onclick='closeFetchModal()' style='background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:4px 8px'>✕</button>"
-      "</div>"
-      "<div class='src-pills' style='margin-bottom:16px'>"
-        "<div class='src-pill on' data-src='techcrunch'>TechCrunch</div>"
-        "<div class='src-pill on' data-src='blockworks'>Blockworks</div>"
-        "<div class='src-pill on' data-src='theblock'>The Block</div>"
-        "<div class='src-pill' data-src='cryptofunding'>Crypto-fundraising</div>"
-        "<div class='src-pill on' data-src='producthunt'>ProductHunt</div>"
-        "<div class='src-pill on' data-src='linkedinjobs'>LinkedIn Jobs</div>"
-      "</div>"
-      "<button id='fetch-btn' style='background:var(--pip);color:#fff;border:none;font-weight:700;font-size:13px;padding:10px 24px;cursor:pointer;font-family:Nunito,sans-serif;border-radius:var(--r);width:100%;transition:opacity .2s'>Search Funding News →</button>"
-      "<div id='fetch-ldg' style='display:none;align-items:center;gap:8px;font-size:12px;color:var(--tx3);margin-top:12px'><div class='spinner'></div><span>Searching...</span></div>"
-      "<div id='fetch-err' style='display:none;margin-top:10px;padding:10px;background:rgba(248,81,73,0.06);border:1px solid rgba(248,81,73,0.2);color:var(--red);font-size:12px;border-radius:8px'></div>"
-      "<div id='fetch-results' style='display:none;margin-top:14px'>"
-        "<div style='font-size:11px;color:var(--tx3);margin-bottom:8px'>Select companies to research → Inbox:</div>"
-        "<div class='fetch-list' id='fetch-list'></div>"
-        "<div style='display:flex;align-items:center;margin-top:10px'>"
-          "<button id='res-sel-btn' style='background:var(--pip);color:#fff;border:none;font-weight:700;font-size:12px;padding:9px 18px;cursor:pointer;font-family:Nunito,sans-serif;border-radius:8px'>Research Selected →</button>"
-          "<span id='fetch-count' style='font-size:11px;color:var(--tx3);margin-left:10px'></span>"
-        "</div>"
-      "</div>"
-    "</div>"
-  "</div>\n"
-
-  "<div class='modal-overlay' id='onboarding-modal'>"
-    "<div class='modal' style='max-width:480px'>"
-      "<div style='text-align:center;margin-bottom:24px'>"
-        "<img src='data:image/png;base64,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' style='width:56px;height:56px;object-fit:contain;margin-bottom:12px'>"
-        "<div style='font-size:24px;font-weight:800;letter-spacing:-.03em;margin-bottom:6px'>Welcome to Scout</div>"
-        "<div style='font-size:13px;color:var(--tx3)'>Your AI-powered client acquisition tool. Set up your profile to get started.</div>"
-      "</div>"
-      "<div class='modal-field'><label class='modal-label'>Your Name / Agency ✳</label><input class='modal-input' id='ob-name' placeholder='e.g. Jane Smith or Acme Marketing'></div>"
-      "<div class='modal-field'><label class='modal-label'>Tagline</label><input class='modal-input' id='ob-tagline' placeholder='Fractional CMO for AI-first startups'></div>"
-      "<div class='modal-field'><label class='modal-label'>LinkedIn URL</label><input class='modal-input' id='ob-linkedin' placeholder='https://linkedin.com/in/yourname'></div>"
-      "<div class='modal-actions'>"
-        "<button class='modal-cancel' onclick='onboardingSkip()'>Skip for now</button>"
-        "<button class='modal-save' onclick='onboardingSave()'>Enter Scout &#8594;</button>"
-      "</div>"
-    "</div>"
-  "</div>\n"
-
   "</div>"
-
-  "<div class='modal-overlay' id='onboarding-overlay'>"
-    "<div class='modal' style='max-width:500px'>"
-      "<div style='text-align:center;margin-bottom:20px'>"
-        "<img src='data:image/png;base64,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' style='width:52px;height:52px;object-fit:contain;margin-bottom:12px'>"
-        "<div class='modal-title' style='text-align:center;font-size:22px;margin-bottom:6px'>Welcome to Scout</div>"
-        "<div style='font-size:13px;color:var(--tx3);line-height:1.7'>Your AI-powered client research tool. How are you using Scout?</div>"
-      "</div>"
-      "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px'>"
-        "<button class='ob-type-btn' data-type='agency' onclick='obSelectType(\"agency\")' style='background:var(--bg);border:1px solid var(--bor2);border-radius:var(--r);padding:16px 10px;cursor:pointer;text-align:center;transition:all .2s;font-family:Nunito,sans-serif'>"
-          "<div style='font-size:24px;margin-bottom:8px'></div>"
-          "<div style='font-size:12px;font-weight:800;color:var(--tx);margin-bottom:4px'>Agency / Freelance</div>"
-          "<div style='font-size:10px;color:var(--tx3)'>Finding clients</div>"
-        "</button>"
-        "<button class='ob-type-btn' data-type='personal' onclick='obSelectType(\"personal\")' style='background:var(--bg);border:1px solid var(--bor2);border-radius:var(--r);padding:16px 10px;cursor:pointer;text-align:center;transition:all .2s;font-family:Nunito,sans-serif'>"
-          "<div style='font-size:24px;margin-bottom:8px'></div>"
-          "<div style='font-size:12px;font-weight:800;color:var(--tx);margin-bottom:4px'>Personal</div>"
-          "<div style='font-size:10px;color:var(--tx3)'>Finding opportunities</div>"
-        "</button>"
-        "<button class='ob-type-btn' data-type='hiring' onclick='obSelectType(\"hiring\")' style='background:var(--bg);border:1px solid var(--bor2);border-radius:var(--r);padding:16px 10px;cursor:pointer;text-align:center;transition:all .2s;font-family:Nunito,sans-serif'>"
-          "<div style='font-size:24px;margin-bottom:8px'></div>"
-          "<div style='font-size:12px;font-weight:800;color:var(--tx);margin-bottom:4px'>Hiring</div>"
-          "<div style='font-size:10px;color:var(--tx3)'>Finding candidates</div>"
-        "</button>"
-      "</div>"
-      "<div id='ob-details' style='display:none'>"
-        "<div class='modal-field'><label class='modal-label' id='ob-name-label'>Your name or agency</label><input class='modal-input' id='ob-name' placeholder='e.g. Jane Smith'></div>"
-        "<div class='modal-field'><label class='modal-label' id='ob-tagline-label'>What you specialise in</label><input class='modal-input' id='ob-tagline' placeholder='e.g. Fractional CMO for AI startups'></div>"
-        "<div class='modal-field'><label class='modal-label'>LinkedIn URL</label><input class='modal-input' id='ob-linkedin' placeholder='https://linkedin.com/in/yourname'></div>"
-        "<div class='modal-field'><label class='modal-label' id='ob-looking-label'>What type of clients are you looking for?</label><input class='modal-input' id='ob-looking' placeholder='e.g. Series A-B AI startups, no CMO'></div>"
-        "<div style='display:flex;gap:10px;margin-top:20px'>"
-          "<button class='modal-cancel' onclick='onboardingSkip()' style='flex:1'>Skip for now</button>"
-          "<button class='modal-save' onclick='onboardingSave()' style='flex:2'>Enter Scout &#8594;</button>"
-        "</div>"
-      "</div>"
-      "<div id='ob-skip-row' style='text-align:center;margin-top:16px'>"
-        "<button onclick='onboardingSkip()' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Nunito,sans-serif;text-decoration:underline'>Skip for now</button>"
-      "</div>"
-    "</div>"
-  "</div>\n"
-  "</div>\n"
-
-  "<div class='pricing-overlay' id='pricing-overlay'>"
-    "<div class='pricing-modal'>"
-      "<div id='pricing-msg' style='font-size:13px;color:var(--amb);text-align:center;margin-bottom:12px;min-height:18px'></div>"
-      "<div class='pricing-title'>Choose your plan</div>"
-      "<div class='pricing-sub'>Start free. Upgrade when Scout starts paying for itself.</div>"
-      "<div class='pricing-grid'>"
-        "<div class='tier-card'>"
-          "<div class='tier-name'>Free</div>"
-          "<div class='tier-price'>$0<span>/mo</span></div>"
-          "<div class='tier-desc'>Try Scout and see if it fits your workflow</div>"
-          "<ul class='tier-features'>"
-            "<li>5 company researches/month</li>"
-            "<li>2 lead fetches/month</li>"
-            "<li>Inbox &amp; Pipeline</li>"
-            "<li class='dim'>Pip Hunt job search</li>"
-            "<li class='dim'>CSV export</li>"
-            "<li class='dim'>Team access</li>"
-            "<li>+1 credit per company you tag as hiring</li>"
-          "</ul>"
-          "<button class='tier-cta outline' onclick='selectTier(\"free\")'>Current plan</button>"
-        "</div>"
-        "<div class='tier-card featured'>"
-          "<div class='tier-badge'>Most Popular</div>"
-          "<div class='tier-name'>Pro</div>"
-          "<div class='tier-price'>$29<span>/mo</span></div>"
-          "<div class='tier-desc'>For freelancers and fractional CMOs actively prospecting</div>"
-          "<ul class='tier-features'>"
-            "<li>Unlimited research</li>"
-            "<li>20 lead fetches/month</li>"
-            "<li>Pip Hunt job search</li>"
-            "<li>CSV export</li>"
-            "<li>Inbox, Pipeline, Profile</li>"
-            "<li class='dim'>Team access</li>"
-            "<li>Priority support</li>"
-          "</ul>"
-          "<button class='tier-cta' onclick='selectTier(\"pro\")'>Get Pro &#8594;</button>"
-        "</div>"
-        "<div class='tier-card'>"
-          "<div class='tier-name'>Agency</div>"
-          "<div class='tier-price'>$99<span>/mo</span></div>"
-          "<div class='tier-desc'>For agencies managing multiple clients and team pipelines</div>"
-          "<ul class='tier-features'>"
-            "<li>Everything in Pro</li>"
-            "<li>Up to 5 team members</li>"
-            "<li>Shared pipeline &amp; inbox</li>"
-            "<li>100 lead fetches/month</li>"
-            "<li>White-label pitch openers</li>"
-            "<li>Client workspace</li>"
-            "<li>Dedicated support</li>"
-          "</ul>"
-          "<button class='tier-cta' onclick='selectTier(\"agency\")'>Get Agency &#8594;</button>"
-        "</div>"
-      "</div>"
-      "<div class='pricing-note'>"
-        "Cancel anytime &nbsp;&#183;&nbsp; Secure payments via Stripe &nbsp;&#183;&nbsp; "
-        "<a href='#' onclick='closePricing()'>Maybe later</a>"
-        ""
-      "</div>\n"
-
-  "<footer style='border-top:1px solid var(--bor);padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:40px'>"
-  "<span style='font-size:11px;color:var(--tx3)'>&#169; 2026 Scout</span>"
-  "<div style='display:flex;gap:20px;align-items:center'>"
-    "<a href='/legal#terms' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Terms of Service</a>"
-    "<a href='/legal#privacy' target='_blank' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Privacy Policy</a>"
-    "<a href='mailto:hello@scout-ai.io' style='font-size:11px;color:var(--tx3);text-decoration:none' onmouseover=\"this.style.color='var(--pip)'\" onmouseout=\"this.style.color='var(--tx3)'\">Contact</a>"
+  "<div id='sourcer-search-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:14px'>"
+  "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px'>LinkedIn X-Ray Searches</div>"
+  "<div style='font-size:12px;color:var(--tx3);margin-bottom:14px'>Copy each into Google to find LinkedIn profiles. Paste candidates below to score them.</div>"
+  "<div id='sourcer-searches'></div>"
   "</div>"
-"</footer>\n"
-  "<div class='modal-overlay' id='profile-modal'>"
-    "<div class='modal' style='max-width:600px'>"
-      "<div class='modal-title'>Edit Profile</div>"
-      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:4px'>Identity</div>"
-      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        "<div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='e.g. Jane Smith'></div>"
-        "<div class='modal-field'><label class='modal-label'>Email</label><input class='modal-input' id='pm-email' placeholder='you@yoursite.com'></div>"
-        "<div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Scout'></div>"
-        "<div class='modal-field'><label class='modal-label'>Your Role</label><input class='modal-input' id='pm-role' placeholder='Fractional CMO'></div>"
-        "<div class='modal-field'><label class='modal-label'>Location</label><input class='modal-input' id='pm-location' placeholder='New York, USA'></div>"
-        "<div class='modal-field'><label class='modal-label'>Years Experience</label><input class='modal-input' id='pm-experience' placeholder='10+'></div>"
-      "</div>"
-      "<div class='modal-field' style='margin-top:4px'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div>"
-      "<div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are and what you do...'></textarea></div>"
-      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Ideal Client</div>"
-      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        "<div class='modal-field'><label class='modal-label'>Target Industries</label><input class='modal-input' id='pm-industries' placeholder='AI, SaaS, Fintech'></div>"
-        "<div class='modal-field'><label class='modal-label'>Ideal Funding Stage</label><input class='modal-input' id='pm-funding_stage' placeholder='Seed – Series B'></div>"
-        "<div class='modal-field'><label class='modal-label'>Ideal Company Size</label><input class='modal-input' id='pm-company_size' placeholder='10–100 employees'></div>"
-        "<div class='modal-field'><label class='modal-label'>Deal Size / Rate</label><input class='modal-input' id='pm-deal_size' placeholder='$5k–$15k/mo'></div>"
-        "<div class='modal-field'><label class='modal-label'>Typical Engagement</label><input class='modal-input' id='pm-client_size' placeholder='3–6 month retainers'></div>"
-        "<div class='modal-field'><label class='modal-label'>Availability</label><input class='modal-input' id='pm-availability' placeholder='2 spots open Q2 2026'></div>"
-      "</div>"
-      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Links</div>"
-      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'>"
-        "<div class='modal-field'><label class='modal-label'>LinkedIn</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/you'></div>"
-        "<div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://x.com/yourhandle'></div>"
-        "<div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com'></div>"
-        "<div class='modal-field'><label class='modal-label'>Book a Call (Calendly)</label><input class='modal-input' id='pm-calendly' placeholder='https://calendly.com/you'></div>"
-      "</div>"
-      "<div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Scout Settings</div>"
-      "<div class='modal-field'><label class='modal-label'>Min GTM Score to show in leads (0 = show all)</label><input class='modal-input' id='pm-min_score' placeholder='0' type='number' min='0' max='100'></div>"
-      "<div class='modal-actions'>"
-        "<button class=\'modal-cancel\' onclick=\'closeProfileModal()\'>Cancel</button>"
-        "<button class='modal-save' onclick='profileSaveInfo()'>Save changes</button>"
-      "</div>"
-    "</div>"
-  "</div>\n"
-  "<div class='modal-overlay' id='case-modal'>"
-    "<div class='modal'>"
-      "<input type='hidden' id='cm-idx' value='-1'>"
-      "<div class='modal-title'>Case Study</div>"
-      "<div class='modal-field'><label class='modal-label'>Client Name</label><input class='modal-input' id='cm-client' placeholder='Acme Inc (or keep anonymous)'></div>"
-      "<div class='modal-field'><label class='modal-label'>What you did</label><input class='modal-input' id='cm-title' placeholder='Built GTM from zero to Series B'></div>"
-      "<div class='modal-field'><label class='modal-label'>Result / Impact</label><textarea class='modal-input modal-textarea' id='cm-result' placeholder='Describe the outcome...'></textarea></div>"
-      "<div class='modal-field'><label class='modal-label'>Key Metrics (comma separated)</label><input class='modal-input' id='cm-metrics' placeholder='3x pipeline, $2M ARR, 40% CAC reduction'></div>"
-      "<div class='modal-actions'>"
-        "<button class='modal-cancel' onclick=\"document.getElementById('case-modal').classList.remove('open')\">Cancel</button>"
-        "<button class='modal-cancel' onclick='profileDeleteCase()' style='color:var(--red);border-color:rgba(239,68,68,0.2)'>Delete</button>"
-        "<button class='modal-save' onclick='profileSaveCase()'>Save</button>"
-      "</div>"
-    "</div>"
-  "</div>\n"
-
-  "<div id='ob-splash' style='display:none;opacity:0;position:fixed;top:0;left:0;width:100%;height:100vh;background:#020408;z-index:99999;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;transition:opacity .5s ease'><div id='ob-step1' style='text-align:center'><div style='display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:32px'><div class='ndot' style='width:10px;height:10px'></div><span style='font-size:14px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div><div style='font-size:30px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif'>Find your next client.</div><div style='font-size:14px;color:#7da8c8;max-width:360px;line-height:1.65;margin-bottom:28px'>AI lead generation for fractional CMOs and agencies.</div><button onclick='obStep(2)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 48px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)'>Get started &#8594;</button><div style='margin-top:12px'><button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;text-decoration:underline'>Skip for now</button></div></div><div id='ob-step2' style='display:none;width:100%;max-width:420px'><div style='font-size:22px;font-weight:800;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Set up your profile</div><div style='font-size:13px;color:#7da8c8;margin-bottom:14px;text-align:center'>Personalises your pitch openers.</div><input class='modal-input' id='ob-name' placeholder='Your name or agency' style='font-size:15px;padding:14px 18px;width:100%;display:block;margin-bottom:8px'><input class='modal-input' id='ob-tagline' placeholder='What you specialise in' style='font-size:14px;padding:13px 18px;width:100%;display:block;margin-bottom:8px'><input class='modal-input' id='ob-linkedin' placeholder='LinkedIn URL (optional)' style='font-size:14px;padding:13px 18px;width:100%;display:block;margin-bottom:12px'><button onclick='obStep(3)' style='width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-bottom:8px'>Continue &#8594;</button><button onclick='obSkip()' style='width:100%;background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;text-decoration:underline;padding:6px'>Skip for now</button></div><div id='ob-step3' style='display:none;width:100%;max-width:540px'><div style='font-size:22px;font-weight:800;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Choose your plan</div><div style='font-size:13px;color:#7da8c8;margin-bottom:14px;text-align:center'>Start free. Upgrade anytime.</div><div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px'><div onclick='obChoosePlan(\"free\")' class='ob-plan-card' id='opc-free'><div class='ob-plan-name'>Free</div><div class='ob-plan-price'>$0</div><div class='ob-plan-desc'>5 researches/mo</div></div><div onclick='obChoosePlan(\"pro\")' class='ob-plan-card ob-plan-hot selected' id='opc-pro'><div class='ob-plan-badge'>Popular</div><div class='ob-plan-name'>Pro</div><div class='ob-plan-price'>$29<span>/mo</span></div><div class='ob-plan-desc'>Unlimited research</div></div><div onclick='obChoosePlan(\"agency\")' class='ob-plan-card' id='opc-agency'><div class='ob-plan-name'>Agency</div><div class='ob-plan-price'>$99<span>/mo</span></div><div class='ob-plan-desc'>5 team members</div></div></div><button id='ob-enter-btn' onclick='obFinish()' style='width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer'>Enter Scout &#8594;</button></div></div>\n"
-  "<script>" + JS + "</script>\n"
+  "<div id='sourcer-candidates-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:14px'>"
+  "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px'>Score candidates</div>"
+  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste names and roles. Scout scores fit 0-100 and writes a personalised LinkedIn InMail for each.</div>"
+  "<textarea id='sourcer-paste' placeholder='One per line: Jane Smith - Head of Product at Monzo' style='width:100%;min-height:90px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px'></textarea>"
+  "<button onclick='sourcerScore()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;margin-bottom:14px'>Score and write InMails</button>"
+  "<div id='sourcer-results'></div>"
+  "</div>"
+  "</div>"
+  "</div>"
+"<script>" + JS + "</script>\n"
   "</body>\n</html>\n")
 
 LANDING_HTML = '''<!DOCTYPE html>
