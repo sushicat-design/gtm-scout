@@ -2429,17 +2429,47 @@ function authSuccess(){
 function renderTopbar(){
   var right=document.getElementById('topbar-right');if(!right)return;profileLoad();
   var plan=(function(){try{return JSON.parse(localStorage.getItem('scout_tier')||'{}').plan||'free';}catch(e){return 'free';}})();
+  var initials=PROFILE.name?PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase():'ME';
   right.innerHTML=
     '<div id="credits-bar" style="display:none;align-items:center;gap:8px">'+
       '<div style="width:70px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden"><div id="credits-fill" style="height:100%;background:var(--pip);width:0%;border-radius:2px;transition:width .3s"></div></div>'+
       '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>'+
     '</div>'+
     (plan==='free'?'<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>':'')+
-    '<button data-action="open-profile" style="width:30px;height:30px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif" title="Profile">'+
-      (PROFILE.name?PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase():'ME')+
-    '</button>'+
-    '<button onclick="authSignOut()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:2px 6px;opacity:.6" title="Sign out">&#8594;</button>';
+    '<div style="position:relative" id="profile-menu-wrap">'+
+      '<button id="profile-avatar-btn" style="width:32px;height:32px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;display:flex;align-items:center;justify-content:center" title="Account">'+initials+'</button>'+
+      '<div id="profile-dropdown" style="display:none;position:absolute;top:38px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);min-width:180px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden">'+
+        '<div style="padding:12px 16px;border-bottom:1px solid var(--bor)">'+
+          '<div style="font-size:13px;font-weight:700;color:var(--tx)">'+( PROFILE.name||'My account')+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+(PROFILE.email||'')+'</div>'+
+        '</div>'+
+        '<button data-nav="dashboard" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9783; Dashboard</button>'+
+        '<button data-nav="search" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9906; Research</button>'+
+        '<button data-nav="piphunt" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#128269; Pip Hunt</button>'+
+        '<button data-nav="profile" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">&#9881; Profile</button>'+
+        '<button onclick="closeProfileMenu();authSignOut()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">Sign out</button>'+
+      '</div>'+
+    '</div>';
   updateCreditsBar();
+  // Wire avatar button to toggle dropdown
+  setTimeout(function(){
+    var btn=document.getElementById('profile-avatar-btn');
+    if(btn) btn.onclick=function(e){
+      e.stopPropagation();
+      var dd=document.getElementById('profile-dropdown');
+      if(dd) dd.style.display=dd.style.display==='none'?'block':'none';
+    };
+    // Close on outside click
+    document.addEventListener('click',function(){
+      var dd=document.getElementById('profile-dropdown');
+      if(dd) dd.style.display='none';
+    },{once:false});
+  },50);
+}
+
+function closeProfileMenu(){
+  var dd=document.getElementById('profile-dropdown');
+  if(dd) dd.style.display='none';
 }
 function initApp(){
   load();profileLoad();updateCreditsBar();setPage('dashboard');renderTopbar();
@@ -2464,6 +2494,36 @@ function initApp(){
 }
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
+
+  // Handle Supabase email confirmation redirect (hash fragment)
+  var hash = window.location.hash;
+  if(hash && hash.indexOf('access_token=') >= 0){
+    var params = {};
+    hash.replace(/^#/,'').split('&').forEach(function(p){
+      var kv = p.split('='); params[kv[0]] = decodeURIComponent(kv[1]||'');
+    });
+    if(params.access_token){
+      // Store the token and fetch user
+      localStorage.setItem('sb_token', params.access_token);
+      if(params.refresh_token) localStorage.setItem('sb_refresh', params.refresh_token);
+      // Clean the URL
+      window.history.replaceState(null,'',window.location.pathname);
+      // Fetch user info
+      var h = {'apikey': SUPA_KEY, 'Authorization': 'Bearer '+params.access_token, 'Content-Type':'application/json'};
+      fetch(SUPA_URL+'/auth/v1/user',{headers:h}).then(function(r){return r.json();}).then(function(u){
+        if(u && u.id){
+          localStorage.setItem('sb_user', JSON.stringify(u));
+          SUPA_USER = u;
+          if(u.user_metadata && u.user_metadata.name) PROFILE.name = u.user_metadata.name;
+          if(u.email) PROFILE.email = u.email;
+          try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+        }
+        initApp();
+      }).catch(function(){ initApp(); });
+      return;
+    }
+  }
+
   var token=localStorage.getItem('sb_token'),user=authGetUser();
   if(token&&user){SUPA_USER=user;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
   else{showAuthScreen('signup');}
@@ -2885,7 +2945,6 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="#features" class="nlink">Features</a>
     <a href="#pricing" class="nlink">Pricing</a>
     <a href="#waitlist" class="nlink">Early access</a>
-    <a href="/app" class="ncta">Start free</a>
   </div>
 </nav>
 
@@ -2895,7 +2954,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <h1>Your next<br><em>best lead</em></h1>
     <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds — so you spend time closing, not researching.</p>
     <div class="actions">
-      <a href="/app" class="btnp">Get started free</a>
+      <a href="/app" class="btnp">Open Scout</a>
       <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng">Book a call</a>
     </div>
     <div class="stats">
