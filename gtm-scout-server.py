@@ -2228,9 +2228,10 @@ function updateCreditsBar(){
   if(upBtn) upBtn.style.display='';
   var used = t.research_used||0;
   var pct = Math.min(100, Math.round(used/lim.research*100));
-  document.getElementById('credits-fill').style.width = pct+'%';
-  document.getElementById('credits-count').textContent = (lim.research-used)+' research credits left';
-  document.getElementById('credits-fill').style.background = pct>=80?'var(--red)':'var(--pip)';
+  var fillEl = document.getElementById('credits-fill');
+  var countEl = document.getElementById('credits-count');
+  if(fillEl){ fillEl.style.width = pct+'%'; fillEl.style.background = pct>=80?'var(--red)':'var(--pip)'; }
+  if(countEl) countEl.textContent = (lim.research-used)+' research credits left';
 }
 
 function showPricing(msg){
