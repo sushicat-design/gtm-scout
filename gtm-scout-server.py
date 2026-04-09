@@ -13,7 +13,7 @@ PORT = int(os.environ.get('PORT', find_port()))
 GIST_ID = os.environ.get('GIST_ID', '')
 GIST_TOKEN = os.environ.get('GIST_TOKEN', '')
 
-def load_db():
+def load_db(user_key=None):
     # Try GitHub Gist first
     if GIST_ID and GIST_TOKEN:
         try:
@@ -28,7 +28,7 @@ def load_db():
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
                 gist_data = json.loads(resp.read())
-                content = gist_data['files']['scout_db.json']['content']
+                content = (lambda gf: gf['content'] if gf else '[]')(gist_data['files'].get(('scout_db_'+user_key.replace('@','_').replace('.','_')+'.json') if user_key else 'scout_db.json'))
                 data = json.loads(content)
                 if isinstance(data, list) and len(data) > 0:
                     # Only skip if it's literally just the init placeholder
@@ -45,7 +45,7 @@ def load_db():
         print('[DB] No Gist credentials - GIST_ID:', bool(GIST_ID), 'GIST_TOKEN:', bool(GIST_TOKEN))
     # Fallback to local file
     try:
-        db_file = '/tmp/scout_db.json'
+        db_file = '/tmp/scout_db_' + (user_key.replace('@','_').replace('.','_') if user_key else 'default') + '.json'
         if os.path.exists(db_file):
             with open(db_file) as f:
                 data = json.load(f)
@@ -56,10 +56,10 @@ def load_db():
         print('[DB] Local load error:', e)
     return []
 
-def save_db(data):
+def save_db(data, user_key=None):
     # Always save to local file first
     try:
-        db_file = '/tmp/scout_db.json'
+        db_file = '/tmp/scout_db_' + (user_key.replace('@','_').replace('.','_') if user_key else 'default') + '.json'
         with open(db_file, 'w') as f:
             json.dump(data, f)
         print('[DB] Saved', len(data), 'records to local file')
@@ -68,9 +68,10 @@ def save_db(data):
     # Save to GitHub Gist
     if GIST_ID and GIST_TOKEN:
         try:
+            _gist_fname = ('scout_db_' + user_key.replace('@','_').replace('.','_') + '.json') if user_key else 'scout_db.json'
             payload = json.dumps({
                 'files': {
-                    'scout_db.json': {
+                    _gist_fname: {
                         'content': json.dumps(data)
                     }
                 }
@@ -800,7 +801,9 @@ var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text b
 var FETCH_SYS = "You are a funding news analyst. Search the web for startup funding announcements from the last 14 days. Focus on AI, web3, crypto, blockchain, DeFi, fintech. Return ONLY a valid JSON array, no markdown. Each item: {company:Name,sector:AI/Web3/etc,funding:$XM,stage:Seed/Series A/etc,source:publication}. Max 15 companies. Only include real recent raises.";
 
 function load() {
-  fetch('/db').then(function(r){return r.json();}).then(function(d){
+  var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
+  var url = userEmail ? '/db?user=' + encodeURIComponent(userEmail) : '/db';
+  fetch(url).then(function(r){return r.json();}).then(function(d){
     if(Array.isArray(d)){
       DB = d.filter(function(x){return !x._inbox;});
       INBOX = d.filter(function(x){return x._inbox;});
@@ -818,7 +821,8 @@ function load() {
 
 function saveAll() {
   var all = DB.concat(INBOX);
-  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(all)})
+  var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json','X-User-Email': userEmail},body:JSON.stringify(all)})
   .then(function(r){return r.json();})
   .then(function(d){
     var ind=document.getElementById('save-ind');
@@ -2075,6 +2079,11 @@ var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:5}, starter:{research:50,fet
 var TIER_LABELS = {free:'Free',starter:'Starter',pro:'Pro',agency:'Agency'};
 
 function tierLoad(){
+  var _u=authGetUser();
+  if(_u&&_u.email==='cara@sushicat.info'){
+    return {plan:'agency',research_used:0,fetch_used:0,period:new Date().toISOString(),_master:true};
+  }
+
   try{
     var t=localStorage.getItem('scout_tier');
     if(t) return JSON.parse(t);
@@ -2092,6 +2101,7 @@ function tierReset(t){
 }
 
 function tierCanResearch(){
+  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
   var t = tierReset(tierLoad());
   var limit = TIER_LIMITS[t.plan||'free'].research;
   if(t.research_used >= limit){
@@ -2102,6 +2112,7 @@ function tierCanResearch(){
 }
 
 function tierCanFetch(){
+  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
   var t = tierReset(tierLoad());
   var limit = TIER_LIMITS[t.plan||'free'].fetch;
   if(t.fetch_used >= limit){
@@ -2112,6 +2123,7 @@ function tierCanFetch(){
 }
 
 function tierCanPipHunt(){
+  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
   var t = tierReset(tierLoad());
   if(t.plan==='free'){
     showPricing('Pip Hunt is available on Pro and Agency plans.');
@@ -2948,25 +2960,22 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="#waitlist" class="nlink">Early access</a>
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
-    <a href="/app" id="nav-signin" class="nlink" style="font-weight:700">Sign in</a>
-    <a href="/app" id="nav-startfree" class="ncta" style="display:none">Start free</a>
+    <a href="/app" id="nav-cta" class="ncta">Start free</a>
   </div>
   <script>
     (function(){
       try{
-        var t=localStorage.getItem('sb_token');
-        var si=document.getElementById('nav-signin');
-        var sf=document.getElementById('nav-startfree');
-        if(!t){
-          if(si) si.textContent='Start free';
-          if(sf){ sf.style.display='none'; }
-        } else {
-          if(si){ si.textContent='Sign in'; si.style.display='block'; }
+        var token = localStorage.getItem('sb_token');
+        var btn = document.getElementById('nav-cta');
+        if(token && btn){
+          btn.textContent = 'Sign in';
+          btn.style.background = 'none';
+          btn.style.border = '1px solid rgba(45,157,232,0.3)';
+          btn.style.color = '#2d9de8';
         }
       }catch(e){}
     })();
-  </script>
-</nav>
+  </script></nav>
 
 <section class="hero">
   <div>
@@ -3700,8 +3709,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(out)
             return
-        if self.path == '/db':
-            data = json.dumps(load_db()).encode('utf-8')
+        if self.path.startswith('/db'):
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            user_key = qs.get('user', [None])[0]
+            data = json.dumps(load_db(user_key)).encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.send_header('Content-Length', str(len(data)))
@@ -3768,7 +3780,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length', 0))
             try:
                 data = json.loads(self.rfile.read(length))
-                save_db(data)
+                user_email = self.headers.get('X-User-Email', None)
+                user_key = user_email if user_email else None
+                save_db(data, user_key)
                 self.respond({'ok': True})
             except Exception as e:
                 self.respond({'error': str(e)})
