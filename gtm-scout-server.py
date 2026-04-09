@@ -967,6 +967,7 @@ function bulk(){
   if(busy)return;
   var names=document.getElementById('bi').value.trim().split('\\n').map(function(s){return s.trim();}).filter(Boolean);
   if(!names.length)return;
+  if(names.length>5){if(!confirm('Researching '+names.length+' companies uses many API tokens and may hit rate limits. Research up to 3 at a time for best results. Continue?'))return;}
   document.getElementById('bi').value='';
   var i=0;function next(){if(i>=names.length)return;run(names[i++],next);}next();
 }
@@ -1116,7 +1117,8 @@ function researchSelected(){
     var name=names[i++];
     runToInbox(name,next);
   }
-  next();
+  // Stagger calls to avoid rate limit
+  setTimeout(next, 0);
 }
 
 function runToInbox(company, callback){
@@ -1146,7 +1148,7 @@ function runToInbox(company, callback){
     if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}
     setTimeout(function(){if(ind)ind.textContent='';},3000);
   }).finally(function(){
-    if(callback)setTimeout(callback,300);
+    if(callback)setTimeout(callback,1500); // 1.5s between calls avoids rate limit
   });
 }
 
