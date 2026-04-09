@@ -1011,7 +1011,12 @@ function run(company,callback){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
     var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON returned');
-    var res=JSON.parse(t.slice(a,b+1));
+    var _js=t.slice(a,b+1),res;
+    try{res=JSON.parse(_js);}catch(e){
+      var _r=_js.replace(/,\s*"[^"]*"\s*:[^,}]*$/,'').replace(/,$/,'');
+      if(_r.slice(-1)!=='}')_r+='}';
+      try{res=JSON.parse(_r);}catch(e2){throw new Error('Parse failed: '+e2.message);}
+    }
     if(!res.company)throw new Error('Missing company data');
     res._open=true;
     tierUseResearch();
@@ -1045,7 +1050,12 @@ function fetchLeads() {
     if(d.error)throw new Error(d.error);
     var t=d.text||'';t=t.replace(/```json/g,'').replace(/```/g,'').trim();
     var a=t.indexOf('['),b=t.lastIndexOf(']');if(a<0||b<0)throw new Error('No results found');
-    var cos=JSON.parse(t.slice(a,b+1));
+    var _arr=t.slice(a,b+1),cos;
+    try{cos=JSON.parse(_arr);}catch(e){
+      var _lc=_arr.lastIndexOf(',{');
+      if(_lc>0)_arr=_arr.slice(0,_lc)+']';
+      try{cos=JSON.parse(_arr);}catch(e2){throw new Error('Results parse error: '+e2.message);}
+    }
     // Filter out error messages or non-company results
     var badWords=['insufficient','unable','error','no data','no results','no companies','n/a','unknown','failed'];
     cos=cos.filter(function(co){
@@ -1104,7 +1114,12 @@ function runToInbox(company, callback){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
     var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON');
-    var res=JSON.parse(t.slice(a,b+1));
+    var _js2=t.slice(a,b+1),res;
+    try{res=JSON.parse(_js2);}catch(e){
+      var _r2=_js2.replace(/,\s*"[^"]*"\s*:[^,}]*$/,'').replace(/,$/,'');
+      if(_r2.slice(-1)!=='}')_r2+='}';
+      try{res=JSON.parse(_r2);}catch(e2){throw new Error('Parse failed: '+e2.message);}
+    }
     if(!res.company)throw new Error('Missing company');
     // Skip cold leads and companies that already have a CMO
     var score = res.gtm_readiness_score || 0;
@@ -2892,7 +2907,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<p>Research any company to get a full GTM profile, score and pitch opener.</p>"
     "</div>"
     "<div class='search-box'>"
-      "<input id='ci' type='text' placeholder='Company name, e.g. Privy, Alchemy, Listen Labs...'>"
+      "<input id='ci' type='text' placeholder='Company name'>"
       "<button id='rb'>Research →</button>"
     "</div>"
     "<div id='ldg'><div class='spinner'></div><span>Researching <b id='lname'></b>... <span id='ltimer'>0s</span></span></div>"
