@@ -955,10 +955,18 @@ function setPage(page, addToHistory) {
   });
   if(page==='dashboard') renderDashboard();
   if(page==='leads') renderLeads();
-  if(page==='piphunt')    { phLoad(); phRenderJobs(); setTimeout(function(){
-    var lastSrc=PH_HISTORY.filter(function(h){return h.type==='source'&&h.candidates&&h.candidates.length;})[0];
-    if(lastSrc){ var sm=document.getElementById('ph-source-mode'); if(sm&&sm.style.display!=='none') renderCandidateCards(lastSrc.candidates); }
-  },50); }
+  if(page==='piphunt')    {
+    phLoad();
+    phRenderJobs();
+    // Restore last candidate search if any
+    setTimeout(function(){
+      var lastSrc=PH_HISTORY.filter(function(h){return h.type==='source'&&h.candidates&&h.candidates.length;})[0];
+      if(lastSrc){
+        phSetMode('source');
+        renderCandidateCards(lastSrc.candidates);
+      }
+    },50);
+  }
   if(page==='inbox') renderInbox();
   if(page==='profile'){profileLoad();renderProfile();}
 }
