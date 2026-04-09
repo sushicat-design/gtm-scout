@@ -1744,6 +1744,8 @@ function renderInbox(){
 var PH_HISTORY = []; // Array of {type, query, results, ts}
 var PH_JOBS = [];
 var PH_SAVED = [];
+var PH_APPLIED = [];
+var phBottomTab = 'saved';
 var phCategory = 'cmo';
 var phFilters = {remote: false, startup: false, week: false};
 
@@ -1761,129 +1763,76 @@ function phSetCategory(cat){
 }
 
 function phToggleFilter(f){
-  phFilters[f] = !phFilters[f];
-  document.querySelector('[data-filter="'+f+'"]').classList.toggle('on', phFilters[f]);
+  phFilters[f]=!phFilters[f];
+  var btn=document.getElementById('ph-filter-'+f);
+  if(btn){btn.style.background=phFilters[f]?'var(--pip)':'var(--sur2)';btn.style.color=phFilters[f]?'#fff':'var(--tx3)';btn.style.borderColor=phFilters[f]?'var(--pip)':'var(--bor)';}
   phRenderJobs();
 }
 
+
 function phFetch(){
   if(!tierCanPipHunt())return;
-  var btn = document.getElementById('ph-fetch-btn');
-  var status = document.getElementById('ph-status');
-  btn.disabled = true;
-  status.textContent = 'Searching job boards...';
-  var sys = phCategory === 'cmo' ? PH_SYS_CMO : PH_SYS_DESIGN;
-  var query = phCategory === 'cmo' ? 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co CMO VP Marketing Head of Marketing startup 2025 2026' : 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co Head of Design VP Design Creative Director startup 2025 2026';
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
+  var inp=document.getElementById('ph-search-input');
+  var query=inp?inp.value.trim():'';
+  if(!query){showUpsellToast('Enter a job title or role first');if(inp)inp.focus();return;}
+  var btn=document.getElementById('ph-fetch-btn');
+  var status=document.getElementById('ph-status');
+  if(btn)btn.disabled=true;
+  if(status)status.textContent='Searching...';
+  var sites='site:linkedin.com/jobs OR site:indeed.com OR site:glassdoor.com OR site:ziprecruiter.com OR site:monster.com OR site:dice.com OR site:flexjobs.com OR site:upwork.com';
+  var fullQuery=sites+' "'+query+'" 2026';
+  var sys='You are a JSON API. Search the web for real open job postings matching the query right now. Return ONLY a raw JSON array starting with [. Each object must have: role, company, location, remote(bool), salary, posted, apply_url, description(1 sentence max), sector. Use null for unknown fields. No markdown, no explanation, no backticks.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:'',company:fullQuery,system:sys,mode:'fetch'})})
   .then(function(r){return r.json();})
   .then(function(d){
-    if(d.error) throw new Error(d.error);
-    var t=(d.text||'');
-    // Try to extract JSON array - be very permissive
-    t = t.replace(/```json/g,'').replace(/```/g,'');
-    var a=t.indexOf('['), b=t.lastIndexOf(']');
-    var jobs = [];
-    if(a>=0 && b>a){
-      try{ jobs=JSON.parse(t.slice(a,b+1)); }catch(e){
-        // Try to find any JSON objects
-        var objs=[];
-        var re=/{[^{}]+}/g, m;
-        while((m=re.exec(t))!==null){
-          try{var o=JSON.parse(m[0]);if(o.company||o.role)objs.push(o);}catch(e){}
-        }
-        jobs=objs;
-      }
-    }
-    if(!Array.isArray(jobs)||!jobs.length){
-      // Last resort: ask Claude to convert the text to JSON
-      status.textContent='Reformatting results...';
-      fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({key:'',company:'Convert this job listing text to a JSON array. Return ONLY the JSON array starting with [. Each item needs: role, company, location, remote, salary, posted, apply_method, apply_url, description, sector. Text: '+t.slice(0,3000),
-        system:'Return ONLY a valid JSON array starting with [. No explanation, no markdown.'})})
-      .then(function(r2){return r2.json();})
-      .then(function(d2){
-        var t2=(d2.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
-        var a2=t2.indexOf('['),b2=t2.lastIndexOf(']');
-        if(a2>=0&&b2>a2){
-          try{
-            jobs=JSON.parse(t2.slice(a2,b2+1));
-            jobs.forEach(function(j){
-              j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
-              j._cat=phCategory;
-              j.role=j.role||j.title||'Open Role';
-              j.company=j.company||'Unknown';
-            });
-            jobs=jobs.filter(function(j){return j.company&&j.role;});
-            PH_JOBS=PH_JOBS.concat(jobs);
-            phSave();phRenderJobs();
-            status.textContent=jobs.length+' jobs found';
-          }catch(e2){status.textContent='Could not parse results. Try again.';}
-        } else {
-          status.textContent='No structured results. Try again.';
-        }
-        setTimeout(function(){status.textContent='';},4000);
-        btn.disabled=false;
-      }).catch(function(){
-        status.textContent='Parse failed. Try again.';
-        setTimeout(function(){status.textContent='';},3000);
-        btn.disabled=false;
-      });
-      return;
-    }
-    // Filter junk
-    var bad=['error','unable','insufficient','no results','no jobs','n/a'];
-    jobs=jobs.filter(function(j){
-      if(!j.company&&!j.role) return false;
-      var lower=((j.company||'')+(j.role||'')).toLowerCase();
-      return !bad.some(function(w){return lower.indexOf(w)>=0;});
-    });
-    // Normalize fields
+    if(d.error)throw new Error(d.error);
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    var jobs=[];
+    if(a>=0&&b>a){try{jobs=JSON.parse(t.slice(a,b+1));}catch(e){}}
+    if(!jobs.length){if(status)status.textContent='No results - try different keywords';setTimeout(function(){if(status)status.textContent='';},3000);return;}
+    jobs=jobs.filter(function(j){return j.company||j.role;});
     jobs.forEach(function(j){
       j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
-      j._cat=phCategory;
+      j._query=query;
       j.role=j.role||j.title||j.position||'Open Role';
       j.company=j.company||j.employer||'Unknown';
-      j.apply_url=j.apply_url||j.url||j.link||j.application_url||null;
-      j.apply_method=j.apply_method||(j.apply_url&&j.apply_url.indexOf('@')>=0?'email':j.apply_url?'link':null);
+      j.apply_url=j.apply_url||j.url||j.link||null;
       j.remote=j.remote||j.is_remote||(j.location&&j.location.toLowerCase().indexOf('remote')>=0)||false;
     });
-    // Dedupe
-    jobs.forEach(function(j){
-      var exists=PH_JOBS.some(function(x){return x.company===j.company&&x.role===j.role;});
-      if(!exists) PH_JOBS.unshift(j);
-    });
-    phSave();
-    phRenderJobs();
-    status.textContent=jobs.length+' jobs found';
-    setTimeout(function(){status.textContent='';},4000);
+    PH_JOBS=jobs;
+    phSave();phRenderJobs();
+    if(status){status.textContent=jobs.length+' jobs found';setTimeout(function(){status.textContent='';},3000);}
   })
-  .catch(function(e){
-    status.textContent='Error: '+e.message;
-    setTimeout(function(){status.textContent='';},5000);
-  })
-  .finally(function(){btn.disabled=false;});
+  .catch(function(e){if(status){status.textContent='Error: '+e.message;setTimeout(function(){status.textContent='';},4000);}})
+  .finally(function(){if(btn)btn.disabled=false;});
 }
+
 
 function phSave(){
   try{localStorage.setItem('ph_jobs',JSON.stringify(PH_JOBS));}catch(e){}
   try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
+  try{localStorage.setItem('ph_applied',JSON.stringify(PH_APPLIED));}catch(e){}
   try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
 }
 
 function phLoad(){
   try{var j=localStorage.getItem('ph_jobs');if(j)PH_JOBS=JSON.parse(j);}catch(e){}
   try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
+  try{var ap=localStorage.getItem('ph_applied');if(ap)PH_APPLIED=JSON.parse(ap);}catch(e){}
   try{var ph=localStorage.getItem('ph_history');if(ph){PH_HISTORY=JSON.parse(ph);}}catch(e){}
 }
 
 function phSaveJob(id){
   var job=PH_JOBS.find(function(j){return j._id===id;});
   if(!job)return;
-  var already=PH_SAVED.some(function(j){return j._id===id;});
-  if(!already){PH_SAVED.unshift(job);}
-  phSave();
-  phRenderJobs();
+  if(!PH_SAVED.some(function(j){return j._id===id;}))PH_SAVED.unshift(job);
+  PH_JOBS=PH_JOBS.filter(function(j){return j._id!==id;});
+  phSave();phRenderJobs();
+  showUpsellToast('Saved to Saved Jobs');
 }
+
 
 function phRemoveSaved(id){
   PH_SAVED=PH_SAVED.filter(function(j){return j._id!==id;});
@@ -1905,147 +1854,79 @@ function phRenderJobs(){
   var cont=document.getElementById('ph-jobs-grid');
   if(!cont)return;
   cont.innerHTML='';
-  var jobs=PH_JOBS.filter(function(j){return j._cat===phCategory;});
-  if(phFilters.remote) jobs=jobs.filter(function(j){return j.remote;});
-  if(phFilters.startup) jobs=jobs.filter(function(j){
-    var s=(j.sector||'').toLowerCase();
-    return s.indexOf('ai')>=0||s.indexOf('tech')>=0||s.indexOf('saas')>=0||s.indexOf('fintech')>=0;
-  });
-  if(phFilters.week) jobs=jobs.filter(function(j){
-    var p=(j.posted||'').toLowerCase();
-    return p.indexOf('day')>=0||p.indexOf('hour')>=0||p.indexOf('today')>=0||p.indexOf('1 week')>=0;
-  });
-
-  if(!jobs.length){
-    cont.innerHTML='<div class="ph-empty" style="grid-column:1/-1"><div class="ph-empty-title">No jobs yet</div><p>Click "Search Jobs" to find open '+(phCategory==='cmo'?'marketing leadership':'design leadership')+' roles.</p></div>';
-    return;
+  var savedIds=PH_SAVED.map(function(j){return j._id;});
+  var appliedIds=PH_APPLIED.map(function(j){return j._id;});
+  var jobs=PH_JOBS.filter(function(j){return savedIds.indexOf(j._id)<0&&appliedIds.indexOf(j._id)<0;});
+  if(phFilters.remote)jobs=jobs.filter(function(j){return j.remote;});
+  if(phFilters.startup)jobs=jobs.filter(function(j){var s=(j.sector||j.description||'').toLowerCase();return s.indexOf('ai')>=0||s.indexOf('tech')>=0||s.indexOf('saas')>=0||s.indexOf('fintech')>=0;});
+  if(phFilters.week)jobs=jobs.filter(function(j){var p=(j.posted||'').toLowerCase();return p.indexOf('day')>=0||p.indexOf('hour')>=0||p.indexOf('today')>=0;});
+  if(!jobs.length&&!PH_SAVED.length&&!PH_APPLIED.length){
+    cont.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--tx3);font-size:13px">Search for a role above to find open positions</div>';
+  } else if(!jobs.length){
+    cont.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px 0;color:var(--tx3);font-size:13px">No results matching filters</div>';
   }
-
   jobs.forEach(function(job){
     var id=job._id;
-    var isSaved=PH_SAVED.some(function(j){return j._id===id;});
-    var card=document.createElement('div');
-    card.className='ph-card'+(isSaved?' saved':'');
-
+    var card=document.createElement('div');card.className='ph-card';
     var applyHtml='';
     if(job.apply_url){
-      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
-      var isLinkedIn=job.apply_method==='linkedin'||(job.apply_url||'').indexOf('linkedin')>=0;
-      var methodLabel=isEmail?'Email':isLinkedIn?'LinkedIn':'Apply';
-      var displayUrl=isEmail?job.apply_url:(job.apply_url.replace(/^https?:\/\//,'').slice(0,50)+(job.apply_url.length>55?'...':''));
-      applyHtml='<div class="ph-apply">'+
-        '<span class="ph-apply-method">'+methodLabel+'</span>'+
-        (isEmail
-          ? '<span class="ph-apply-link">'+job.apply_url+'</span>'
-          : '<a class="ph-apply-link" href="'+job.apply_url+'" target="_blank">'+displayUrl+'</a>')+
-        '</div>';
+      var isEmail2=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var isLI2=(job.apply_url||'').indexOf('linkedin')>=0;
+      var methodLabel=isEmail2?'Email':isLI2?'LinkedIn':'Apply';
+      var displayUrl=job.apply_url.replace(/^https?:\/\//,'').slice(0,50);
+      applyHtml='<div class="ph-apply"><span class="ph-apply-method">'+methodLabel+'</span>'+(isEmail2?'<span class="ph-apply-link">'+job.apply_url+'</span>':'<a class="ph-apply-link" href="'+job.apply_url+'" target="_blank">'+displayUrl+'</a>')+'</div>';
     }
-
-    card.innerHTML=
-      '<div class="ph-card-header">'+
-        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
-        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
-        '<div class="ph-card-meta">'+
-          (job.location?'<span class="ph-tag">'+(job.location)+'</span>':'')+
-          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
-          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
-          (job.posted?'<span class="ph-tag new">'+(job.posted)+'</span>':'')+
-        '</div>'+
-      '</div>'+
-      '<div class="ph-card-body">'+
-        (job.description?'<div class="ph-desc">'+(job.description)+'</div>':'')+
-        applyHtml+
-      '</div>'+
-      '<div class="ph-card-actions" id="pha-'+id+'"></div>';
-
-    // Wire action buttons
+    card.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job.location?'<span class="ph-tag">'+job.location+'</span>':'')+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+(job.salary?'<span class="ph-tag salary">'+job.salary+'</span>':'')+(job.posted?'<span class="ph-tag new">'+job.posted+'</span>':'')+'</div></div><div class="ph-card-body">'+(job.description?'<div class="ph-desc">'+job.description+'</div>':'')+applyHtml+'</div><div class="ph-card-actions" id="pha-'+id+'"></div>';
     var acts=card.querySelector('.ph-card-actions');
-
-    // Apply / Copy button
-    if(job.apply_url){
-      var applyBtn=document.createElement('button');
-      applyBtn.className='abtn g';
-      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
-      applyBtn.textContent=isEmail?'Copy Email':'Open Application';
-      (function(url,isEm){
-        applyBtn.onclick=function(){
-          if(isEm){navigator.clipboard.writeText(url);applyBtn.textContent='Copied!';setTimeout(function(){applyBtn.textContent='Copy Email';},1800);}
-          else{window.open(url,'_blank');}
-        };
-      })(job.apply_url, isEmail);
-      acts.appendChild(applyBtn);
-    }
-
-    // Save / unsave
-    var saveBtn=document.createElement('button');
-    saveBtn.className='abtn'+(isSaved?' g':'');
-    saveBtn.textContent=isSaved?'Saved ✓':'Save';
-    (function(jid,saved){
-      saveBtn.onclick=function(){
-        if(saved){phRemoveSaved(jid);}
-        else{phSaveJob(jid);}
-      };
-    })(id, isSaved);
-    acts.appendChild(saveBtn);
-
-    // Research company in Scout
-    var rBtn=document.createElement('button');rBtn.className='abtn';
-    rBtn.textContent='Research in Scout';
-    (function(co){rBtn.onclick=function(){phResearchInScout(co);};})(job.company);
-    acts.appendChild(rBtn);
-
-    // Remove from list
-    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';
-    rmBtn.textContent='Remove';
-    (function(jid){rmBtn.onclick=function(){
-      PH_JOBS=PH_JOBS.filter(function(j){return j._id!==jid;});
-      phSave();phRenderJobs();
-    };})(id);
-    acts.appendChild(rmBtn);
-
+    var applyBtn=document.createElement('button');applyBtn.className='abtn g';applyBtn.textContent=job.apply_url?(job.apply_url.indexOf('@')>=0?'Copy & Apply':'Apply'):'Mark Applied';
+    (function(jid){applyBtn.onclick=function(){phApplyJob(jid);};})(id);acts.appendChild(applyBtn);
+    var saveBtn=document.createElement('button');saveBtn.className='abtn';saveBtn.textContent='Save';
+    (function(jid){saveBtn.onclick=function(){phSaveJob(jid);};})(id);acts.appendChild(saveBtn);
+    var rBtn=document.createElement('button');rBtn.className='abtn';rBtn.textContent='Research';
+    (function(co){rBtn.onclick=function(){phResearchInScout(co);};})(job.company);acts.appendChild(rBtn);
+    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';rmBtn.textContent='Remove';
+    (function(jid){rmBtn.onclick=function(){PH_JOBS=PH_JOBS.filter(function(j){return j._id!==jid;});phSave();phRenderJobs();};})(id);acts.appendChild(rmBtn);
     cont.appendChild(card);
   });
-
-  // Render saved section
-  var savedCont=document.getElementById('ph-saved-grid');
-  if(!savedCont)return;
-  savedCont.innerHTML='';
-  var savedJobs=PH_SAVED.filter(function(j){return j._cat===phCategory;});
-  if(!savedJobs.length){
-    document.getElementById('ph-saved-section').style.display='none';
-    return;
+  // Bottom section
+  var bs=document.getElementById('ph-bottom-section');
+  if(bs)bs.style.display=(PH_SAVED.length||PH_APPLIED.length)?'block':'none';
+  // Saved grid
+  var sg=document.getElementById('ph-saved-grid');
+  if(sg){
+    sg.style.display=phBottomTab==='saved'?'block':'none';
+    sg.innerHTML='';
+    if(!PH_SAVED.length){sg.innerHTML='<div style="padding:16px 0;color:var(--tx3);font-size:12px">No saved jobs yet</div>';}
+    else{PH_SAVED.forEach(function(job){
+      var id=job._id;var mini=document.createElement('div');mini.className='ph-card saved';
+      mini.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+(job.salary?'<span class="ph-tag salary">'+job.salary+'</span>':'')+'</div></div><div class="ph-card-actions"></div>';
+      var acts=mini.querySelector('.ph-card-actions');
+      var ab=document.createElement('button');ab.className='abtn g';ab.textContent=job.apply_url?'Apply':'Mark Applied';
+      (function(jid){ab.onclick=function(){phApplyJob(jid);};})(id);acts.appendChild(ab);
+      if(job.apply_url&&job.apply_url.indexOf('@')<0){var oa=document.createElement('a');oa.href=job.apply_url;oa.target='_blank';oa.className='abtn';oa.style.textDecoration='none';oa.textContent='Open';acts.appendChild(oa);}
+      var unBtn=document.createElement('button');unBtn.className='abtn ghost';unBtn.textContent='Remove';
+      (function(jid){unBtn.onclick=function(){PH_SAVED=PH_SAVED.filter(function(j){return j._id!==jid;});phSave();phRenderJobs();};})(id);acts.appendChild(unBtn);
+      sg.appendChild(mini);
+    });}
   }
-  document.getElementById('ph-saved-section').style.display='block';
-  savedJobs.forEach(function(job){
-    var id=job._id;
-    var mini=document.createElement('div');mini.className='ph-card saved';
-    mini.innerHTML=
-      '<div class="ph-card-header">'+
-        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
-        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
-        '<div class="ph-card-meta">'+
-          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
-          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
-        '</div>'+
-      '</div>'+
-      '<div class="ph-card-actions"></div>';
-    var acts=mini.querySelector('.ph-card-actions');
-    if(job.apply_url){
-      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
-      var ab=document.createElement('button');ab.className='abtn g';
-      ab.textContent=isEmail?'Copy Email':'Open Application';
-      (function(url,isEm){ab.onclick=function(){
-        if(isEm){navigator.clipboard.writeText(url);ab.textContent='Copied!';setTimeout(function(){ab.textContent='Copy Email';},1800);}
-        else window.open(url,'_blank');
-      };})(job.apply_url,isEmail);
-      acts.appendChild(ab);
-    }
-    var unBtn=document.createElement('button');unBtn.className='abtn ghost';unBtn.textContent='Remove';
-    (function(jid){unBtn.onclick=function(){phRemoveSaved(jid);phRenderJobs();};})(id);
-    acts.appendChild(unBtn);
-    savedCont.appendChild(mini);
-  });
+  // Applied grid
+  var ag=document.getElementById('ph-applied-grid');
+  if(ag){
+    ag.style.display=phBottomTab==='applied'?'block':'none';
+    ag.innerHTML='';
+    if(!PH_APPLIED.length){ag.innerHTML='<div style="padding:16px 0;color:var(--tx3);font-size:12px">No applications yet - click Apply on any job to track it here</div>';}
+    else{PH_APPLIED.forEach(function(job){
+      var id=job._id;var mini=document.createElement('div');mini.className='ph-card saved';
+      mini.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job._applied_at?'<span class="ph-tag">Applied '+job._applied_at+'</span>':'')+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+'</div></div><div class="ph-card-actions"></div>';
+      var acts=mini.querySelector('.ph-card-actions');
+      if(job.apply_url&&job.apply_url.indexOf('@')<0){var oa2=document.createElement('a');oa2.href=job.apply_url;oa2.target='_blank';oa2.className='abtn g';oa2.style.textDecoration='none';oa2.textContent='Open Application';acts.appendChild(oa2);}
+      var rmBtn2=document.createElement('button');rmBtn2.className='abtn ghost';rmBtn2.textContent='Remove';
+      (function(jid){rmBtn2.onclick=function(){PH_APPLIED=PH_APPLIED.filter(function(j){return j._id!==jid;});phSave();phRenderJobs();};})(id);acts.appendChild(rmBtn2);
+      ag.appendChild(mini);
+    });}
+  }
 }
+
 // ── DOM READY ─────────────────────────────────────────────────────────────────
 
 
@@ -2502,45 +2383,29 @@ function sourcerRun(){
   var jd=(document.getElementById('sourcer-jd')||{value:''}).value.trim();
   if(!jd){alert('Please enter a job description or requirements.');return;}
   SOURCER_JD=jd;
-  // Clear input so user can start a new search
-  var jdEl=document.getElementById('sourcer-jd');
-  if(jdEl) jdEl.value='';
+  var jdEl=document.getElementById('sourcer-jd');if(jdEl)jdEl.value='';
   var status=document.getElementById('sourcer-status');
-  if(status)status.textContent='Generating search strings...';
-  var sys='You are a Boolean search expert for talent sourcing. Generate 5 X-Ray Google search strings to find candidates on LinkedIn for this role or requirement. Return ONLY a JSON array of strings. Each uses site:linkedin.com/in plus relevant keywords. Vary: job title, skills, companies to poach from, seniority+location, broad. No markdown, just the JSON array.';
+  if(status){status.textContent='Finding candidates...';status.style.color='var(--tx3)';}
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:'',company:jd,system:sys,mode:'fetch'})})
+    body:JSON.stringify({key:'',company:jd,system:'',mode:'source'})})
   .then(function(r){return r.json();})
   .then(function(d){
+    if(d.error){if(status)status.textContent='Error: '+d.error;return;}
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
     var a=t.indexOf('['),b=t.lastIndexOf(']');
-    var searches=[];
-    if(a>=0&&b>a){try{searches=JSON.parse(t.slice(a,b+1));}catch(e){}}
-    if(!searches.length){if(status)status.textContent='Try again';return;}
-    // Save directly to history
-    PH_HISTORY.unshift({type:'source',query:jd,searches:searches,candidates:[],ts:Date.now()});
+    var candidates=[];
+    if(a>=0&&b>a){try{candidates=JSON.parse(t.slice(a,b+1));}catch(e){}}
+    if(!candidates.length){if(status)status.textContent='No candidates found - try again';return;}
+    if(status){status.textContent=candidates.length+' candidates found';setTimeout(function(){status.textContent='';},3000);}
+    PH_HISTORY.unshift({type:'source',query:jd,candidates:candidates,ts:Date.now()});
     if(PH_HISTORY.length>20)PH_HISTORY.pop();
     try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
     phSave();
-    phRenderHistory();
-    var hw=document.getElementById('ph-history-wrap');
-    if(hw)hw.style.display='block';
-    var cs2=document.getElementById('sourcer-candidates-section');
-    if(cs2)cs2.style.display='block';
-    if(false){
-      cont.innerHTML=searches.map(function(s){
-        var enc=encodeURIComponent(s);
-        return '<div class="sourcer-search-card" data-search="'+enc+'">'+
-          '<div class="sourcer-search-str">'+s+'</div>'+
-          '<button class="sourcer-copy-btn" data-action="copy-search">Copy</button>'+
-          '</div>';
-      }).join('');
-    }
-    var cs=document.getElementById('sourcer-candidates-section');
-    if(cs)cs.style.display='block';
-    if(status){status.textContent=searches.length+' search strings ready';setTimeout(function(){status.textContent='';},3000);}
+    renderCandidateCards(candidates);
+    var hw=document.getElementById('ph-history-wrap');if(hw)hw.style.display='block';
   }).catch(function(e){if(status)status.textContent='Error: '+e.message;});
 }
+
 
 function sourcerScore(){
   var paste=(document.getElementById('sourcer-paste')||{value:''}).value.trim();
@@ -2796,20 +2661,22 @@ function phRenderHistory(){
     header.appendChild(left);header.appendChild(toggle);
     var body = document.createElement('div');
     body.style.cssText = 'display:none;padding:0 14px 12px;border-top:1px solid var(--bor)';
-    if(item.searches && item.searches.length){
-      item.searches.forEach(function(s){
-        var row = document.createElement('div');
-        row.style.cssText = 'background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-top:8px;display:flex;align-items:center;gap:10px';
-        var str = document.createElement('div');
-        str.style.cssText = 'font-size:11px;color:var(--tx2);font-family:JetBrains Mono,monospace;flex:1;word-break:break-all';
-        str.textContent = s;
-        var cp = document.createElement('button');
-        cp.style.cssText = 'background:var(--pip);color:#fff;border:none;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;flex-shrink:0';
-        cp.textContent = 'Copy';
-        var _s = s;
-        cp.onclick = function(){ navigator.clipboard.writeText(_s); cp.textContent='Copied!'; setTimeout(function(){cp.textContent='Copy';},1500); };
-        row.appendChild(str);row.appendChild(cp);
-        body.appendChild(row);
+    if(item.candidates && item.candidates.length){
+      var ct=document.createElement('div');ct.style.cssText='font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-top:12px;margin-bottom:8px';
+      ct.textContent=item.candidates.length+' Candidates';body.appendChild(ct);
+      item.candidates.forEach(function(c){
+        var sc3=c.fit_score||0;var scol3=sc3>=75?'var(--pip2)':sc3>=50?'var(--amb)':'var(--tx3)';
+        var cr=document.createElement('div');cr.style.cssText='background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px';
+        var cl=document.createElement('div');cl.style.minWidth='0';
+        var cn2=document.createElement('div');cn2.style.cssText='font-size:12px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';cn2.textContent=c.name||'';
+        var cr2=document.createElement('div');cr2.style.cssText='font-size:11px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';cr2.textContent=(c.current_title||'')+(c.current_company?' at '+c.current_company:'');
+        cl.appendChild(cn2);cl.appendChild(cr2);
+        var cright=document.createElement('div');cright.style.cssText='display:flex;align-items:center;gap:8px;flex-shrink:0';
+        var cscore=document.createElement('div');cscore.style.cssText='font-size:18px;font-weight:800;font-family:JetBrains Mono,monospace;color:'+scol3;cscore.textContent=sc3;
+        cright.appendChild(cscore);
+        var la2=document.createElement('a');var liUrl2=c.linkedin_url||('https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((c.name||'')+' '+(c.current_title||'')));
+        la2.href=liUrl2;la2.target='_blank';la2.style.cssText='font-size:10px;color:#0a66c2;font-weight:700;text-decoration:none';la2.textContent=c.linkedin_url?'LinkedIn':'Find';
+        cright.appendChild(la2);cr.appendChild(cl);cr.appendChild(cright);body.appendChild(cr);
       });
     }
     if(item.candidates && item.candidates.length){
@@ -3024,6 +2891,79 @@ function deleteCurrentLead(){
   showUpsellToast((r.company||'Lead') + ' deleted');
   setPage('leads');
 }
+
+function renderCandidateCards(candidates){
+  var wrap=document.getElementById('sourcer-candidates-section');
+  if(!wrap)return;
+  wrap.style.display='block';
+  wrap.innerHTML='';
+  var title=document.createElement('div');
+  title.style.cssText='font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px';
+  title.textContent='Candidates ('+candidates.length+')';
+  wrap.appendChild(title);
+  candidates.forEach(function(c){
+    var score=c.fit_score||0;
+    var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+    var card=document.createElement('div');
+    card.style.cssText='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:16px;margin-bottom:10px';
+    var hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px';
+    var nb=document.createElement('div');
+    var ne=document.createElement('div');ne.style.cssText='font-size:14px;font-weight:700;color:var(--tx)';ne.textContent=c.name||'Unknown';
+    var re2=document.createElement('div');re2.style.cssText='font-size:12px;color:var(--tx3);margin-top:2px';
+    re2.textContent=(c.current_title||'')+(c.current_company?' at '+c.current_company:'');
+    nb.appendChild(ne);nb.appendChild(re2);
+    if(c.location){var lo=document.createElement('div');lo.style.cssText='font-size:11px;color:var(--tx3);margin-top:1px';lo.textContent=c.location;nb.appendChild(lo);}
+    var se=document.createElement('div');se.style.cssText='text-align:right;flex-shrink:0;margin-left:12px';
+    var sn=document.createElement('div');sn.style.cssText='font-size:24px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1';sn.textContent=score;
+    var sl=document.createElement('div');sl.style.cssText='font-size:9px;color:'+scol+';font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px';
+    sl.textContent=score>=75?'Strong fit':score>=50?'Good fit':'Weak fit';
+    se.appendChild(sn);se.appendChild(sl);hdr.appendChild(nb);hdr.appendChild(se);card.appendChild(hdr);
+    if(c.why_fit){var wf=document.createElement('div');wf.style.cssText='font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5;padding:8px 10px;background:var(--sur);border-radius:6px;border-left:3px solid '+scol;wf.textContent=c.why_fit;card.appendChild(wf);}
+    if(c.inmail){
+      var iw=document.createElement('div');iw.style.cssText='margin-bottom:10px';
+      var it=document.createElement('button');it.style.cssText='font-size:11px;font-weight:700;color:var(--pip);background:none;border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:0;margin-bottom:6px';it.textContent='Show InMail draft';
+      var ib=document.createElement('div');ib.style.cssText='display:none;font-size:12px;color:var(--tx2);line-height:1.6;padding:10px 12px;background:var(--pip-dim);border:1px solid var(--pip-bor);border-radius:6px;font-style:italic';ib.textContent=c.inmail;
+      var exp=false;var _im=c.inmail;
+      var cp2=document.createElement('button');cp2.style.cssText='font-size:10px;font-weight:700;color:#fff;background:var(--pip);border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:3px 10px;border-radius:4px;margin-left:8px';cp2.textContent='Copy';
+      cp2.onclick=function(){navigator.clipboard.writeText(_im);cp2.textContent='Copied!';setTimeout(function(){cp2.textContent='Copy';},1500);};
+      it.onclick=function(){exp=!exp;ib.style.display=exp?'block':'none';it.textContent=exp?'Hide InMail draft':'Show InMail draft';};
+      it.appendChild(cp2);iw.appendChild(it);iw.appendChild(ib);card.appendChild(iw);
+    }
+    var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    var liUrl=c.linkedin_url||('https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((c.name||'')+' '+(c.current_title||'')));
+    var la=document.createElement('a');la.href=liUrl;la.target='_blank';la.rel='noopener';
+    la.style.cssText='display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid #0a66c2;color:#0a66c2;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;text-decoration:none;font-family:Outfit,sans-serif';
+    la.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'+(c.linkedin_url?'View Profile':'Find on LinkedIn');
+    btns.appendChild(la);card.appendChild(btns);wrap.appendChild(card);
+  });
+}
+
+function phApplyJob(id){
+  var job=PH_JOBS.find(function(j){return j._id===id;})||PH_SAVED.find(function(j){return j._id===id;});
+  if(!job)return;
+  if(job.apply_url){
+    var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+    if(isEmail){navigator.clipboard.writeText(job.apply_url);showUpsellToast('Email copied: '+job.apply_url);}
+    else{window.open(job.apply_url,'_blank');}
+  }
+  PH_JOBS=PH_JOBS.filter(function(j){return j._id!==id;});
+  PH_SAVED=PH_SAVED.filter(function(j){return j._id!==id;});
+  if(!PH_APPLIED.some(function(j){return j._id===id;})){
+    job._applied_at=new Date().toLocaleDateString();PH_APPLIED.unshift(job);
+  }
+  phSave();phRenderJobs();
+  showUpsellToast('Moved to Applied To ✓');
+}
+
+function phShowBottomTab(tab){
+  phBottomTab=tab;
+  var sg=document.getElementById('ph-saved-grid');var ag=document.getElementById('ph-applied-grid');
+  var st=document.getElementById('ph-tab-saved');var at2=document.getElementById('ph-tab-applied');
+  if(sg)sg.style.display=tab==='saved'?'block':'none';
+  if(ag)ag.style.display=tab==='applied'?'block':'none';
+  if(st){st.style.borderBottomColor=tab==='saved'?'var(--pip)':'transparent';st.style.color=tab==='saved'?'var(--tx)':'var(--tx3)';}
+  if(at2){at2.style.borderBottomColor=tab==='applied'?'var(--pip)':'transparent';at2.style.color=tab==='applied'?'var(--tx)':'var(--tx3)';}
+}
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -3214,28 +3154,30 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</div>"
   "</div>"
   "<div id='ph-hunt-mode' style='padding:0 24px 24px'>"
-  "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px'>"
-  "<button class='ph-tab active' data-cat='cmo' onclick='phSetCategory(\"cmo\")' style='background:var(--pip);color:#fff;border:1px solid var(--pip);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>CMO / VP Marketing</button>"
-  "<button class='ph-tab' data-cat='design' onclick='phSetCategory(\"design\")' style='background:var(--sur2);color:var(--tx3);border:1px solid var(--bor2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Design Leadership</button>"
-  "<button class='ph-tab' data-cat='fractional' onclick='phSetCategory(\"fractional\")' style='background:var(--sur2);color:var(--tx3);border:1px solid var(--bor2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Fractional Roles</button>"
+  "<div style='display:flex;gap:8px;margin-bottom:14px;align-items:center'>"
+  "  <input id='ph-search-input' type='text' placeholder='e.g. fractional CMO, VP Marketing, Head of Growth...' style='flex:1;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:10px 14px;border-radius:8px;outline:none' onkeydown='if(event.key===\"Enter\")phFetch()'>"
+  "  <button id='ph-fetch-btn' onclick='phFetch()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;white-space:nowrap'>Search Jobs</button>"
+  "  <span id='ph-status' style='font-size:12px;color:var(--tx3);white-space:nowrap'></span>"
   "</div>"
-  "<div style='display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap'>"
-  "<button class='ph-filter' data-filter='remote' onclick='phToggleFilter(\"remote\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Remote only</button>"
-  "<button class='ph-filter' data-filter='startup' onclick='phToggleFilter(\"startup\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>AI / Tech</button>"
-  "<button class='ph-filter' data-filter='week' onclick='phToggleFilter(\"week\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>This week</button>"
-  "<button id='ph-fetch-btn' onclick='phFetch()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:8px 20px;border-radius:8px;cursor:pointer;margin-left:auto'>Search Jobs</button>"
-  "<span id='ph-status' style='font-size:12px;color:var(--tx3)'></span>"
+  "<div style='display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap'>"
+  "  <button class='ph-filter' id='ph-filter-remote' onclick='phToggleFilter(\"remote\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Remote only</button>"
+  "  <button class='ph-filter' id='ph-filter-startup' onclick='phToggleFilter(\"startup\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>AI / Tech</button>"
+  "  <button class='ph-filter' id='ph-filter-week' onclick='phToggleFilter(\"week\")' style='background:var(--sur2);border:1px solid var(--bor);color:var(--tx3);font-size:11px;font-weight:600;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>This week</button>"
   "</div>"
   "<div class='ph-grid' id='ph-jobs-grid'></div>"
-  "<div id='ph-saved-section' style='margin-top:24px;display:none'>"
-  "<div style='font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px'>Saved Roles</div>"
-  "<div class='ph-grid' id='ph-saved-grid'></div>"
+  "<div id='ph-bottom-section' style='margin-top:28px;display:none'>"
+  "  <div style='display:flex;gap:0;border-bottom:1px solid var(--bor);margin-bottom:16px'>"
+  "    <button id='ph-tab-saved' onclick='phShowBottomTab(\"saved\")' style='background:none;border:none;border-bottom:2px solid var(--pip);color:var(--tx);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;margin-bottom:-1px'>Saved Jobs</button>"
+  "    <button id='ph-tab-applied' onclick='phShowBottomTab(\"applied\")' style='background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;margin-bottom:-1px'>Applied To</button>"
+  "  </div>"
+  "  <div id='ph-saved-grid'></div>"
+  "  <div id='ph-applied-grid' style='display:none'></div>"
   "</div>"
   "</div>"
   "<div id='ph-source-mode' style='display:none;padding:0 24px 24px'>"
   "<div style='background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:14px'>"
   "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px'>Describe the role</div>"
-  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste a job description or write the skills and level needed. Scout generates LinkedIn X-Ray search strings and scores candidates you find.</div>"
+  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste a job description or describe the role. Scout finds candidates on LinkedIn, scores their fit, and writes personalised InMail drafts.</div>"
   "<textarea id='sourcer-jd' placeholder='Senior Product Designer, 5yr, B2B SaaS, Figma, remote OK' style='width:100%;min-height:110px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box'></textarea>"
   "<div style='display:flex;gap:10px;margin-top:10px;align-items:center'>"
   "<button onclick='sourcerRun()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer'>Generate search strings</button>"
@@ -4445,6 +4387,41 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
                 try:
                     with urllib.request.urlopen(req, timeout=90) as resp:
+                        data = json.loads(resp.read())
+                except urllib.error.HTTPError as e:
+                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
+                except Exception as e:
+                    self.respond({'error': str(e)}); return
+                content = data.get('content', [])
+                stop_reason = data.get('stop_reason', '')
+                for block in content:
+                    if block.get('type') == 'text': final_text = block.get('text', '')
+                if stop_reason == 'end_turn': break
+                elif stop_reason == 'tool_use':
+                    messages.append({'role': 'assistant', 'content': content})
+                    messages.append({'role': 'user', 'content': [{'type': 'tool_result', 'tool_use_id': b['id'], 'content': [{'type': 'text', 'text': 'ok'}]} for b in content if b.get('type') == 'tool_use']})
+                else: break
+            self.respond({'text': final_text})
+        elif mode == 'source':
+            source_sys = (
+                "You are a talent sourcing expert. Given a job description:\n"
+                "1. Generate 3 LinkedIn X-Ray search strings (site:linkedin.com/in format)\n"
+                "2. Search the web using each string to find real candidate profiles\n"
+                "3. For each candidate found, extract: name, current_title, current_company, location, linkedin_url, summary\n"
+                "4. Score each 0-100 based on fit for the job description\n"
+                "5. Write a 2-sentence personalised LinkedIn InMail for each\n"
+                "Return ONLY a valid JSON array. Each object: name, current_title, current_company, location, linkedin_url, fit_score, why_fit, inmail. "
+                "Use null for unknown. Start with [ immediately."
+            )
+            messages = [{'role': 'user', 'content': 'Job description: ' + company}]
+            final_text = ''
+            for _ in range(15):
+                payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 4000, 'system': source_sys,
+                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
+                req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
+                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
+                try:
+                    with urllib.request.urlopen(req, timeout=120) as resp:
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
