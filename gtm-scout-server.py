@@ -780,6 +780,33 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .kanban-card-meta{font-size:11px;color:var(--tx3)}
 .kanban-card-score{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
 .kanban-empty{font-size:12px;color:var(--tx3);text-align:center;padding:24px 0;opacity:.5}
+/* App loading state - hide content until ready */
+body:not(.app-ready) .page,
+body:not(.app-ready) .sidebar,
+body:not(.app-ready) .topbar {
+  visibility: hidden;
+}
+body:not(.app-ready) #app-loading {
+  display: flex !important;
+}
+#app-loading {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg);
+  z-index: 9998;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+#app-loading-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--pip);
+  box-shadow: 0 0 20px var(--pip);
+  animation: ndot 1.5s ease-in-out infinite;
+}
 """
 
 JS = """
@@ -1098,12 +1125,7 @@ function renderDashboard(){
   var contacted=DB.filter(function(r){return r.outreach_status==='contacted'||r.outreach_status==='in_talks';}).length;
   var won=DB.filter(function(r){return r.outreach_status==='closed';}).length;
   var refused=DB.filter(function(r){return r.outreach_status==='refused';}).length;
-  stats.innerHTML=
-    '<div class="stat-card" data-nav="search">'+
-      '<div class="stat-card-n">'+DB.length+'</div>'+
-      '<div class="stat-card-l">Total Leads</div>'+
-      '<div class="stat-card-accent" style="background:var(--pip)"></div>'+
-    '</div>'+
+    stats.innerHTML=
     '<div class="stat-card" data-action="hot-leads">'+
       '<div class="stat-card-n" style="color:var(--pip2)">'+hot+'</div>'+
       '<div class="stat-card-l">Hot Leads</div>'+
@@ -1120,9 +1142,9 @@ function renderDashboard(){
       '<div class="stat-card-accent" style="background:var(--grn)"></div>'+
     '</div>'+
     '<div class="stat-card">'+
-      '<div class="stat-card-n" style="color:var(--tx3)">'+refused+'</div>'+
+      '<div class="stat-card-n" style="color:rgba(239,68,68,0.8)">'+refused+'</div>'+
       '<div class="stat-card-l">Closed Lost</div>'+
-      '<div class="stat-card-accent" style="background:var(--tx3)"></div>'+
+      '<div class="stat-card-accent" style="background:rgba(239,68,68,0.5)"></div>'+
     '</div>';
 
   // Show inbox button only for agency
@@ -1135,6 +1157,44 @@ function renderDashboard(){
       setTimeout(function(){var b=document.getElementById('inbox-nav-btn');if(b)b.onclick=function(){navTo('inbox');};},10);
     } else {
       inboxBtn.innerHTML='';
+    }
+  }
+
+  // Recent fetched leads
+  var recentDiv = document.getElementById('dash-recent-leads');
+  if(recentDiv){
+    var recent = DB.slice().sort(function(a,b){return (b._ts||0)-(a._ts||0);}).slice(0,5);
+    if(recent.length){
+      recentDiv.innerHTML='';
+      recent.forEach(function(r){
+        var score=r.gtm_readiness_score||0;
+        var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:border-color .15s';
+        row.setAttribute('data-action','open-lead');
+        row.setAttribute('data-id',r._id);
+        row.onmouseover=function(){this.style.borderColor='rgba(45,157,232,0.3)';};
+        row.onmouseout=function(){this.style.borderColor='var(--bor)';};
+        var left=document.createElement('div');left.style.minWidth='0';
+        var nm=document.createElement('div');nm.style.cssText='font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';nm.textContent=r.company||'Unknown';
+        var mt=document.createElement('div');mt.style.cssText='font-size:11px;color:var(--tx3);margin-top:1px';mt.textContent=r.sector||r.stage||'';
+        left.appendChild(nm);left.appendChild(mt);
+        var sc=document.createElement('div');sc.style.cssText='font-size:22px;font-weight:800;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;flex-shrink:0;margin-left:12px;color:'+scol;sc.textContent=score;
+        row.appendChild(left);row.appendChild(sc);
+        recentDiv.appendChild(row);
+      });
+    } else {
+      var emp=document.createElement('div');
+      emp.style.cssText='font-size:13px;color:var(--tx3);text-align:center;padding:24px 0';
+      emp.textContent='No leads yet — ';
+      var btn=document.createElement('button');
+      btn.style.cssText='background:none;border:none;color:var(--pip);cursor:pointer;font-family:Outfit,sans-serif;font-size:13px;font-weight:700';
+      btn.textContent='research a company';
+      btn.onclick=function(){navTo('search');};
+      emp.appendChild(btn);
+      var end=document.createTextNode(' to get started.');
+      emp.appendChild(end);
+      recentDiv.appendChild(emp);
     }
   }
 
@@ -2504,14 +2564,14 @@ function authSuccess(){
 }
 function renderTopbar(){
   var right=document.getElementById('topbar-right');if(!right)return;profileLoad();
-  var plan=(function(){try{return JSON.parse(localStorage.getItem('scout_tier')||'{}').plan||'free';}catch(e){return 'free';}})();
+  var _tier=tierLoad(); var plan=_tier.plan||'free';
   var initials=PROFILE.name?PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase():'ME';
   right.innerHTML=
     '<div id="credits-bar" style="display:none;align-items:center;gap:8px">'+
       '<div style="width:70px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden"><div id="credits-fill" style="height:100%;background:var(--pip);width:0%;border-radius:2px;transition:width .3s"></div></div>'+
       '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>'+
     '</div>'+
-    (plan==='free'?'<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>':'')+
+    (!_tier._master&&plan==='free'?'<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>':'')+
     '<div style="position:relative" id="profile-menu-wrap">'+
       '<button id="profile-avatar-btn" style="width:32px;height:32px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;display:flex;align-items:center;justify-content:center" title="Account">'+initials+'</button>'+
       '<div id="profile-dropdown" style="display:none;position:absolute;top:38px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);min-width:180px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden">'+
@@ -2554,7 +2614,7 @@ function closeProfileMenu(){
   if(dd) dd.style.display='none';
 }
 function initApp(){
-  load();profileLoad();updateCreditsBar();renderTopbar();setPage('dashboard');
+  profileLoad();updateCreditsBar();renderTopbar();setPage('dashboard');document.body.classList.add('app-ready');load();
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-action]')||e.target;
     var a=t?t.getAttribute('data-action'):null;if(!a)return;
@@ -2693,7 +2753,11 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<div class='page' id='page-dashboard'>"
   "<div style='padding:20px 24px 0'><div class='stat-cards' id='dash-stats'></div></div>"
   "<div style='padding:12px 24px 24px'>"
-  "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:14px'>"
+    "<div style='margin-bottom:20px'>"
+  "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:10px'>Recent Leads</div>"
+  "<div id='dash-recent-leads'></div>"
+  "</div>"
+"<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:14px'>"
   "<div style='font-size:16px;font-weight:700;color:var(--tx)'>Pipeline</div>"
   "<div style='display:flex;gap:8px;align-items:center'>"
   "<button onclick=\"navTo('search')\" style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer'>+ Research</button>"
