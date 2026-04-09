@@ -849,7 +849,7 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly Hot Lead if 80+, Warm Lead if 50-79, Cold Lead if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to not_contacted), best_contact_title (the exact title of the best person to reach out to for fractional CMO services - prefer CMO, VP Marketing, Head of Growth, Head of Marketing, Co-founder if no marketing hire, or CEO as last resort), best_contact_name (their name if known, else null). Use null for unknown. IMPORTANT: Only research companies that are likely to need fractional CMO services — recently funded startups WITHOUT an established CMO or marketing team. If a company clearly has a mature marketing org, set gtm_readiness_score below 40.";
+var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load() {
@@ -949,12 +949,6 @@ function setPage(page, addToHistory) {
     var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
   });
-  if(page==='dashboard') renderDashboard();
-  if(page==='search') renderRecentLeads();
-  if(page==='leads') renderLeads();
-  if(page==='pipeline') renderPipelinePage();
-  if(page==='piphunt'){phLoad();setTimeout(function(){phRenderHistory();},50);}
-  if(page==='inbox') renderInbox();
   if(page==='dashboard') renderDashboard();
   if(page==='leads') renderLeads();
   if(page==='piphunt'){ phLoad(); phRenderJobs(); setTimeout(function(){phRenderHistory();},100); }
@@ -1110,11 +1104,11 @@ function researchSelected(){
   });
   if(!names.length)return;
   document.getElementById('fetch-results').style.display='none';
-  closeFetchModal();
   var i=0;
   function next(){
     if(i>=names.length){
       updateBadges();
+      renderInbox();
       setPage('inbox');
       showUpsellToast('Done! '+INBOX.length+' lead'+(INBOX.length!==1?'s':'')+' in Inbox');
       return;
@@ -1146,7 +1140,6 @@ function runToInbox(company, callback){
     res._open=false;
     INBOX.unshift(res);
     save();updateBadges();
-    if(typeof currentPage!=='undefined'&&currentPage==='inbox')renderInbox();
     if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
     setTimeout(function(){if(ind)ind.textContent='';},2000);
   }).catch(function(e){
