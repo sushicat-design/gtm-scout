@@ -1097,7 +1097,7 @@ function researchSelected(){
       renderInbox();
       setPage('inbox');
       updateBadges();
-      showUpsellToast('Done! ' + INBOX.length + ' lead' + (INBOX.length!==1?'s':'') + ' added to Inbox');
+      showUpsellToast('Done! '+INBOX.length+' lead'+(INBOX.length!==1?'s':'')+' in Inbox');
       return;
     }
     var name=names[i++];
@@ -1108,49 +1108,38 @@ function researchSelected(){
 
 function runToInbox(company, callback){
   var ind=document.getElementById('save-ind');
-  if(ind){ind.textContent='researching '+company+'...';ind.style.color='var(--tx3)';}
+  if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
-    var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON');
-    var _js2=t.slice(a,b+1),res;
-    try{res=JSON.parse(_js2);}catch(e){
-      var _r2=_js2.replace(/,\s*"[^"]*"\s*:[^,}]*$/,'').replace(/,$/,'');
-      if(_r2.slice(-1)!=='}')_r2+='}';
-      try{res=JSON.parse(_r2);}catch(e2){throw new Error('Parse failed: '+e2.message);}
+    var a=t.indexOf('{'),b=t.lastIndexOf('}');
+    if(a<0||b<0)throw new Error('No JSON');
+    var _s=t.slice(a,b+1),res;
+    try{res=JSON.parse(_s);}catch(e){
+      var _f=_s.replace(/,\s*"[^"]*"\s*:[^,}]*$/,'').replace(/,$/,'');
+      if(_f.slice(-1)!=='}')_f+='}';
+      try{res=JSON.parse(_f);}catch(e2){throw new Error('Parse error: '+e2.message);}
     }
     if(!res.company)throw new Error('Missing company');
-    // Skip cold leads and companies that already have a CMO
-    var score = res.gtm_readiness_score || 0;
-    var hasCmo = res.has_cmo === true;
-    if(score < 50 || hasCmo){
-      if(ind){ind.textContent='skipped '+res.company+' (not a fit)';ind.style.color='var(--tx3)';}
+    var score=res.gtm_readiness_score||0;
+    if(score<40){
+      if(ind){ind.textContent='Skipped '+res.company+' (score '+score+')';ind.style.color='var(--tx3)';}
       setTimeout(function(){if(ind)ind.textContent='';},2000);
-      if(callback) setTimeout(callback, 300);
-      return;
+    } else {
+      res._id='id'+Date.now()+Math.floor(Math.random()*9999);
+      res._inbox=true;
+      res._open=false;
+      INBOX.unshift(res);
+      save();updateBadges();
+      if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
+      setTimeout(function(){if(ind)ind.textContent='';},2000);
     }
-    // Skip cold leads - not worth pursuing
-    var score = res.gtm_readiness_score || 0;
-    if(score < 50){
-      if(ind){ind.textContent='Skipped '+res.company+' (cold lead, score '+score+')';ind.style.color='var(--tx3)';}
-      if(callback) setTimeout(callback, 300);
-      return;
-    }
-    res._id='id'+Date.now()+Math.floor(Math.random()*9999);
-    res._inbox=true;
-    res._open=false;
-    INBOX.unshift(res);
-    save();updateBadges();
-    navTo('inbox');
-    renderInbox();
-    if(ind){ind.textContent='added to inbox';ind.style.color='var(--pip)';}
-    setTimeout(function(){if(ind)ind.textContent='';},2000);
   }).catch(function(e){
-    if(ind){ind.textContent='error: '+e.message;ind.style.color='var(--red)';}
+    if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}
     setTimeout(function(){if(ind)ind.textContent='';},3000);
   }).finally(function(){
-    if(callback) setTimeout(callback, 300);
+    if(callback)setTimeout(callback,300);
   });
 }
 
@@ -2795,27 +2784,28 @@ function goBack(){
 }
 
 function renderSidebarTier(){
-  var label=document.getElementById('sb-tier-label');
+  var wrap=document.getElementById('sb-tier-features');
   var items=document.getElementById('sb-tier-items');
-  if(!label||!items)return;
+  var label=document.getElementById('sb-tier-label');
+  if(!wrap||!items)return;
   var t=tierLoad();
   var plan=t.plan||'free';
   var features={
     free:    [],
     starter: [],
-    pro:     ['300 researches/mo','30 lead fetches/mo','Pip Hunt (jobs & sourcing)','CSV export','Priority support'],
-    agency:  ['750 researches/mo','5 team members','100 lead fetches/mo','Inbox & review queue','White-label pitches','Dedicated support']
+    pro:     ['CSV Export','Priority Support'],
+    agency:  ['Inbox & Review','White-label Pitches','Dedicated Support']
   };
-  var planLabel={free:'Free Plan',starter:'Starter Plan',pro:'Pro Plan',agency:'Agency Plan'};
+  var planLabel={free:'Free',starter:'Starter',pro:'Pro Plan',agency:'Agency Plan'};
   var list=features[plan]||[];
-  if(!list.length){
-    label.textContent='';items.innerHTML='';
-    document.getElementById('sb-tier-features').style.display='none';
-    return;
-  }
-  document.getElementById('sb-tier-features').style.display='block';
-  label.textContent=planLabel[plan]||'';
-  items.innerHTML=list.map(function(f){return '<div style="display:flex;align-items:center;gap:6px"><span style="color:var(--pip2);font-size:10px">&#10003;</span>'+f+'</div>';}).join('');
+  if(!list.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  if(label) label.textContent=planLabel[plan]||'';
+  items.innerHTML=list.map(function(f){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor);color:var(--tx2);font-size:12px">'+
+      '<span style="color:var(--pip2);font-size:10px;flex-shrink:0">&#10003;</span>'+f+
+    '</div>';
+  }).join('');
 }
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
