@@ -1111,7 +1111,7 @@ function researchSelected(){
       updateBadges();
       renderInbox();
       setPage('inbox');
-      showUpsellToast('Research complete! Check Inbox ✓');
+      var _added=INBOX.length;showUpsellToast('Done! '+_added+' lead'+(_added!==1?'s':'')+' added to Inbox ✓');
       return;
     }
     var name=names[i++];
@@ -1685,11 +1685,11 @@ function renderInbox(){
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
           '<div>'+
             '<div class="inbox-card-name">'+(r.company||'')+'</div>'+
-            '<div class="inbox-card-meta">'+(r.sector||'')+(r.stage?' - '+r.stage:'')+(r.hq?' - '+r.hq:'')+'</div>'+
+            '<div class="inbox-card-meta" style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.sector||'')+((r.sector&&r.stage)?' · ':'')+( r.stage||'')+'</div>'+
           '</div>'+
-          '<div style="text-align:right">'+
-            '<div style="font-size:20px;font-weight:800;color:'+c+'">'+n+'</div>'+
-            '<div style="font-size:9px;font-weight:700;color:'+c+';border:1px solid '+c+';padding:2px 8px;border-radius:999px;display:inline-block;margin-top:3px">'+(r.gtm_label||'')+'</div>'+
+          '<div style="text-align:right;flex-shrink:0;min-width:60px">'+
+            '<div style="font-size:22px;font-weight:800;color:'+c+';line-height:1">'+n+'</div>'+
+            '<div style="font-size:9px;font-weight:700;color:'+c+';border:1px solid '+c+';padding:2px 8px;border-radius:999px;display:inline-block;margin-top:4px;white-space:nowrap">'+(r.gtm_label||'')+'</div>'+
           '</div>'+
         '</div>'+
       '</div>'+
@@ -2289,10 +2289,14 @@ function tierReset(t){
 
 function tierCanResearch(){
   var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
-  var t = tierReset(tierLoad());
-  var limit = TIER_LIMITS[t.plan||'free'].research;
-  if(t.research_used >= limit){
-    showPricing('You have used your '+limit+' free research credits this month.');
+  var t=tierReset(tierLoad());
+  var limit=TIER_LIMITS[t.plan||'free'].research;
+  if(t.research_used>=limit){
+    if(t.plan==='agency'){
+      showLimitToast('You’ve used all '+limit+' researches this month. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up 20 credits →</a>');
+    } else {
+      showLimitToast('You’ve used all '+limit+' researches. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up</a> or <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">upgrade your plan →</a>');
+    }
     return false;
   }
   return true;
@@ -2300,10 +2304,14 @@ function tierCanResearch(){
 
 function tierCanFetch(){
   var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
-  var t = tierReset(tierLoad());
-  var limit = TIER_LIMITS[t.plan||'free'].fetch;
-  if(t.fetch_used >= limit){
-    showPricing('You have used your '+limit+' free fetch credits this month.');
+  var t=tierReset(tierLoad());
+  var limit=TIER_LIMITS[t.plan||'free'].fetch;
+  if(t.fetch_used>=limit){
+    if(t.plan==='agency'){
+      showLimitToast('You’ve used all '+limit+' fetches this month. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up →</a>');
+    } else {
+      showLimitToast('You’ve used all '+limit+' fetches. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up</a> or <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">upgrade →</a>');
+    }
     return false;
   }
   return true;
@@ -2384,6 +2392,13 @@ function earnCredit(){
 }
 
 // Smart upsell - show after every 3rd research for free users
+function showLimitToast(msg){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sur);border:1px solid var(--pip-bor);color:var(--tx);font-size:13px;font-weight:600;padding:14px 24px;border-radius:10px;z-index:99999;box-shadow:0 4px 32px rgba(0,0,0,0.5);font-family:Outfit,sans-serif;max-width:360px;text-align:center;line-height:1.5';
+  t.innerHTML=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(function(){t.remove();},300);},5000);
+}
 function showUpsellToast(msg){
   var existing = document.getElementById("upsell-toast");
   if(existing) existing.remove();
