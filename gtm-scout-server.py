@@ -955,7 +955,10 @@ function setPage(page, addToHistory) {
   });
   if(page==='dashboard') renderDashboard();
   if(page==='leads') renderLeads();
-  if(page==='piphunt')    { phLoad(); phRenderJobs(); }
+  if(page==='piphunt')    { phLoad(); phRenderJobs(); setTimeout(function(){
+    var lastSrc=PH_HISTORY.filter(function(h){return h.type==='source'&&h.candidates&&h.candidates.length;})[0];
+    if(lastSrc){ var sm=document.getElementById('ph-source-mode'); if(sm&&sm.style.display!=='none') renderCandidateCards(lastSrc.candidates); }
+  },50); }
   if(page==='inbox') renderInbox();
   if(page==='profile'){profileLoad();renderProfile();}
 }
@@ -3223,7 +3226,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste a job description or describe the role. Scout finds candidates on LinkedIn, scores their fit, and writes personalised InMail drafts.</div>"
   "<textarea id='sourcer-jd' placeholder='Senior Product Designer, 5yr, B2B SaaS, Figma, remote OK' style='width:100%;min-height:110px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box'></textarea>"
   "<div style='display:flex;gap:10px;margin-top:10px;align-items:center'>"
-  "<button onclick='sourcerRun()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer'>Generate search strings</button>"
+  "<button onclick='sourcerRun()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer'>Find Candidates</button>"
   "<span id='sourcer-status' style='font-size:12px;color:var(--tx3)'></span>"
   "</div>"
   "</div>"
@@ -3232,7 +3235,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<div style='font-size:12px;color:var(--tx3);margin-bottom:14px'>Copy each into Google to find LinkedIn profiles. Paste candidates below to score them.</div>"
   "<div id='sourcer-searches'></div>"
   "</div>"
-  "<div id='sourcer-candidates-section' style='display:none;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:14px'>"
+  "<div id='sourcer-candidates-section' style='display:none;margin-top:14px'></div>"
   "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px'>Score candidates</div>"
   "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste names and roles. Scout scores fit 0-100 and writes a personalised LinkedIn InMail for each.</div>"
   "<textarea id='sourcer-paste' placeholder='One per line: Jane Smith - Head of Product at Monzo' style='width:100%;min-height:90px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px'></textarea>"
