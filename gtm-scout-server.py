@@ -850,7 +850,7 @@ var currentPage = 'search';
 var fil = 'all';
 
 var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly Hot Lead if 80+, Warm Lead if 50-79, Cold Lead if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to not_contacted), best_contact_title (the exact title of the best person to reach out to for fractional CMO services - prefer CMO, VP Marketing, Head of Growth, Head of Marketing, Co-founder if no marketing hire, or CEO as last resort), best_contact_name (their name if known, else null). Use null for unknown. IMPORTANT: Only research companies that are likely to need fractional CMO services — recently funded startups WITHOUT an established CMO or marketing team. If a company clearly has a mature marketing org, set gtm_readiness_score below 40.";
-var FETCH_SYS = "You are a funding news analyst. Search the web for startup funding announcements from the last 14 days. Focus on AI, web3, crypto, blockchain, DeFi, fintech. Return ONLY a valid JSON array, no markdown. Each item: {company:Name,sector:AI/Web3/etc,funding:$XM,stage:Seed/Series A/etc,source:publication}. Max 15 companies. Only include real recent raises.";
+var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load() {
   var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
@@ -1049,12 +1049,29 @@ function fetchLeads() {
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=d.text||'';t=t.replace(/```json/g,'').replace(/```/g,'').trim();
-    var a=t.indexOf('['),b=t.lastIndexOf(']');if(a<0||b<0)throw new Error('No results found');
-    var _arr=t.slice(a,b+1),cos;
+    // Try to find array in response
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    var _arr,cos;
+    if(a>=0&&b>a){
+      _arr=t.slice(a,b+1);
+    } else {
+      // No brackets - try to wrap content in array
+      // Sometimes AI returns objects without wrapping []
+      var _ob=t.indexOf('{'),_cb=t.lastIndexOf('}');
+      if(_ob>=0&&_cb>_ob){ _arr='['+t.slice(_ob,_cb+1)+']'; }
+      else{ throw new Error('No results returned - try again'); }
+    }
     try{cos=JSON.parse(_arr);}catch(e){
+      // Strip last incomplete entry
       var _lc=_arr.lastIndexOf(',{');
       if(_lc>0)_arr=_arr.slice(0,_lc)+']';
-      try{cos=JSON.parse(_arr);}catch(e2){throw new Error('Results parse error: '+e2.message);}
+      try{cos=JSON.parse(_arr);}catch(e2){
+        // Last resort: extract individual objects
+        var _objs=[],_m,_re=/{[^{}]+}/g;
+        while((_m=_re.exec(_arr))!==null){try{_objs.push(JSON.parse(_m[0]));}catch(ex){}}
+        if(_objs.length){cos=_objs;}
+        else{throw new Error('Could not parse results - try again');}
+      }
     }
     // Filter out error messages or non-company results
     var badWords=['insufficient','unable','error','no data','no results','no companies','n/a','unknown','failed'];
