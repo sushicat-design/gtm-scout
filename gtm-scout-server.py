@@ -852,7 +852,7 @@ var fil = 'all';
 var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
-function load() {
+function load(onDone) {
   var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
   var url = userEmail ? '/db?user=' + encodeURIComponent(userEmail) : '/db';
   fetch(url).then(function(r){return r.json();}).then(function(d){
@@ -860,13 +860,14 @@ function load() {
       DB = d.filter(function(x){return !x._inbox;});
       INBOX = d.filter(function(x){return x._inbox;});
       updateBadges();
-      if(currentPage==='dashboard') renderDashboard();
-      else if(currentPage==='profile'){profileLoad();renderProfile();}
+      if(typeof onDone==='function'){onDone();}
+      else if(currentPage==='dashboard') renderDashboard();
+      if(currentPage==='profile'){profileLoad();renderProfile();}
       else if(currentPage==='leads') renderLeads();
       else if(currentPage==='pipeline') renderPipelinePage();
       else if(currentPage==='inbox') renderInbox();
     }
-  }).catch(function(){DB=[];INBOX=[];});
+  }).catch(function(){DB=[];INBOX=[];if(typeof onDone==='function')onDone();});
 }
 
 
@@ -897,6 +898,8 @@ function updateBadges() {
   if(ib) { ib.textContent = INBOX.length; ib.style.display = INBOX.length ? '' : 'none'; }
   var ibd = document.getElementById('inbox-badge-dash');
   if(ibd) ibd.textContent = INBOX.length ? INBOX.length + ' new' : '';
+  var ibsi = document.getElementById('inbox-badge-si');
+  if(ibsi){ ibsi.textContent=INBOX.length; ibsi.style.display=INBOX.length?'':'none'; }
 }
 function renderAll(){
   if(currentPage==='dashboard') renderDashboard();
@@ -2706,7 +2709,8 @@ function closeProfileMenu(){
   if(dd) dd.style.display='none';
 }
 function initApp(){
-  profileLoad();updateCreditsBar();renderTopbar();setPage('dashboard');document.body.classList.add('app-ready');load();
+  profileLoad();phLoad();updateCreditsBar();renderTopbar();document.body.classList.add('app-ready');
+  load(function(){ setPage('dashboard'); });
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-action]')||e.target;
     var a=t?t.getAttribute('data-action'):null;if(!a)return;
@@ -2922,7 +2926,11 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<button onclick='navTo(\"piphunt\")' style='margin-left:auto;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;padding:5px 12px;border-radius:var(--r-pill);cursor:pointer;font-family:Nunito,sans-serif'>Open</button>"
       "</div>"
     "</div>"
-  "</div>\n"
+
+    "<div id='sb-tier-features' style='display:none;padding:12px 16px;border-top:1px solid var(--bor)'>"
+    "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'></div>"
+    "<div id='sb-tier-items'></div>"
+    "</div>"  "</div>\n"
 
   "<div class='page active' id='page-search'>"
     "<div class='search-hero'>"
@@ -4261,5 +4269,9 @@ if __name__ == '__main__':
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge' style='display:none'>0</span></button>"
     "<div id='sb-tier-features' style='padding:12px 16px;border-top:1px solid var(--bor);margin-top:8px'>"
     "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'></div>"
+    "<div id='sb-tier-features' style='display:none;padding:12px 16px;border-top:1px solid var(--bor)'>"
+    "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px'></div>"
+    "<div id='sb-tier-items'></div>"
+    "</div>"
     "<div id='sb-tier-items' style='font-size:12px;color:var(--tx2);line-height:1.8'></div>"
 
