@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env pyth<div class=\'modal-field\'><label class=\'modal-label\'>Phone</label><input class=\'modal-input\' id=\'pm-phone\' placeholder=\'+1 555 000 0000\' type=\'text\'></div>on3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -1446,7 +1446,7 @@ function renderLeadDetail(r){
       '</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0;padding-top:8px;border-top:1px solid var(--bor)">'+
-      '<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
+      '<button onclick="generateProposal(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Proposal</button>'+'<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0">'+
       '<div class="ld-section-title">Notes</div>'+
@@ -1837,7 +1837,7 @@ function phSaveJob(id){
   if(!PH_SAVED.some(function(j){return j._id===id;}))PH_SAVED.unshift(job);
   PH_JOBS=PH_JOBS.filter(function(j){return j._id!==id;});
   phSave();phRenderJobs();
-  showUpsellToast('Saved to Saved Jobs');
+  showInfoToast('Saved to Saved Jobs ✓');
 }
 
 
@@ -1995,9 +1995,17 @@ function renderProfile(){
   if(PROFILE.twitter) socials += '<a class="prof-social" href="'+PROFILE.twitter+'" target="_blank">Twitter/X</a>';
   if(PROFILE.website) socials += '<a class="prof-social" href="'+PROFILE.website+'" target="_blank">Website</a>';
   if(PROFILE.calendly) socials += '<a class="prof-social" href="'+PROFILE.calendly+'" target="_blank">Book a call</a>';
-  var servicesHtml = (PROFILE.services_list||[]).map(function(s){
-    return '<span class="prof-tag">'+s+'</span>';
-  }).join('') + '<button class="prof-tag-add" onclick="profileAddService()">+ Add</button>';
+  var servicesHtml = (PROFILE.services||[]).map(function(s,i){
+    var sobj=typeof s==='object'?s:{name:s,desc:'',price:''};
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;background:var(--sur2);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-bottom:6px">'+
+      '<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:var(--tx)">'+(sobj.name||'')+'</div>'+
+      (sobj.desc?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+(sobj.desc||'')+'</div>':'')+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:8px">'+
+      (sobj.price?'<span style="font-size:11px;color:var(--pip2);font-weight:700">'+sobj.price+'</span>':'')+
+      '<button onclick="profileRemoveService('+i+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;line-height:1;padding:0">&times;</button>'+
+      '</div></div>';
+  }).join('') + '<button class="prof-tag-add" onclick="profileAddService()">+ Add service</button>';
   var casesHtml = (PROFILE.cases||[]).map(function(c,i){
     var metrics = (c.metrics||[]).map(function(m){return '<span class="case-metric">'+m+'</span>';}).join('');
     return '<div class="case-card" onclick="profileEditCase('+i+')">'
@@ -2100,10 +2108,11 @@ function profileEditInfo(){
   m.style.display='flex';
 }
 
+  PROFILE.phone = (document.getElementById('pm-phone')||{value:''}).value.trim();
 function profileSaveInfo(){
   var fields=["name","email","tagline","bio","agency","role","location","experience",
     "client_size","availability","industries","funding_stage","company_size","deal_size",
-    "linkedin","twitter","website","calendly","min_score"];
+    "linkedin","twitter","website","calendly","phone","min_score"];
   fields.forEach(function(f){
     var el=document.getElementById("pm-"+f);
     if(el) PROFILE[f]=el.value.trim();
@@ -2117,20 +2126,24 @@ function profileSaveInfo(){
 
 
 function profileAddService(){
-  var name=prompt('Service name (e.g. GTM Strategy):');
-  if(!name)return;
-  var desc=prompt('Short description (optional):');
-  var icons=['','','','','','','',''];
-  var icon=icons[Math.floor(Math.random()*icons.length)];
-  PROFILE.services=PROFILE.services||[];
-  PROFILE.services.push({name:name.trim(),desc:(desc||'').trim(),icon:icon});
-  profileSave();
+  var name=window.prompt('Service name (e.g. GTM Strategy):');
+  if(!name||!name.trim())return;
+  var desc=window.prompt('Short description (1 sentence):');
+  var price=window.prompt('Price range (e.g. $3k–$8k/mo):');
+  if(!PROFILE.services)PROFILE.services=[];
+  PROFILE.services.push({name:name.trim(),desc:desc||'',price:price||''});
+  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  renderProfile();
+}
+function profileRemoveService(idx){
+  if(!PROFILE.services)return;
+  PROFILE.services.splice(idx,1);
+  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  renderProfile();
 }
 
-function profileRemoveService(i){
-  PROFILE.services.splice(i,1);
-  profileSave();
-}
+
+
 
 function profileAddCase(){
   openCaseModal(-1,{client:'',title:'',result:'',metrics:[]});
@@ -2333,21 +2346,29 @@ function showLimitToast(msg){
   document.body.appendChild(t);
   setTimeout(function(){t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(function(){t.remove();},300);},5000);
 }
-function showUpsellToast(msg){
-  var existing = document.getElementById("upsell-toast");
-  if(existing) existing.remove();
-  var toast = document.createElement("div");
-  toast.id = "upsell-toast";
-  toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--pip-bor);border-radius:var(--r);padding:14px 18px;max-width:300px;z-index:500;font-size:12px;color:var(--tx2);display:flex;flex-direction:column;gap:8px";
-  var span = document.createElement("span"); span.textContent = msg;
-  var btn = document.createElement("button");
-  var _t2=tierLoad();btn.textContent=_t2.plan==="pro"?"Upgrade to Agency":_t2.plan==="starter"?"Upgrade to Pro":"Upgrade";
-  btn.style.cssText = "background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif";
-  btn.onclick = function(){ showPricing(); toast.remove(); };
-  toast.appendChild(span); toast.appendChild(btn);
-  document.body.appendChild(toast);
-  setTimeout(function(){ if(toast.parentNode) toast.remove(); }, 8000);
+function showInfoToast(msg){
+  var ex=document.getElementById('info-toast');if(ex)ex.remove();
+  var t=document.createElement('div');t.id='info-toast';
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:12px 18px;max-width:280px;z-index:500;font-size:12px;color:var(--tx2);font-family:Outfit,sans-serif;line-height:1.4';
+  t.textContent=msg;document.body.appendChild(t);
+  setTimeout(function(){t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(function(){t.remove();},300);},3000);
 }
+function showUpsellToast(msg){
+  var _t=tierLoad();
+  if(_t._master||_t.plan==='agency'){showInfoToast(msg);return;}
+  var ex=document.getElementById('upsell-toast');if(ex)ex.remove();
+  var toast=document.createElement('div');toast.id='upsell-toast';
+  toast.style.cssText='position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 18px;max-width:300px;z-index:500;font-size:12px;color:var(--tx2);display:flex;flex-direction:column;gap:8px';
+  var span=document.createElement('span');span.textContent=msg;
+  var btn=document.createElement('button');
+  var ul=_t.plan==='pro'?'Upgrade to Agency':_t.plan==='starter'?'Upgrade to Pro':'Upgrade';
+  btn.textContent=ul;
+  btn.style.cssText='background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;align-self:flex-start';
+  btn.onclick=function(){showPricing();toast.remove();};
+  toast.appendChild(span);toast.appendChild(btn);document.body.appendChild(toast);
+  setTimeout(function(){if(toast.parentNode){toast.style.transition='opacity .3s';toast.style.opacity='0';setTimeout(function(){toast.remove();},300);}},8000);
+}
+
 
 function smartUpgradeMsg(){
   var t=tierLoad();var plan=t.plan||'free';
@@ -2790,7 +2811,7 @@ function exportToHubspot(r){
   a.href = URL.createObjectURL(blob);
   a.download = (r.company||'lead').replace(/[^a-z0-9]/gi,'-')+'-hubspot.csv';
   a.click();
-  showUpsellToast('HubSpot CSV downloaded ✓');
+  showInfoToast('HubSpot CSV downloaded ✓');
 }
 
 function exportToNotion(r){
@@ -2851,7 +2872,7 @@ function generateWhitelabelLink(r){
   var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   var url = window.location.origin + '/p/' + encoded;
   navigator.clipboard.writeText(url).then(function(){
-    showUpsellToast('Public pitch link copied ✓');
+    showInfoToast('Pitch link copied ✓');
   }).catch(function(){
     // fallback - show in prompt
     window.prompt('Copy this public link:', url);
@@ -2890,7 +2911,7 @@ function saveWlConfig(){
   PROFILE.wl_color   = (document.getElementById('wl-color')||{value:'#2d9de8'}).value;
   PROFILE.wl_cta     = (document.getElementById('wl-cta')||{value:''}).value.trim();
   try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
-  showUpsellToast('White-label settings saved ✓');
+  showInfoToast('White-label settings saved ✓');
 }
 
 function findOnLinkedIn(){
@@ -2975,7 +2996,7 @@ function renderCandidateCards(candidates){
           phSave();
           _card.style.opacity='0';_card.style.transition='opacity .2s';
           setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);renderCandidateBottomSections();},200);
-          showUpsellToast('Candidate saved \u2713');
+          showInfoToast('Candidate saved ✓');
         };})(c,card);
         btns.appendChild(saveBtn);
       }
@@ -3074,7 +3095,7 @@ function phApplyJob(id){
     job._applied_at=new Date().toLocaleDateString();PH_APPLIED.unshift(job);
   }
   phSave();phRenderJobs();
-  showUpsellToast('Moved to Applied To ✓');
+  showInfoToast('Moved to Applied To ✓');
 }
 
 function phShowBottomTab(tab){
@@ -3148,6 +3169,34 @@ function pruneTrash(){
   });
 })();
 // ── END SECURITY ──────────────────────────────────────────
+
+function generateProposal(r){
+  if(!r){showInfoToast('No lead selected');return;}
+  profileLoad();
+  var user=authGetUser();
+  var data={
+    consultant:{
+      name:PROFILE.name||'',agency:PROFILE.agency||'',role:PROFILE.role||'Fractional CMO',
+      tagline:PROFILE.tagline||'',bio:PROFILE.bio||'',
+      email:PROFILE.show_email===false?'':(PROFILE.email||(user&&user.email)||''),
+      phone:PROFILE.phone||'',linkedin:PROFILE.linkedin||'',
+      website:PROFILE.website||'',calendly:PROFILE.calendly||'',
+      logo:PROFILE.wl_logo||null,color:PROFILE.wl_color||'#2d9de8',
+      deal_size:PROFILE.deal_size||'',client_size:PROFILE.client_size||'',availability:PROFILE.availability||''
+    },
+    lead:{
+      company:r.company||'',sector:r.sector||'',stage:r.stage||'',hq:r.hq||'',
+      funding_amount:r.funding_amount||'',score:r.gtm_readiness_score||0,
+      label:r.gtm_label||'',why_fit:r.why_fit||'',pitch_opener:r.pitch_opener||'',
+      gtm_signals:r.gtm_signals||{}
+    },
+    services:PROFILE.services||[],
+    cases:PROFILE.case_studies||[]
+  };
+  var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  window.open(window.location.origin+'/proposal/'+encoded,'_blank');
+  showInfoToast('Proposal opening\u2026');
+}
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -3603,9 +3652,9 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 <nav>
   <a href="/" class="nlogo"><div class="ndot"></div>Scout</a>
   <div class="nlinks">
-    <a href="#features" class="nlink">Features</a>
-    <a href="#pricing" class="nlink">Pricing</a>
-    <a href="#waitlist" class="nlink">Early access</a>
+    <a href="#features" class="nlink" id="t-nav1">Features</a>
+    <a href="#pricing" class="nlink" id="t-nav2">Pricing</a>
+    <a href="#waitlist" class="nlink" id="t-nav3">Early access</a>
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
     <a href="/app" id="nav-cta" class="ncta">Start free</a>
@@ -3629,17 +3678,17 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 
 <section class="hero">
   <div>
-    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div>AI client acquisition</div>
-    <h1>Your next<br><em>best lead</em></h1>
-    <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.</p>
+    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div><span id="t-eyebrow">AI client acquisition</span></div>
+    <h1 id="t-h1">Your next<br><em>best lead</em></h1>
+    <p class="sub" id="t-sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.</p>
     <div class="actions">
-      <a href="/app" class="btnp">Discover Scout</a>
-      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng">Book a call</a>
+      <a href="/app" class="btnp" id="t-cta1">Discover Scout</a>
+      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng" id="t-cta2">Book a call</a>
     </div>
     <div class="stats">
-      <div class="stat"><div class="stn">8<span>s</span></div><div class="stl">To full GTM profile</div></div>
-      <div class="stat"><div class="stn">0<span>–100</span></div><div class="stl">GTM Score</div></div>
-      <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl">From free</div></div>
+      <div class="stat"><div class="stn">8<span>s</span></div><div class="stl" id="t-stat1">To full GTM profile</div></div>
+      <div class="stat"><div class="stn">0<span>–100</span></div><div class="stl" id="t-stat2">GTM Score</div></div>
+      <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl" id="t-stat3">From free</div></div>
     </div>
   </div>
   <div>
@@ -3688,7 +3737,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 </div>
 
 <section style="position:relative;z-index:1;padding:80px 48px 0;max-width:1240px;margin:0 auto;text-align:center">
-  <p style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);margin-bottom:24px">Built for</p>
+  <p id="t-builtfor" style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);margin-bottom:24px">Built for</p>
   <div class="for-pills">
     <div class="for-pill">Fractional CMOs</div>
     <div class="for-pill">Marketing Agencies</div>
@@ -3699,24 +3748,24 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 </section>
 
 <section class="sec" id="features">
-  <div class="slbl">What Scout does</div>
-  <h2>Stop researching.<br>Start closing.</h2>
-  <p class="ssub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
+  <div class="slbl" id="t-feat-eyebrow">What Scout does</div>
+  <h2 id="t-feat-h2">Stop researching.<br>Start closing.</h2>
+  <p class="ssub" id="t-feat-sub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
   <div class="fg">
-    <div class="fc"><div class="fn">01</div><div class="ft">Know before you pitch</div><p class="fd">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
-    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.</p></div>
-    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans funding databases daily. Hot companies land in your Inbox automatically - just approve or dismiss.</p></div>
-    <div class="fc"><div class="fn">04</div><div class="ft">Never lose track</div><p class="fd">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
-    <div class="fc"><div class="fn">05</div><div class="ft">Two businesses, one tool</div><p class="fd">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
-    <div class="fc"><div class="fn">06</div><div class="ft">Your digital pitch deck</div><p class="fd">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
+    <div class="fc"><div class="fn">01</div><div class="ft" id="t-ft1">Know before you pitch</div><p class="fd" id="t-fd1">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
+    <div class="fc"><div class="fn">02</div><div class="ft" id="t-ft2">Write itself</div><p class="fd" id="t-fd2">Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.</p></div>
+    <div class="fc"><div class="fn">03</div><div class="ft" id="t-ft3">Pipeline on autopilot</div><p class="fd" id="t-fd3">Scout scans funding databases daily. Hot companies land in your Inbox automatically - just approve or dismiss.</p></div>
+    <div class="fc"><div class="fn">04</div><div class="ft" id="t-ft4">Never lose track</div><p class="fd" id="t-fd4">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
+    <div class="fc"><div class="fn">05</div><div class="ft" id="t-ft5">Two businesses, one tool</div><p class="fd" id="t-fd5">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
+    <div class="fc"><div class="fn">06</div><div class="ft" id="t-ft6">Your digital pitch deck</div><p class="fd" id="t-fd6">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
   </div>
 </section>
 
 
 <div class="ps" id="pricing">
   <div style="text-align:center;margin-bottom:40px">
-    <div class="slbl" style="text-align:center">Pricing</div>
-    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
+    <div class="slbl" id="t-price-eyebrow" style="text-align:center">Pricing</div>
+    <h2 id="t-price-h2" style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
     <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
   </div>
 
@@ -3808,17 +3857,547 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 <div class="wl" id="waitlist">
   <div class="wl-card">
     <div>
-      <div class="slbl">Early access</div>
-      <h2 style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
-      <p style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam - just Scout updates and GTM tips from Pip.</p>
+      <div class="slbl" id="t-wl-eyebrow">Early access</div>
+      <h2 id="t-wl-h2" style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
+      <p id="t-wl-sub" style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam - just Scout updates and GTM tips from Pip.</p>
     </div>
     <div>
       <div class="wl-row">
         <input type="email" id="wl-email" class="wl-input" placeholder="you@agency.com">
-        <button class="wl-btn" onclick="joinWaitlist()">Join waitlist</button>
+        <button class="wl-btn" id="t-wl-btn" onclick="joinWaitlist()">Join waitlist</button>
       </div>
       <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:'Outfit',sans-serif"></div>
-      <p style="font-size:11px;color:var(--tx3);margin-top:10px">Already 140+ fractional CMOs and agencies signed up.</p>
+      <p id="t-wl-note" style="font-size:11px;color:var(--tx3);margin-top:10px">Already 140+ fractional CMOs and agencies signed up.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="flo">Scout · scout-ai.io</div>
+  <div class="fls">
+    <a href="/legal#terms" class="fl">Terms</a>
+    <a href="/legal#privacy" class="fl">Privacy</a>
+    <a href="mailto:hello@scout-ai.io" class="fl">hello@scout-ai.io</a>
+    <a href="/app" class="fl">Go to app</a>
+  </div>
+</footer>
+
+<script>
+var cos=[
+  {n:'Ambience Healthcare',m:'Series B · Healthcare AI · SF',s:87,
+   sigs:['Recently funded - $70M Series B','No CMO listed on LinkedIn','3 open marketing roles','Has PR agency, no growth lead'],
+   dots:['g','g','g','a'],
+   p:"Saw the Series B - congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap..."},
+  {n:'Fathom Video',m:'Series A · AI Productivity · New York',s:79,
+   sigs:['Raised $46M 8 weeks ago','Marketing team of 2','Actively hiring demand gen','No head of growth'],
+   dots:['g','g','g','a'],
+   p:"Noticed Fathom just closed the Series A - impressive traction. With a 2-person marketing team and demand gen role open, the timing for fractional support is usually right about now..."},
+  {n:'Cohere',m:'Series C · Enterprise AI · Toronto',s:61,
+   sigs:['$270M raised, 18 months ago','CMO hired 6 months back','Growing marketing team','Strong content presence'],
+   dots:['a','a','g','g'],
+   p:"Cohere’s been building out the marketing org since the Series C - strong moves. If there’s a gap in the enterprise GTM motion, happy to share what’s worked for similar API-first companies..."}
+];
+var ci=0;
+
+function run(c){
+  var tp=document.getElementById('tp');
+  var cr=document.getElementById('cr');
+  var scw=document.getElementById('sc-wrap');
+  var res=document.getElementById('res');
+  var pf2=document.getElementById('pf2');
+  var rs=document.getElementById('rs');
+  var rb2=document.getElementById('rb2');
+  var ptx=document.getElementById('ptx');
+  var pt=document.getElementById('pt');
+  var sct=document.getElementById('sc-txt');
+  if(!tp)return;
+  // reset
+  tp.textContent='';cr.style.display='inline-block';
+  scw.style.display='none';res.style.display='none';
+  pf2.style.transition='none';pf2.style.width='0';
+  setTimeout(function(){pf2.style.transition='width .35s ease';},50);
+  rs.textContent='0';
+  rb2.style.transition='none';rb2.style.width='0';
+  setTimeout(function(){rb2.style.transition='width 1.2s cubic-bezier(.4,0,.2,1)';},50);
+  ptx.textContent='';pt.classList.remove('on');
+  [0,1,2,3].forEach(function(i){
+    var el=document.getElementById('sig'+i);
+    el.classList.remove('on');
+    el.querySelector('.dw-sigdot').className='dw-sigdot '+c.dots[i];
+    el.querySelector('span').textContent=c.sigs[i];
+  });
+  document.getElementById('rn').textContent=c.n;
+  document.getElementById('rm').textContent=c.m;
+  document.getElementById('rt').textContent=c.s>=75?'Hot Lead':c.s>=55?'Warm Lead':'Cold Lead';
+  // type
+  var i=0;
+  var tt=setInterval(function(){
+    tp.textContent=c.n.substring(0,i+1);i++;
+    if(i>=c.n.length){
+      clearInterval(tt);cr.style.display='none';
+      setTimeout(function(){
+        scw.style.display='block';
+        var labs=['Scanning funding data...','Checking LinkedIn team...','Analysing hiring signals...','Writing pitch opener...'];
+        var li=0;sct.textContent=labs[0];
+        var prog=0;
+        var pt2=setInterval(function(){
+          prog+=2.2;pf2.style.width=Math.min(prog,96)+'%';
+          if(prog>22&&li===0){li=1;sct.textContent=labs[1];}
+          if(prog>50&&li===1){li=2;sct.textContent=labs[2];}
+          if(prog>78&&li===2){li=3;sct.textContent=labs[3];}
+          if(prog>=100){
+            clearInterval(pt2);pf2.style.width='100%';
+            setTimeout(function(){
+              scw.style.display='none';res.style.display='block';
+              var cnt=0;
+              var st=setInterval(function(){cnt+=3;if(cnt>=c.s){cnt=c.s;clearInterval(st);}rs.textContent=cnt;},22);
+              setTimeout(function(){rb2.style.width=c.s+'%';},80);
+              [0,1,2,3].forEach(function(i){setTimeout(function(){document.getElementById('sig'+i).classList.add('on');},300+i*200);});
+              setTimeout(function(){
+                pt.classList.add('on');
+                var txt=c.p;var j=0;
+                var wt=setInterval(function(){j+=3;ptx.textContent=txt.substring(0,j);if(j>=txt.length){clearInterval(wt);setTimeout(function(){ci=(ci+1)%cos.length;run(cos[ci]);},3500);}},20);
+              },1300);
+            },280);
+          }
+        },38);
+      },500);
+    }
+  },52);
+}
+
+run(cos[0]);
+
+function joinWaitlist(){
+  var e=document.getElementById('wl-email').value.trim();
+  var m=document.getElementById('wl-msg');
+  if(!e||!e.includes('@')){m.style.color='#ef4444';m.textContent='Please enter a val<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scout - Find your next client</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#020408;--sur:#060c14;--sur2:#0a1220;--pip:#2d9de8;--pip2:#5bc4f5;--pip3:#a8d8ff;--bor:rgba(45,157,232,0.1);--bor2:rgba(45,157,232,0.2);--tx:#eef4ff;--tx2:#7da8c8;--tx3:#2a4a6a;--grn:#10b981;--amb:#f59e0b;--red:#ef4444}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(60px)}
+.o1{width:800px;height:600px;top:-200px;left:-200px;background:radial-gradient(ellipse,rgba(45,157,232,0.08) 0%,transparent 70%);animation:o1 14s ease-in-out infinite alternate}
+.o2{width:600px;height:500px;bottom:-150px;right:-150px;background:radial-gradient(ellipse,rgba(91,196,245,0.06) 0%,transparent 70%);animation:o2 18s ease-in-out infinite alternate}
+@keyframes o1{to{transform:translate(80px,50px) scale(1.12)}}
+@keyframes o2{to{transform:translate(-60px,-40px) scale(1.08)}}
+.grid{position:fixed;inset:0;z-index:0;opacity:.025;background-image:linear-gradient(var(--pip) 1px,transparent 1px),linear-gradient(90deg,var(--pip) 1px,transparent 1px);background-size:64px 64px}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:60px;display:flex;align-items:center;padding:0 48px;border-bottom:1px solid var(--bor);background:rgba(2,4,8,0.88);backdrop-filter:blur(20px)}
+.nlogo{font-size:12px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--tx);display:flex;align-items:center;gap:10px;text-decoration:none}
+.ndot{width:7px;height:7px;border-radius:50%;background:var(--pip);animation:ndot 2s ease-in-out infinite}
+@keyframes ndot{0%,100%{box-shadow:0 0 8px var(--pip)}50%{box-shadow:0 0 22px var(--pip2),0 0 40px rgba(45,157,232,0.3)}}
+.nlinks{display:flex;gap:32px;margin-left:auto;align-items:center}
+.nlink{font-size:13px;color:var(--tx2);text-decoration:none;transition:color .18s}.nlink:hover{color:var(--tx)}
+.ncta{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:9px 22px;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-flex;letter-spacing:.02em;transition:all .18s}
+.ncta:hover{background:var(--pip2);transform:translateY(-1px)}
+.hero{position:relative;z-index:1;min-height:100vh;display:grid;grid-template-columns:1fr 500px;align-items:center;padding:100px 48px 60px;gap:60px;max-width:1240px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--bor2);border-radius:4px;padding:6px 14px;font-size:10px;font-weight:700;color:var(--pip2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:28px;background:rgba(45,157,232,0.05)}
+h1{font-size:76px;font-weight:800;letter-spacing:-.05em;line-height:.9;color:var(--tx);margin-bottom:24px}
+h1 em{font-style:normal;background:linear-gradient(135deg,var(--pip2),var(--pip),var(--pip3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{font-size:17px;color:var(--tx2);line-height:1.65;max-width:460px;margin-bottom:40px}
+.actions{display:flex;gap:12px;margin-bottom:56px;flex-wrap:wrap}
+.btnp{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;padding:15px 34px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;box-shadow:0 0 32px rgba(45,157,232,0.3);transition:all .2s}
+.btnp:hover{background:var(--pip2);box-shadow:0 0 56px rgba(45,157,232,0.5);transform:translateY(-2px)}
+.btng{background:none;color:var(--tx2);border:1px solid var(--bor2);font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;padding:15px 34px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;transition:all .2s}
+.btng:hover{border-color:var(--pip);color:var(--tx)}
+.stats{display:flex;gap:40px}
+.stat{border-left:1px solid var(--bor2);padding-left:20px}
+.stn{font-size:28px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace;line-height:1}
+.stn span{color:var(--pip2)}
+.stl{font-size:11px;color:var(--tx3);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.1em}
+/* Demo widget */
+.dw{background:#060c14;border-radius:14px;overflow:hidden;border:1px solid rgba(45,157,232,0.2);box-shadow:0 0 80px rgba(45,157,232,0.08),0 24px 64px rgba(0,0,0,0.6)}
+.dw-bar{background:#0a1220;padding:13px 18px;display:flex;align-items:center;gap:7px;border-bottom:1px solid rgba(45,157,232,0.08)}
+.dw-dot{width:10px;height:10px;border-radius:50%}
+.dw-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);margin-left:8px;letter-spacing:.04em}
+.dw-search{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(45,157,232,0.07)}
+.dw-icon{width:16px;height:16px;border:1.5px solid var(--pip);border-radius:50%;position:relative;flex-shrink:0}
+.dw-icon::after{content:'';position:absolute;bottom:-4px;right:-3px;width:5px;height:1.5px;background:var(--pip);transform:rotate(45deg);border-radius:1px}
+.dw-input{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx);flex:1}
+.dw-cur{display:inline-block;width:2px;height:13px;background:var(--pip);margin-left:1px;vertical-align:middle;animation:cur .8s step-end infinite}
+@keyframes cur{0%,100%{opacity:1}50%{opacity:0}}
+.dw-scanning{padding:12px 20px;border-bottom:1px solid rgba(45,157,232,0.07)}
+.dw-scan-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dw-scan-dot{width:6px;height:6px;border-radius:50%;background:var(--pip);animation:sdot 1.2s ease-in-out infinite;flex-shrink:0}
+@keyframes sdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+.dw-scan-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)}
+.dw-prog{height:2px;background:rgba(45,157,232,0.08);border-radius:1px;overflow:hidden}
+.dw-prog-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width .35s ease}
+.dw-res{padding:20px}
+.dw-res-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.dw-name{font-size:17px;font-weight:700;color:var(--tx);letter-spacing:-.02em;margin-bottom:3px}
+.dw-meta{font-size:11px;color:var(--tx3)}
+.dw-score{font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;color:var(--pip2);line-height:1;letter-spacing:-.04em;text-align:right}
+.dw-tag{font-size:9px;font-weight:700;color:var(--pip2);letter-spacing:.12em;text-transform:uppercase;text-align:right;margin-top:2px}
+.dw-scorebar{height:2px;background:rgba(45,157,232,0.1);border-radius:1px;margin-bottom:16px;overflow:hidden}
+.dw-scorebar-fill{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:1px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.dw-sigs{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.dw-sig{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--tx2);font-family:'Outfit',sans-serif;opacity:0;transform:translateX(-5px);transition:opacity .35s,transform .35s}
+.dw-sig.on{opacity:1;transform:translateX(0)}
+.dw-sigdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.g{background:var(--grn)}.a{background:var(--amb)}
+.dw-pitch{background:var(--sur2);border-left:2px solid var(--pip);padding:12px 14px;border-radius:0 6px 6px 0;opacity:0;transform:translateY(4px);transition:opacity .4s,transform .4s}
+.dw-pitch.on{opacity:1;transform:translateY(0)}
+.dw-pitch-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--pip2);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
+.dw-pitch-txt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);line-height:1.75;min-height:52px}
+/* Marquee */
+.mq{border-top:1px solid var(--bor);border-bottom:1px solid var(--bor);overflow:hidden;background:rgba(6,12,20,0.7);padding:14px 0;position:relative;z-index:1}
+.mqt{display:flex;animation:mq 24s linear infinite;white-space:nowrap}
+.mqi{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);flex-shrink:0;padding:0 32px;display:flex;align-items:center;gap:10px;border-right:1px solid var(--bor)}
+.mqd{width:4px;height:4px;border-radius:50%;background:var(--pip);flex-shrink:0}
+@keyframes mq{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* Sections */
+.sec{position:relative;z-index:1;padding:120px 48px;max-width:1240px;margin:0 auto}
+.slbl{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--pip2);margin-bottom:14px}
+h2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:var(--tx);max-width:580px;margin-bottom:16px}
+.ssub{font-size:16px;color:var(--tx2);line-height:1.7;max-width:460px;margin-bottom:64px}
+/* Feature grid */
+.fg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bor)}
+.fc{background:var(--bg);padding:40px 32px;transition:background .2s;position:relative;overflow:hidden;cursor:default}
+.fc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--pip),transparent);transform:scaleX(0);transition:transform .5s;transform-origin:center}
+.fc:hover{background:var(--sur)}.fc:hover::before{transform:scaleX(1)}
+.fn{font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.12em;font-family:'JetBrains Mono',monospace;margin-bottom:20px}
+.ft{font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--tx);margin-bottom:10px}
+.fd{font-size:14px;color:var(--tx2);line-height:1.7}
+/* Demo card */
+.dw2{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
+.dc{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:48px;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;position:relative;overflow:hidden}
+.dc::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,rgba(45,157,232,0.06) 0%,transparent 70%);pointer-events:none}
+.de{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.16em;margin-bottom:8px}
+.dn{font-size:24px;font-weight:700;letter-spacing:-.03em;color:var(--tx);margin-bottom:4px}
+.dm{font-size:13px;color:var(--tx3);margin-bottom:28px}
+.sc{font-size:96px;font-weight:800;letter-spacing:-.06em;line-height:1;font-family:'JetBrains Mono',monospace;background:linear-gradient(135deg,var(--pip),var(--pip2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stag{display:inline-block;background:rgba(45,157,232,0.1);border:1px solid var(--bor2);color:var(--pip2);font-size:11px;font-weight:700;padding:4px 12px;border-radius:4px;letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.sbar{height:3px;background:var(--bor);border-radius:2px;margin:20px 0;overflow:hidden}
+.sf{height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));width:87%;border-radius:2px}
+.pl{font-size:9px;font-weight:700;color:var(--pip2);text-transform:uppercase;letter-spacing:.18em;margin-bottom:10px;margin-top:24px}
+.pb{background:var(--sur2);border-left:2px solid var(--pip);padding:14px 16px;border-radius:0 6px 6px 0;font-size:12px;color:var(--tx2);font-family:'JetBrains Mono',monospace;line-height:1.85}
+.sgl{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.18em;margin-bottom:14px}
+.sg{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bor);font-size:13px}.sg:last-of-type{border:none}
+.sn2{color:var(--tx2)}.sgy{color:var(--grn);font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}.sgn{color:var(--tx3);font-size:10px;font-family:'JetBrains Mono',monospace}
+.fl2{font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.18em;margin:20px 0 12px}
+.fr{display:flex;gap:12px;align-items:center;background:var(--sur2);border:1px solid var(--bor);border-radius:6px;padding:10px 14px;margin-bottom:6px}
+.fa{width:30px;height:30px;border-radius:50%;background:rgba(45,157,232,0.1);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--pip2);flex-shrink:0}
+/* Who its for */
+.for-pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.for-pill{border:1px solid var(--bor2);border-radius:6px;padding:10px 20px;font-size:13px;color:var(--tx2);background:var(--sur)}
+/* Waitlist */
+.wl{position:relative;z-index:1;padding:0 48px 80px;max-width:1240px;margin:0 auto}
+.wl-card{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:56px 48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.wl-input{width:100%;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:'Outfit',sans-serif;font-size:14px;padding:13px 18px;outline:none;border-radius:8px;transition:border-color .2s}
+.wl-input:focus{border-color:rgba(45,157,232,0.5)}
+.wl-row{display:flex;gap:8px;margin-bottom:10px}
+.wl-btn{background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:13px 24px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:all .2s}
+.wl-btn:hover{background:var(--pip2)}
+/* Pricing */
+.ps{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.prc{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:32px;position:relative;transition:all .2s}
+.prc:hover{border-color:var(--bor2);transform:translateY(-2px)}
+.prc.hot{border-color:var(--bor2);box-shadow:0 0 40px rgba(45,157,232,0.08)}
+.pbdg{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:9px;font-weight:700;padding:3px 14px;border-radius:4px;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 0 16px rgba(45,157,232,0.4);white-space:nowrap}
+.pn{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.16em;margin-bottom:14px}
+.pp{font-size:44px;font-weight:700;color:var(--tx);letter-spacing:-.04em;line-height:1;font-family:'JetBrains Mono',monospace}
+.pper{font-size:14px;color:var(--tx3);font-family:'Outfit',sans-serif;font-weight:400}
+.pd{font-size:13px;color:var(--tx3);margin:12px 0 22px;line-height:1.6}
+.pb2{width:100%;background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;padding:12px;border-radius:6px;cursor:pointer;transition:all .2s;box-shadow:0 0 20px rgba(45,157,232,0.2)}
+.pb2:hover{background:var(--pip2);box-shadow:0 0 32px rgba(45,157,232,0.4)}
+.pb2.out{background:none;border:1px solid var(--bor2);color:var(--tx2);box-shadow:none}
+.pb2.out:hover{border-color:var(--pip);color:var(--pip2)}
+.pfl{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:9px}
+.pfl li{font-size:13px;color:var(--tx2);display:flex;gap:8px;align-items:baseline;line-height:1.4}
+.pfl li::before{content:'-';color:var(--pip2);font-weight:700;flex-shrink:0}
+/* CTA */
+.ctaw{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
+.ctac{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:80px 48px;text-align:center;position:relative;overflow:hidden}
+.ctac::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(45,157,232,0.06) 0%,transparent 70%);pointer-events:none}
+.cpip{width:90px;height:90px;object-fit:contain;margin:0 auto 24px;display:block;animation:pf 5s ease-in-out infinite;transform:translateZ(0);will-change:transform}
+@keyframes pf{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-14px) rotate(2deg)}}
+.ch2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:var(--tx);margin-bottom:16px}
+.cs{font-size:17px;color:var(--tx2);margin-bottom:36px;line-height:1.6}
+.cn{font-size:12px;color:var(--tx3);margin-top:14px}
+footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between}
+.flo{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--tx2)}
+.fls{display:flex;gap:24px}
+.fl{font-size:12px;color:var(--tx3);text-decoration:none;transition:color .15s}
+.fl:hover{color:var(--pip2)}
+
+/* ── MOBILE / TABLET ───────────────────────────────────────────────── */
+@media(max-width:900px){
+  nav{padding:0 20px}
+  .nlinks .nlink{display:none}
+  .hero{grid-template-columns:1fr;padding:80px 24px 48px;gap:32px;min-height:auto}
+  h1{font-size:52px}
+  .sub{font-size:15px}
+  .stats{gap:24px}
+  .hr{display:none}
+  .mq{display:none}
+  .sec{padding:64px 24px}
+  h2{font-size:36px}
+  .fg{grid-template-columns:1fr}
+  .dc{grid-template-columns:1fr;padding:28px 24px;gap:28px}
+  .wl-card{grid-template-columns:1fr;padding:32px 24px;gap:24px}
+  .wl-row{flex-direction:column}
+  .wl-btn{width:100%}
+  .pg{grid-template-columns:1fr;gap:12px}
+  .ctac{padding:48px 24px}
+  .ch2{font-size:36px}
+  footer{flex-direction:column;gap:16px;text-align:center;padding:24px}
+  .fls{flex-wrap:wrap;justify-content:center}
+  .ps{padding:0 24px 64px}
+  .dw2{padding:0 24px 64px}
+  .wl{padding:0 24px 48px}
+  .ctaw{padding:0 24px 64px}
+  .for-pills{gap:8px}
+  .for-pill{font-size:12px;padding:8px 14px}
+}
+@media(max-width:480px){
+  h1{font-size:40px}
+  .actions{flex-direction:column}
+  .btnp,.btng{width:100%;justify-content:center}
+  .stats{flex-direction:column;gap:16px}
+  .ch2{font-size:28px}
+}
+</style>
+
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scout">
+<meta name="theme-color" content="#020408">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div>
+<div class="grid"></div>
+<nav>
+  <a href="/" class="nlogo"><div class="ndot"></div>Scout</a>
+  <div class="nlinks">
+    <a href="#features" class="nlink" id="t-nav1">Features</a>
+    <a href="#pricing" class="nlink" id="t-nav2">Pricing</a>
+    <a href="#waitlist" class="nlink" id="t-nav3">Early access</a>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
+    <a href="/app" id="nav-cta" class="ncta">Start free</a>
+<button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(45,157,232,0.3);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;margin-left:8px">ES</button>
+<script>try{var _t=localStorage.getItem('sb_token');var _u=localStorage.getItem('sb_user');var _nc=document.getElementById('nav-cta');if(_t&&_u&&_nc){_nc.textContent='Dashboard';_nc.style.background='var(--pip,#2d9de8)';}}catch(e){}</script>
+  </div>
+  <script>
+    (function(){
+      try{
+        var token = localStorage.getItem('sb_token');
+        var btn = document.getElementById('nav-cta');
+        if(token && btn){
+          btn.textContent = 'Sign in';
+          btn.style.background = 'none';
+          btn.style.border = '1px solid rgba(45,157,232,0.3)';
+          btn.style.color = '#2d9de8';
+        }
+      }catch(e){}
+    })();
+  </script></nav>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div><span id="t-eyebrow">AI client acquisition</span></div>
+    <h1 id="t-h1">Your next<br><em>best lead</em></h1>
+    <p class="sub" id="t-sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.</p>
+    <div class="actions">
+      <a href="/app" class="btnp" id="t-cta1">Discover Scout</a>
+      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng" id="t-cta2">Book a call</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stn">8<span>s</span></div><div class="stl" id="t-stat1">To full GTM profile</div></div>
+      <div class="stat"><div class="stn">0<span>–100</span></div><div class="stl" id="t-stat2">GTM Score</div></div>
+      <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl" id="t-stat3">From free</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="dw">
+      <div class="dw-bar">
+        <div class="dw-dot" style="background:#ff5f57"></div>
+        <div class="dw-dot" style="background:#febc2e"></div>
+        <div class="dw-dot" style="background:#28c840"></div>
+        <span class="dw-lbl">scout - research</span>
+      </div>
+      <div class="dw-search">
+        <div class="dw-icon"></div>
+        <div class="dw-input"><span id="tp"></span><span class="dw-cur" id="cr"></span></div>
+      </div>
+      <div id="sc-wrap" style="display:none">
+        <div class="dw-scanning">
+          <div class="dw-scan-row"><div class="dw-scan-dot"></div><span class="dw-scan-txt" id="sc-txt">Scanning funding data...</span></div>
+          <div class="dw-prog"><div class="dw-prog-fill" id="pf2"></div></div>
+        </div>
+      </div>
+      <div class="dw-res" id="res" style="display:none">
+        <div class="dw-res-top">
+          <div><div class="dw-name" id="rn"></div><div class="dw-meta" id="rm"></div></div>
+          <div><div class="dw-score" id="rs">0</div><div class="dw-tag" id="rt">Hot Lead</div></div>
+        </div>
+        <div class="dw-scorebar"><div class="dw-scorebar-fill" id="rb2"></div></div>
+        <div class="dw-sigs">
+          <div class="dw-sig" id="sig0"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig1"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig2"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig3"><div class="dw-sigdot a"></div><span></span></div>
+        </div>
+        <div class="dw-pitch" id="pt">
+          <div class="dw-pitch-lbl">AI pitch opener</div>
+          <div class="dw-pitch-txt" id="ptx"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="mq">
+  <div class="mqt">
+    <span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span><span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span>
+  </div>
+</div>
+
+<section style="position:relative;z-index:1;padding:80px 48px 0;max-width:1240px;margin:0 auto;text-align:center">
+  <p id="t-builtfor" style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);margin-bottom:24px">Built for</p>
+  <div class="for-pills">
+    <div class="for-pill">Fractional CMOs</div>
+    <div class="for-pill">Marketing Agencies</div>
+    <div class="for-pill">Growth Consultants</div>
+    <div class="for-pill">B2B Sales Teams</div>
+    <div class="for-pill">Freelance Marketers</div>
+  </div>
+</section>
+
+<section class="sec" id="features">
+  <div class="slbl" id="t-feat-eyebrow">What Scout does</div>
+  <h2 id="t-feat-h2">Stop researching.<br>Start closing.</h2>
+  <p class="ssub" id="t-feat-sub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
+  <div class="fg">
+    <div class="fc"><div class="fn">01</div><div class="ft" id="t-ft1">Know before you pitch</div><p class="fd" id="t-fd1">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
+    <div class="fc"><div class="fn">02</div><div class="ft" id="t-ft2">Write itself</div><p class="fd" id="t-fd2">Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.</p></div>
+    <div class="fc"><div class="fn">03</div><div class="ft" id="t-ft3">Pipeline on autopilot</div><p class="fd" id="t-fd3">Scout scans funding databases daily. Hot companies land in your Inbox automatically - just approve or dismiss.</p></div>
+    <div class="fc"><div class="fn">04</div><div class="ft" id="t-ft4">Never lose track</div><p class="fd" id="t-fd4">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
+    <div class="fc"><div class="fn">05</div><div class="ft" id="t-ft5">Two businesses, one tool</div><p class="fd" id="t-fd5">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
+    <div class="fc"><div class="fn">06</div><div class="ft" id="t-ft6">Your digital pitch deck</div><p class="fd" id="t-fd6">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
+  </div>
+</section>
+
+
+<div class="ps" id="pricing">
+  <div style="text-align:center;margin-bottom:40px">
+    <div class="slbl" id="t-price-eyebrow" style="text-align:center">Pricing</div>
+    <h2 id="t-price-h2" style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
+    <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
+  </div>
+
+  <!-- Free tier - full width banner above paid plans -->
+  <div style="background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:16px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:20px;font-weight:800;color:var(--tx);font-family:'JetBrains Mono',monospace">Free</span>
+        <span style="font-size:28px;font-weight:800;color:var(--tx);font-family:'JetBrains Mono',monospace">$0</span>
+        <span style="font-size:13px;color:var(--tx3)">forever</span>
+      </div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--tx2)">&#10003; 5 researches/month</span>
+        <span style="font-size:13px;color:var(--tx2)">&#10003; 2 lead fetches</span>
+        <span style="font-size:13px;color:var(--tx2)">&#10003; Dashboard &amp; Pipeline</span>
+        <span style="font-size:13px;color:var(--tx2)">&#10003; 5 Pip Hunt searches</span>
+      </div>
+    </div>
+    <button class="pb2 out" onclick="location.href='/app'" style="white-space:nowrap">Start for free</button>
+  </div>
+
+  <!-- Paid plans - 3 columns -->
+  <div class="pg">
+    <div class="prc">
+      <div class="pn">Starter</div>
+      <div class="pp">$19<span class="pper">/mo</span></div>
+      <div class="pd">For consultants testing the waters.</div>
+      <button class="pb2 out" onclick="location.href='https://buy.stripe.com/8x28wPfrA9WughedmqbjW05'">Get Starter</button>
+      <ul class="pfl">
+        <li>50 researches/month</li>
+        <li>5 lead fetches</li>
+        <li>Dashboard &amp; Pipeline</li>
+        <li>20 Pip Hunt searches</li>
+      </ul>
+    </div>
+    <div class="prc hot">
+      <div class="pbdg">Most popular</div>
+      <div class="pn">Pro</div>
+      <div class="pp">$49<span class="pper">/mo</span></div>
+      <div class="pd">For active prospectors closing deals.</div>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button>
+      <ul class="pfl">
+        <li>300 researches/month</li>
+        <li>30 lead fetches/month</li>
+        <li>Pip Hunt - jobs &amp; candidate sourcing</li>
+        <li>CSV export</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="prc">
+      <div class="pn">Agency</div>
+      <div class="pp">$179<span class="pper">/mo</span></div>
+      <div class="pd">For teams running multiple client pipelines.</div>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button>
+      <ul class="pfl">
+        <li>750 researches/month</li>
+        <li>5 team members</li>
+        <li>100 lead fetches</li>
+        <li>White-label pitches</li>
+        <li>Dedicated support</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Top-up credits -->
+  <div style="margin-top:16px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
+      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;cursor:pointer">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
+      </a>
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;position:relative">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+
+<div style="height:80px"></div>
+<div class="wl" id="waitlist">
+  <div class="wl-card">
+    <div>
+      <div class="slbl" id="t-wl-eyebrow">Early access</div>
+      <h2 id="t-wl-h2" style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
+      <p id="t-wl-sub" style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam - just Scout updates and GTM tips from Pip.</p>
+    </div>
+    <div>
+      <div class="wl-row">
+        <input type="email" id="wl-email" class="wl-input" placeholder="you@agency.com">
+        <button class="wl-btn" id="t-wl-btn" onclick="joinWaitlist()">Join waitlist</button>
+      </div>
+      <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:'Outfit',sans-serif"></div>
+      <p id="t-wl-note" style="font-size:11px;color:var(--tx3);margin-top:10px">Already 140+ fractional CMOs and agencies signed up.</p>
     </div>
   </div>
 </div>
@@ -3933,126 +4512,71 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.act
 </body>
 </html
 
+
+
 <script>
-var LANG = 'en';
-var TRANSLATIONS = {
-  en: {
-    hero_eyebrow: 'AI client acquisition',
-    hero_h1: 'Your next<br><em>best lead</em>',
-    hero_sub: 'Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.',
-    cta_primary: 'Discover Scout',
-    cta_secondary: 'Book a call',
-    stat1_label: 'To full GTM profile',
-    stat2_label: 'GTM Score',
-    stat3_label: 'From free',
-    features_eyebrow: 'What Scout does',
-    features_h2: 'Stop researching.<br>Start closing.',
-    features_sub: "Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.",
-    f1_t: 'Know before you pitch', f1_d: '0–100 score based on funding stage, team gaps, hiring signals, and growth velocity.',
-    f2_t: 'Write itself', f2_d: 'Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.',
-    f3_t: 'Pipeline on autopilot', f3_d: 'Scout scans funding databases daily. Hot companies land in your Inbox automatically.',
-    f4_t: 'Never lose track', f4_d: 'Kanban from Not Contacted to Closed. Every prospect in one place.',
-    f5_t: 'Two businesses, one tool', f5_d: 'Pip Hunt finds companies hiring fractional CMOs right now.',
-    f6_t: 'Your digital pitch deck', f6_d: 'Build a profile with your services and case studies.',
-    pricing_eyebrow: 'Pricing',
-    pricing_h2: 'Pay for what you use',
-    pricing_sub: 'Start free. Upgrade when Scout starts paying for itself.',
-    waitlist_eyebrow: 'Early access',
-    waitlist_h2: 'Join the waitlist',
-    waitlist_sub: "Be first to know when new features drop. No spam.",
-    waitlist_btn: 'Join waitlist',
-    waitlist_note: 'Already 140+ fractional CMOs and agencies signed up.',
-    nav_features: 'Features', nav_pricing: 'Pricing', nav_early: 'Early access',
-    lang_btn: 'ES', built_for: 'Built for'
+var LANG='en';
+var T={
+  en:{
+    eyebrow:'AI client acquisition',h1:'Your next<br><em>best lead</em>',
+    sub:'Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.',
+    cta1:'Discover Scout',cta2:'Book a call',
+    stat1:'To full GTM profile',stat2:'GTM Score',stat3:'From free',
+    'feat-eyebrow':'What Scout does','feat-h2':'Stop researching.<br>Start closing.',
+    'feat-sub':'Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.',
+    ft1:'Know before you pitch',fd1:'0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.',
+    ft2:'Write itself',fd2:'Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.',
+    ft3:'Pipeline on autopilot',fd3:'Scout scans funding databases daily. Hot companies land in your Inbox automatically - just approve or dismiss.',
+    ft4:'Never lose track',fd4:'Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.',
+    ft5:'Two businesses, one tool',fd5:'Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.',
+    ft6:'Your digital pitch deck',fd6:'Build a profile with your services and case studies. Share a link with prospects before you get on a call.',
+    'price-eyebrow':'Pricing','price-h2':'Pay for what you use',
+    'wl-eyebrow':'Early access','wl-h2':'Join the waitlist',
+    'wl-sub':'Be first to know when new features drop. No spam - just Scout updates and GTM tips from Pip.',
+    'wl-btn':'Join waitlist','wl-note':'Already 140+ fractional CMOs and agencies signed up.',
+    nav1:'Features',nav2:'Pricing',nav3:'Early access',
+    builtfor:'Built for',lang:'ES'
   },
-  es: {
-    hero_eyebrow: 'Captación de clientes con IA',
-    hero_h1: 'Tu próximo<br><em>mejor cliente</em>',
-    hero_sub: 'Convierte cualquier nombre de empresa en un lead cualificado. Scout investiga, puntúa y escribe tu opener en 8 segundos - para que dediques tu tiempo a cerrar, no a investigar.',
-    cta_primary: 'Descubrir Scout',
-    cta_secondary: 'Reservar llamada',
-    stat1_label: 'Para perfil GTM completo',
-    stat2_label: 'Puntuación GTM',
-    stat3_label: 'Desde gratis',
-    features_eyebrow: 'Qué hace Scout',
-    features_h2: 'Deja de investigar.<br>Empieza a cerrar.',
-    features_sub: 'Scout hace la investigación, puntúa la oportunidad y escribe el opener. Tú solo decides si enviarlo.',
-    f1_t: 'Sabe antes de presentarte', f1_d: 'Puntuación 0–100 basada en fase de financiación, gaps del equipo y señales de crecimiento.',
-    f2_t: 'Se escribe solo', f2_d: 'Scout lee el contexto - noticias de financiación, gaps del equipo, contrataciones recientes - y escribe un opener que referencia algo real.',
-    f3_t: 'Pipeline en piloto automático', f3_d: 'Scout escanea bases de datos de financiación diariamente. Las empresas calientes llegan a tu bandeja automáticamente.',
-    f4_t: 'Nunca pierdas el hilo', f4_d: 'Kanban de No Contactado a Cerrado. Cada prospecto en un solo lugar.',
-    f5_t: 'Dos negocios, una herramienta', f5_d: 'Pip Hunt encuentra empresas buscando CMOs fraccionales ahora mismo.',
-    f6_t: 'Tu dossier digital', f6_d: 'Crea un perfil con tus servicios y casos de éxito.',
-    pricing_eyebrow: 'Precios',
-    pricing_h2: 'Paga por lo que usas',
-    pricing_sub: 'Empieza gratis. Mejora tu plan cuando Scout empiece a pagarse solo.',
-    waitlist_eyebrow: 'Acceso anticipado',
-    waitlist_h2: 'Únete a la lista de espera',
-    waitlist_sub: 'Sé el primero en conocer las nuevas funciones. Sin spam.',
-    waitlist_btn: 'Unirse a la lista',
-    waitlist_note: 'Ya más de 140 CMOs fraccionales y agencias apuntados.',
-    nav_features: 'Funciones', nav_pricing: 'Precios', nav_early: 'Acceso anticipado',
-    lang_btn: 'EN', built_for: 'Para'
+  es:{
+    eyebrow:'Captación de clientes con IA',h1:'Tu próximo<br><em>mejor cliente</em>',
+    sub:'Convierte cualquier empresa en un lead cualificado. Scout investiga, puntaúa y escribe tu opener en 8 segundos — para que cierres, no investigues.',
+    cta1:'Descubrir Scout',cta2:'Reservar llamada',
+    stat1:'Para perfil GTM completo',stat2:'Puntuación GTM',stat3:'Desde gratis',
+    'feat-eyebrow':'Qué hace Scout','feat-h2':'Deja de investigar.<br>Empieza a cerrar.',
+    'feat-sub':'Scout hace la investigación, puntaúa la oportunidad y escribe el opener. Tú solo decides si enviarlo.',
+    ft1:'Sabe antes de presentarte',fd1:'Puntuación 0–100 basada en fase de financiación, gaps del equipo y señales de crecimiento.',
+    ft2:'Se escribe solo',fd2:'Scout lee el contexto — noticias de financiación, contrataciones recientes — y escribe un opener que referencia algo real.',
+    ft3:'Pipeline en piloto automático',fd3:'Scout escanea bases de datos diariamente. Las empresas calientes llegan a tu bandeja automáticamente.',
+    ft4:'Nunca pierdas el hilo',fd4:'Kanban de No Contactado a Cerrado. Cada prospecto en un solo lugar.',
+    ft5:'Dos negocios, una herramienta',fd5:'Pip Hunt encuentra empresas que buscan CMOs fraccionales ahora mismo.',
+    ft6:'Tu dossier digital',fd6:'Crea un perfil con tus servicios y casos de éxito. Compártelo antes de una llamada.',
+    'price-eyebrow':'Precios','price-h2':'Paga por lo que usas',
+    'wl-eyebrow':'Acceso anticipado','wl-h2':'Uúnete a la lista de espera',
+    'wl-sub':'Sé el primero en conocer las nuevas funciones. Sin spam.',
+    'wl-btn':'Unirse a la lista','wl-note':'Ya más de 140 CMOs fraccionales y agencias apuntados.',
+    nav1:'Funciones',nav2:'Precios',nav3:'Acceso anticipado',
+    builtfor:'Para',lang:'EN'
   }
 };
-
-function toggleLang(){
-  LANG = LANG==='en'?'es':'en';
-  applyLang();
-}
-
+function toggleLang(){LANG=LANG==='en'?'es':'en';applyLang();}
 function applyLang(){
-  var t = TRANSLATIONS[LANG];
-  var set = function(id, html){ var el=document.getElementById(id); if(el) el.innerHTML=html; };
-  var setText = function(id, text){ var el=document.getElementById(id); if(el) el.textContent=text; };
-  var setAll = function(cls, text){ document.querySelectorAll('.'+cls).forEach(function(el){el.textContent=text;}); };
-
-  // Nav
-  document.querySelectorAll('a.nlink').forEach(function(a,i){
-    var keys=['nav_features','nav_pricing','nav_early'];
-    if(keys[i]) a.textContent=t[keys[i]];
+  var t=T[LANG];
+  var ids=['eyebrow','h1','sub','cta1','cta2','stat1','stat2','stat3',
+    'feat-eyebrow','feat-h2','feat-sub',
+    'ft1','fd1','ft2','fd2','ft3','fd3','ft4','fd4','ft5','fd5','ft6','fd6',
+    'price-eyebrow','price-h2','wl-eyebrow','wl-h2','wl-sub','wl-btn','wl-note',
+    'nav1','nav2','nav3','builtfor'];
+  ids.forEach(function(id){
+    var el=document.getElementById('t-'+id);
+    if(!el)return;
+    var v=t[id];
+    if(!v)return;
+    if(v.indexOf('<')>=0)el.innerHTML=v;
+    else el.textContent=v;
   });
-  var lt=document.getElementById('lang-toggle');if(lt)lt.textContent=t.lang_btn;
-
-  // Hero
-  var eyebrow=document.querySelector('.eyebrow span:last-child,.eyebrow');
-  if(eyebrow){var spans=document.querySelectorAll('.eyebrow');spans.forEach(function(e){var last=e.lastChild;if(last&&last.nodeType===3)last.textContent=t.hero_eyebrow;else if(e.children.length>1)e.children[e.children.length-1].textContent=t.hero_eyebrow;});}
-  var h1=document.querySelector('h1');if(h1)h1.innerHTML=t.hero_h1;
-  var sub=document.querySelector('.sub');if(sub)sub.textContent=t.hero_sub;
-  var btnp=document.querySelector('a.btnp');if(btnp)btnp.textContent=t.cta_primary;
-  var btng=document.querySelector('a.btng');if(btng)btng.textContent=t.cta_secondary;
-  var stls=document.querySelectorAll('.stl');
-  var statKeys=['stat1_label','stat2_label','stat3_label'];
-  stls.forEach(function(el,i){if(statKeys[i])el.textContent=t[statKeys[i]];});
-
-  // Features section
-  var slbls=document.querySelectorAll('.slbl');if(slbls[0])slbls[0].textContent=t.features_eyebrow;
-  var h2s=document.querySelectorAll('h2');if(h2s[0])h2s[0].innerHTML=t.features_h2;
-  var ssubs=document.querySelectorAll('.ssub');if(ssubs[0])ssubs[0].textContent=t.features_sub;
-  var fts=document.querySelectorAll('.ft');var fds=document.querySelectorAll('.fd');
-  var ftKeys=['f1_t','f2_t','f3_t','f4_t','f5_t','f6_t'];
-  var fdKeys=['f1_d','f2_d','f3_d','f4_d','f5_d','f6_d'];
-  fts.forEach(function(el,i){if(ftKeys[i])el.textContent=t[ftKeys[i]];});
-  fds.forEach(function(el,i){if(fdKeys[i])el.textContent=t[fdKeys[i]];});
-
-  // Pricing
-  if(slbls[1])slbls[1].textContent=t.pricing_eyebrow;
-  if(h2s[1])h2s[1].textContent=t.pricing_h2;
-  var pricingSub=document.querySelector('.ps p');if(pricingSub)pricingSub.textContent=t.pricing_sub;
-
-  // Waitlist
-  if(slbls[2])slbls[2].textContent=t.waitlist_eyebrow;
-  if(h2s[2])h2s[2].textContent=t.waitlist_h2;
-  var wlCard=document.querySelector('.wl-card p');if(wlCard)wlCard.textContent=t.waitlist_sub;
-  var wlBtn=document.querySelector('.wl-btn');if(wlBtn)wlBtn.textContent=t.waitlist_btn;
-  var wlNote=document.querySelector('.wl-card>div:last-child p:last-child');if(wlNote)wlNote.textContent=t.waitlist_note;
-
-  // Built for
-  var bf=document.querySelector('section:not(#features):not(#pricing) p');
-  if(bf&&bf.textContent.indexOf('Built for')>=0||bf&&bf.textContent.indexOf('Para')>=0)bf.textContent=t.built_for;
-
-  document.title = LANG==='es'?'Scout - Encuentra tu próximo cliente':'Scout - Find your next client';
-  document.documentElement.lang = LANG;
+  var lb=document.getElementById('lang-toggle');if(lb)lb.textContent=t.lang;
+  document.documentElement.lang=LANG;
+  document.title=LANG==='es'?'Scout - Encuentra tu próximo cliente':'Scout - Find your next client';
 }
 </script>
 
@@ -4460,6 +4984,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(out)
             return
+        if self.path.startswith('/proposal/'):
+            encoded = self.path[len('/proposal/'):]
+            out = self.build_proposal_page(encoded).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type','text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(out)))
+            self.end_headers()
+            self.wfile.write(out)
+            return
         if self.path.startswith('/p/'):
             encoded = self.path[3:]
             wl_html = self.build_pitch_page(encoded)
@@ -4519,6 +5052,134 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(content)
             return
         self.send_response(404); self.end_headers(); return
+
+
+    def build_proposal_page(self, encoded):
+        import base64, json as _json, html as _html
+        try:
+            data = _json.loads(base64.b64decode(encoded + '==').decode('utf-8'))
+        except Exception:
+            return '<html><body style="font-family:sans-serif;padding:40px">Invalid proposal link</body></html>'
+
+        c = data.get('consultant', {})
+        lead = data.get('lead', {})
+        services = data.get('services', [])
+        cases = data.get('cases', [])
+
+        def esc(v):
+            return _html.escape(str(v)) if v else ''
+
+        color = esc(c.get('color', '#2d9de8'))
+        name = esc(c.get('name', ''))
+        agency = esc(c.get('agency', ''))
+        role = esc(c.get('role', 'Fractional CMO'))
+        tagline = esc(c.get('tagline', ''))
+        bio = esc(c.get('bio', ''))
+        email = esc(c.get('email', ''))
+        phone = esc(c.get('phone', ''))
+        linkedin = esc(c.get('linkedin', ''))
+        website = esc(c.get('website', ''))
+        calendly = esc(c.get('calendly', ''))
+        deal_size = esc(c.get('deal_size', ''))
+        client_size = esc(c.get('client_size', ''))
+        availability = esc(c.get('availability', ''))
+        logo = c.get('logo', '')
+
+        company = esc(lead.get('company', ''))
+        sector = esc(lead.get('sector', ''))
+        stage = esc(lead.get('stage', ''))
+        hq = esc(lead.get('hq', ''))
+        funding = esc(lead.get('funding_amount', ''))
+        score = int(lead.get('score', 0))
+        label = esc(lead.get('label', ''))
+        why_fit = esc(lead.get('why_fit', ''))
+        pitch = esc(lead.get('pitch_opener', ''))
+        signals = lead.get('gtm_signals', {})
+
+        score_color = '#5bc4f5' if score >= 75 else '#f59e0b' if score >= 50 else '#6b7280'
+        meta_parts = [x for x in [sector, stage, hq, funding] if x]
+        meta = ' &middot; '.join(meta_parts)
+        logo_html = '<img src="' + logo + '" style="height:48px;object-fit:contain;margin-bottom:8px;display:block"/>' if logo else ''
+
+        signal_items = []
+        if signals.get('recently_funded'): signal_items.append('Recently funded')
+        if signals.get('no_cmo'): signal_items.append('No CMO on team')
+        if signals.get('marketing_gap_visible'): signal_items.append('Marketing gap visible')
+        signals_html = ''
+        for s in signal_items:
+            signals_html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9"><div style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0"></div><span style="font-size:14px;color:#334155">' + s + '</span></div>'
+
+        services_html = ''
+        for svc in services:
+            sn = esc(svc.get('name', ''))
+            sd = esc(svc.get('desc', ''))
+            sp = esc(svc.get('price', ''))
+            if not sn: continue
+            price_tag = '<div style="font-size:12px;font-weight:700;color:' + color + ';white-space:nowrap;margin-left:12px">' + sp + '</div>' if sp else ''
+            desc_tag = '<div style="font-size:13px;color:#64748b;line-height:1.6;margin-top:4px">' + sd + '</div>' if sd else ''
+            services_html += '<div style="background:#f8fafc;border-radius:10px;padding:20px 22px;border:1px solid #e2e8f0"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="font-size:15px;font-weight:700;color:#0f1923">' + sn + '</div>' + price_tag + '</div>' + desc_tag + '</div>'
+
+        cases_html = ''
+        for cs in cases:
+            cl = esc(cs.get('client', ''))
+            ct = esc(cs.get('title', ''))
+            cr = esc(cs.get('result', ''))
+            cm = esc(cs.get('metrics', ''))
+            if not cl: continue
+            metrics_tags = ''.join('<span style="background:' + color + '20;color:' + color + ';font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid ' + color + '40">' + m.strip() + '</span>' for m in cm.split(',') if m.strip()) if cm else ''
+            result_tag = '<div style="font-size:13px;color:#10b981;font-weight:600;margin-bottom:8px">' + cr + '</div>' if cr else ''
+            metrics_div = '<div style="display:flex;gap:6px;flex-wrap:wrap">' + metrics_tags + '</div>' if metrics_tags else ''
+            cases_html += '<div style="background:#f8fafc;border-radius:10px;padding:20px 22px;border:1px solid #e2e8f0"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:6px">' + cl + '</div><div style="font-size:15px;font-weight:700;color:#0f1923;margin-bottom:6px">' + ct + '</div>' + result_tag + metrics_div + '</div>'
+
+        contact_items = []
+        if email: contact_items.append('<a href="mailto:' + email + '" style="color:' + color + ';text-decoration:none">' + email + '</a>')
+        if phone: contact_items.append('<a href="tel:' + phone + '" style="color:' + color + ';text-decoration:none">' + phone + '</a>')
+        if linkedin: contact_items.append('<a href="' + linkedin + '" target="_blank" style="color:' + color + ';text-decoration:none">LinkedIn</a>')
+        if website: contact_items.append('<a href="' + website + '" target="_blank" style="color:' + color + ';text-decoration:none">' + website + '</a>')
+        if calendly: contact_items.append('<a href="' + calendly + '" target="_blank" style="background:' + color + ';color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block;margin-top:6px">Book a call &rarr;</a>')
+        contact_html = ''.join('<div style="margin-bottom:8px">' + item + '</div>' for item in contact_items)
+
+        terms_html = ''
+        if deal_size or client_size or availability:
+            terms_html = '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:4px">'
+            if deal_size: terms_html += '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:2px">Investment</div><div style="font-size:14px;color:#334155;font-weight:600">' + deal_size + '</div></div>'
+            if client_size: terms_html += '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:2px">Engagement</div><div style="font-size:14px;color:#334155;font-weight:600">' + client_size + '</div></div>'
+            if availability: terms_html += '<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:2px">Availability</div><div style="font-size:14px;color:#334155;font-weight:600">' + availability + '</div></div>'
+            terms_html += '</div>'
+
+        agency_line = (' &middot; ' + agency) if agency else ''
+        tagline_line = '<div style="font-size:13px;color:rgba(255,255,255,.65);margin-top:4px">' + tagline + '</div>' if tagline else ''
+
+        sections = []
+        # Why now
+        if why_fit or signals_html:
+            s = '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:12px">Why ' + company + ' needs this now</div>'
+            if why_fit: s += '<div style="background:#f8fafc;border-radius:10px;padding:20px;border-left:3px solid ' + color + ';font-size:14px;color:#334155;line-height:1.75">' + why_fit + '</div>'
+            if signals_html: s += '<div style="margin-top:12px">' + signals_html + '</div>'
+            s += '</div>'
+            sections.append(s)
+        # Pitch
+        if pitch:
+            sections.append('<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:12px">How I would approach this</div><div style="background:#f8fafc;border-radius:10px;padding:20px;font-size:14px;color:#334155;line-height:1.75;font-style:italic">' + pitch + '</div></div>')
+        # About
+        if bio:
+            sections.append('<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:12px">About me</div><div style="font-size:14px;color:#334155;line-height:1.75">' + bio + '</div></div>')
+        # Services
+        if services_html:
+            sections.append('<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:14px">What I offer</div><div style="display:flex;flex-direction:column;gap:10px">' + services_html + '</div></div>')
+        # Cases
+        if cases_html:
+            sections.append('<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:14px">Proof of work</div><div style="display:flex;flex-direction:column;gap:10px">' + cases_html + '</div></div>')
+        # Terms
+        if terms_html:
+            sections.append('<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:12px">Engagement terms</div>' + terms_html + '</div>')
+        # Contact
+        if contact_html:
+            sections.append('<div style="background:' + color + '12;border:1px solid ' + color + '30;border-radius:12px;padding:28px 32px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:14px">Get in touch</div><div style="font-size:14px;line-height:1.8">' + contact_html + '</div></div>')
+
+        body_html = ''.join('<div style="margin-bottom:32px">' + s + '</div>' for s in sections)
+
+        return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proposal for ' + company + ' \u00b7 ' + name + '</title><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;font-family:Outfit,sans-serif;color:#1a2332;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{.no-print{display:none!important}}</style></head><body><div class="no-print" style="position:fixed;top:16px;right:16px;z-index:100"><button onclick="window.print()" style="background:' + color + ';color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.15)">\u2193 Download PDF</button></div><div style="max-width:760px;margin:0 auto"><div style="background:' + color + ';padding:44px 48px 40px;position:relative;overflow:hidden"><div style="position:absolute;top:-60px;right:-60px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.07)"></div>' + logo_html + '<div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.03em;margin-bottom:4px">' + name + '</div><div style="font-size:14px;color:rgba(255,255,255,.8);margin-bottom:2px">' + role + agency_line + '</div>' + tagline_line + '</div><div style="background:#0f1923;padding:20px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:4px">Proposal for</div><div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.02em">' + company + '</div>' + ('<div style="font-size:12px;color:#64748b;margin-top:2px">' + meta + '</div>' if meta else '') + '</div><div style="text-align:right"><div style="font-size:44px;font-weight:900;color:' + score_color + ';font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.04em">' + str(score) + '</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-top:2px">GTM Score</div></div></div><div style="padding:40px 48px 48px">' + body_html + '</div><div style="padding:20px 48px;border-top:1px solid #f1f5f9;display:flex;justify-content:space-between"><div style="font-size:11px;color:#cbd5e1">' + name + ' &middot; Prepared for ' + company + '</div><div style="font-size:11px;color:#cbd5e1">Powered by Scout</div></div></div></body></html>'
 
     def build_pitch_page(self, encoded):
         import base64, json as _json, html as _html
