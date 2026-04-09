@@ -573,7 +573,7 @@ body::after{
 .ph-fetch-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
 .ph-status{font-size:11px;color:var(--tx3);margin-left:8px}
 .ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.ph-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);overflow:hidden;transition:all .2s}
+.ph-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);overflow:hidden;padding:16px 18px;transition:all .2s}
 .ph-card:hover{border-color:var(--pip-bor);box-shadow:var(--glow-sm);transform:translateY(-1px)}
 .ph-card.saved{border-color:var(--pip-bor);background:var(--pip-dim)}
 .ph-card-header{padding:16px 18px 12px}
@@ -1721,6 +1721,7 @@ var PH_JOBS = [];
 var PH_SAVED = [];
 var PH_APPLIED = [];
 var PH_SAVED_CANDIDATES = [];
+var PH_TRASH_CANDIDATES = [];
 var phBottomTab = 'saved';
 var phCategory = 'cmo';
 var phFilters = {remote: false, startup: false, week: false};
@@ -1803,6 +1804,7 @@ function phSave(){
   try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
   try{localStorage.setItem('ph_applied',JSON.stringify(PH_APPLIED));}catch(e){}
   try{localStorage.setItem('ph_saved_candidates',JSON.stringify(PH_SAVED_CANDIDATES));}catch(e){}
+  try{localStorage.setItem('ph_trash_candidates',JSON.stringify(PH_TRASH_CANDIDATES));}catch(e){}
   try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
 }
 
@@ -1811,6 +1813,7 @@ function phLoad(){
   try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
   try{var ap=localStorage.getItem('ph_applied');if(ap)PH_APPLIED=JSON.parse(ap);}catch(e){}
   try{var sc2=localStorage.getItem('ph_saved_candidates');if(sc2)PH_SAVED_CANDIDATES=JSON.parse(sc2);}catch(e){}
+  try{var tr=localStorage.getItem('ph_trash_candidates');if(tr){PH_TRASH_CANDIDATES=JSON.parse(tr);pruneTrash();}}catch(e){}
   try{var ph=localStorage.getItem('ph_history');if(ph){PH_HISTORY=JSON.parse(ph);}}catch(e){}
 }
 
@@ -2199,34 +2202,40 @@ function tierReset(t){
 }
 
 function tierCanResearch(){
-  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
+  var u=authGetUser();if(u&&['cara@sushicat.info','scott@cndtlabs.io'].indexOf(u.email)>=0)return true;
   var t=tierReset(tierLoad());
   var limit=TIER_LIMITS[t.plan||'free'].research;
   if(t.research_used>=limit){
-    if(t.plan==='agency'){
-      showLimitToast('You’ve used all '+limit+' researches this month. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up 20 credits →</a>');
+    var plan=t.plan||'free';
+    if(plan==='agency'||t._master){
+      showLimitToast('You\u2019ve used all '+limit+' researches this month. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up →</a>');
     } else {
-      showLimitToast('You’ve used all '+limit+' researches. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up</a> or <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">upgrade your plan →</a>');
+      var upMsg=smartUpgradeMsg()||'';
+      showLimitToast('You\u2019ve used all '+limit+' researches. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up</a>'+(upMsg?' or '+upMsg:''));
     }
     return false;
   }
   return true;
 }
 
+
 function tierCanFetch(){
-  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
+  var u=authGetUser();if(u&&['cara@sushicat.info','scott@cndtlabs.io'].indexOf(u.email)>=0)return true;
   var t=tierReset(tierLoad());
   var limit=TIER_LIMITS[t.plan||'free'].fetch;
   if(t.fetch_used>=limit){
-    if(t.plan==='agency'){
-      showLimitToast('You’ve used all '+limit+' fetches this month. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up →</a>');
+    var plan=t.plan||'free';
+    if(plan==='agency'||t._master){
+      showLimitToast('You\u2019ve used all '+limit+' fetches this month. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up →</a>');
     } else {
-      showLimitToast('You’ve used all '+limit+' fetches. <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="color:var(--pip);font-weight:700">Top up</a> or <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">upgrade →</a>');
+      var upMsg=smartUpgradeMsg()||'';
+      showLimitToast('You\u2019ve used all '+limit+' fetches.'+(upMsg?' '+upMsg:''));
     }
     return false;
   }
   return true;
 }
+
 
 function tierCanPipHunt(){
   var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
@@ -2326,21 +2335,24 @@ function showUpsellToast(msg){
   setTimeout(function(){ if(toast.parentNode) toast.remove(); }, 8000);
 }
 
+function smartUpgradeMsg(){
+  var t=tierLoad();var plan=t.plan||'free';
+  if(plan==='agency'||t._master) return null;
+  if(plan==='pro') return 'Upgrade to Agency for more capacity. <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">Upgrade →</a>';
+  if(plan==='starter') return 'Upgrade to Pro for more power. <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">Upgrade →</a>';
+  return 'Upgrade your plan. <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">Upgrade →</a>';
+}
 function maybeShowUpsell(){
-  var t = tierLoad();
-  if(t.plan !== 'free') return;
-  var used = t.research_used||0;
-  if(used > 0 && used % 3 === 0){
-    var msgs = [
-      'You have used '+used+' of your 5 free researches this month.',
-      'Enjoying Scout? Pro gives you unlimited research for $29/month.',
-      'Running low on credits? Upgrade to Pro for unlimited access.'
-    ];
-    var msg = msgs[Math.min(Math.floor(used/3)-1, msgs.length-1)];
-    // Show subtle toast instead of full modal
-    showUpsellToast(msg);
+  var t=tierLoad();if(t._master)return;
+  var plan=t.plan||'free';
+  if(plan==='agency')return;
+  var used=t.research_used||0;
+  if(used>0&&used%3===0){
+    var upMsg=smartUpgradeMsg();if(!upMsg)return;
+    showLimitToast('You have used '+used+' researches this month. '+upMsg);
   }
 }
+
 
 
 
@@ -2890,85 +2902,148 @@ function renderCandidateCards(candidates){
   if(!wrap)return;
   wrap.style.display='block';
   wrap.innerHTML='';
-  if(!candidates||!candidates.length){
-    wrap.innerHTML='<div style="padding:20px 0;text-align:center;color:var(--tx3);font-size:12px">No candidates found - try a more specific JD</div>';
-    return;
-  }
-  var title=document.createElement('div');
-  title.style.cssText='font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px';
-  title.textContent='Candidates ('+candidates.length+')';
-  wrap.appendChild(title);
-  candidates.forEach(function(c,idx){
-    var score=c.fit_score||0;
-    var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
-    var isSaved=PH_SAVED_CANDIDATES.some(function(x){return x.name===c.name&&x.current_company===c.current_company;});
-    var card=document.createElement('div');card.className='ph-card';card.style.marginBottom='10px';
-    // Header
-    var hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px';
-    var nb=document.createElement('div');
-    var ne=document.createElement('div');ne.style.cssText='font-size:14px;font-weight:700;color:var(--tx)';ne.textContent=c.name||'Unknown';
-    var re2=document.createElement('div');re2.style.cssText='font-size:12px;color:var(--tx3);margin-top:2px';
-    re2.textContent=(c.current_title||'')+(c.current_company?' at '+c.current_company:'');
-    nb.appendChild(ne);nb.appendChild(re2);
-    if(c.location){var lo=document.createElement('div');lo.style.cssText='font-size:11px;color:var(--tx3);margin-top:1px';lo.textContent=c.location;nb.appendChild(lo);}
-    var se=document.createElement('div');se.style.cssText='text-align:right;flex-shrink:0;margin-left:12px';
-    var sn=document.createElement('div');sn.style.cssText='font-size:24px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;line-height:1';sn.textContent=score;
-    var sl=document.createElement('div');sl.style.cssText='font-size:9px;color:'+scol+';font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px';
-    sl.textContent=score>=75?'Strong fit':score>=50?'Good fit':'Weak fit';
-    se.appendChild(sn);se.appendChild(sl);hdr.appendChild(nb);hdr.appendChild(se);card.appendChild(hdr);
-    // Why fit
-    if(c.why_fit){var wf=document.createElement('div');wf.style.cssText='font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5;padding:8px 10px;background:var(--sur);border-radius:6px;border-left:3px solid '+scol;wf.textContent=c.why_fit;card.appendChild(wf);}
-    // InMail
-    if(c.inmail){
-      var iw=document.createElement('div');iw.style.cssText='margin-bottom:10px';
-      var it=document.createElement('button');it.style.cssText='font-size:11px;font-weight:700;color:var(--pip);background:none;border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:0;margin-bottom:6px';it.textContent='Show InMail draft';
-      var ib=document.createElement('div');ib.style.cssText='display:none;font-size:12px;color:var(--tx2);line-height:1.6;padding:10px 12px;background:var(--pip-dim);border:1px solid var(--pip-bor);border-radius:6px;font-style:italic';ib.textContent=c.inmail;
-      var exp=false;var _im=c.inmail;
-      var cp2=document.createElement('button');cp2.style.cssText='font-size:10px;color:#fff;background:var(--pip);border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:3px 10px;border-radius:4px;margin-left:8px';cp2.textContent='Copy';
-      cp2.onclick=function(){navigator.clipboard.writeText(_im);cp2.textContent='Copied!';setTimeout(function(){cp2.textContent='Copy';},1500);};
-      it.onclick=function(){exp=!exp;ib.style.display=exp?'block':'none';it.textContent=exp?'Hide InMail draft':'Show InMail draft';};
-      it.appendChild(cp2);iw.appendChild(it);iw.appendChild(ib);card.appendChild(iw);
-    }
-    // Buttons
-    var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
-    // LinkedIn
-    var liUrl=c.linkedin_url||('https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((c.name||'')+' '+(c.current_title||'')));
-    var la=document.createElement('a');la.href=liUrl;la.target='_blank';la.rel='noopener';
-    la.style.cssText='display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid #0a66c2;color:#0a66c2;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;text-decoration:none;font-family:Outfit,sans-serif';
-    la.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'+(c.linkedin_url?'View Profile':'Find on LinkedIn');
-    btns.appendChild(la);
-    // Save/Unsave
-    var saveBtn=document.createElement('button');
-    saveBtn.style.cssText='font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid '+(isSaved?'var(--pip)':'var(--bor2)')+';background:'+(isSaved?'var(--pip)':'none')+';color:'+(isSaved?'#fff':'var(--tx2)');
-    saveBtn.textContent=isSaved?'Saved \u2713':'Save';
-    (function(_c,_btn){
-      _btn.onclick=function(){
-        var already=PH_SAVED_CANDIDATES.some(function(x){return x.name===_c.name&&x.current_company===_c.current_company;});
-        if(already){
-          PH_SAVED_CANDIDATES=PH_SAVED_CANDIDATES.filter(function(x){return !(x.name===_c.name&&x.current_company===_c.current_company);});
-          _btn.textContent='Save';_btn.style.background='none';_btn.style.color='var(--tx2)';_btn.style.borderColor='var(--bor2)';
-          showUpsellToast('Removed from saved');
-        } else {
-          PH_SAVED_CANDIDATES.unshift(_c);
-          _btn.textContent='Saved \u2713';_btn.style.background='var(--pip)';_btn.style.color='#fff';_btn.style.borderColor='var(--pip)';
-          showUpsellToast('Candidate saved \u2713');
-        }
+
+  // ── Results ────────────────────────────────────────────────────
+  if(candidates&&candidates.length){
+    var resTitle=document.createElement('div');
+    resTitle.style.cssText='font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px';
+    resTitle.textContent='Results ('+candidates.length+')';
+    wrap.appendChild(resTitle);
+
+    candidates.forEach(function(c){
+      var score=c.fit_score||0;
+      var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+      var isSaved=PH_SAVED_CANDIDATES.some(function(x){return x.name===c.name&&x.current_company===c.current_company;});
+      var isTrash=PH_TRASH_CANDIDATES.some(function(x){return x.name===c.name&&x.current_company===c.current_company;});
+      if(isTrash) return;
+      var card=document.createElement('div');card.className='ph-card';card.style.marginBottom='12px';
+      // Score badge + name
+      var hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px';
+      var nb=document.createElement('div');nb.style.flex='1';nb.style.minWidth='0';
+      var ne=document.createElement('div');ne.style.cssText='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:2px';ne.textContent=c.name||'Unknown';
+      var re2=document.createElement('div');re2.style.cssText='font-size:12px;color:var(--tx3)';
+      re2.textContent=(c.current_title||'')+(c.current_company?' at '+c.current_company:'');
+      nb.appendChild(ne);nb.appendChild(re2);
+      if(c.location){var lo=document.createElement('div');lo.style.cssText='font-size:11px;color:var(--tx3);margin-top:2px';lo.textContent=c.location;nb.appendChild(lo);}
+      var se=document.createElement('div');se.style.cssText='text-align:right;flex-shrink:0;margin-left:12px';
+      var sn=document.createElement('div');sn.style.cssText='font-size:24px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;line-height:1';sn.textContent=score;
+      var sl=document.createElement('div');sl.style.cssText='font-size:9px;color:'+scol+';font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px';
+      sl.textContent=score>=75?'Strong fit':score>=50?'Good fit':'Weak fit';
+      se.appendChild(sn);se.appendChild(sl);hdr.appendChild(nb);hdr.appendChild(se);card.appendChild(hdr);
+      // Why fit
+      if(c.why_fit){var wf=document.createElement('div');wf.style.cssText='font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5;padding:8px 10px;background:var(--sur2);border-radius:6px;border-left:3px solid '+scol;wf.textContent=c.why_fit;card.appendChild(wf);}
+      // InMail toggle
+      if(c.inmail){
+        var iw=document.createElement('div');iw.style.cssText='margin-bottom:10px';
+        var it=document.createElement('button');it.style.cssText='font-size:11px;font-weight:700;color:var(--pip);background:none;border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:0';it.textContent='Show InMail draft ▾';
+        var ib=document.createElement('div');ib.style.cssText='display:none;font-size:12px;color:var(--tx2);line-height:1.6;padding:10px 12px;background:var(--sur2);border:1px solid var(--bor);border-radius:6px;margin-top:6px;font-style:italic';ib.textContent=c.inmail;
+        var _im=c.inmail;var exp=false;
+        var cp2=document.createElement('button');cp2.style.cssText='font-size:10px;color:#fff;background:var(--pip);border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:3px 10px;border-radius:4px;margin-left:8px';cp2.textContent='Copy';
+        cp2.onclick=function(){navigator.clipboard.writeText(_im);cp2.textContent='Copied!';setTimeout(function(){cp2.textContent='Copy';},1500);};
+        it.onclick=function(){exp=!exp;ib.style.display=exp?'block':'none';it.textContent=exp?'Hide InMail draft ▴':'Show InMail draft ▾';};
+        it.appendChild(cp2);iw.appendChild(it);iw.appendChild(ib);card.appendChild(iw);
+      }
+      // Buttons
+      var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center';
+      var liUrl=c.linkedin_url||('https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((c.name||'')+' '+(c.current_title||'')));
+      var la=document.createElement('a');la.href=liUrl;la.target='_blank';la.rel='noopener';
+      la.style.cssText='display:inline-flex;align-items:center;gap:5px;border:1px solid #0a66c2;color:#0a66c2;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;text-decoration:none;font-family:Outfit,sans-serif;background:none';
+      la.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'+(c.linkedin_url?'View':'Find');
+      btns.appendChild(la);
+      // Save → moves card to Saved section
+      if(!isSaved){
+        var saveBtn=document.createElement('button');saveBtn.className='abtn';
+        saveBtn.style.cssText='font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif';
+        saveBtn.textContent='Save';
+        (function(_c,_card){saveBtn.onclick=function(){
+          if(!PH_SAVED_CANDIDATES.some(function(x){return x.name===_c.name&&x.current_company===_c.current_company;}))
+            PH_SAVED_CANDIDATES.unshift(_c);
+          phSave();
+          _card.style.opacity='0';_card.style.transition='opacity .2s';
+          setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);renderCandidateBottomSections();},200);
+          showUpsellToast('Saved \u2713');
+        };})(c,card);
+        btns.appendChild(saveBtn);
+      }
+      // Remove → goes to trash
+      var rmBtn=document.createElement('button');
+      rmBtn.style.cssText='font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--bor);background:none;color:var(--tx3)';
+      rmBtn.textContent='Remove';
+      (function(_c,_card){rmBtn.onclick=function(){
+        _c._trashed_at=Date.now();
+        PH_TRASH_CANDIDATES.unshift(_c);
         phSave();
-      };
-    })(c,saveBtn);
-    btns.appendChild(saveBtn);
-    // Remove
-    var rmBtn=document.createElement('button');
-    rmBtn.style.cssText='font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--bor);background:none;color:var(--tx3)';
-    rmBtn.textContent='Remove';
-    (function(_card){
-      rmBtn.onclick=function(){_card.style.opacity='0';_card.style.transition='opacity .2s';setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);},200);};
-    })(card);
-    btns.appendChild(rmBtn);
-    card.appendChild(btns);
-    wrap.appendChild(card);
-  });
+        _card.style.opacity='0';_card.style.transition='opacity .2s';
+        setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);renderCandidateBottomSections();},200);
+      };})(c,card);
+      btns.appendChild(rmBtn);
+      card.appendChild(btns);
+      wrap.appendChild(card);
+    });
+  } else {
+    var empty=document.createElement('div');empty.style.cssText='padding:20px 0;text-align:center;color:var(--tx3);font-size:12px';empty.textContent='No candidates yet - paste a JD and click Find Candidates';
+    wrap.appendChild(empty);
+  }
+
+  // Render saved + trash sections below
+  renderCandidateBottomSections();
 }
+
+function renderCandidateBottomSections(){
+  var wrap=document.getElementById('sourcer-candidates-section');
+  if(!wrap) return;
+  // Remove old saved/trash sections if present
+  var old=wrap.querySelector('.cand-bottom-sections');
+  if(old) old.remove();
+  var bottom=document.createElement('div');bottom.className='cand-bottom-sections';
+
+  // ── Saved Candidates ──────────────────────────────────────
+  if(PH_SAVED_CANDIDATES.length){
+    var savedWrap=document.createElement('div');savedWrap.style.cssText='margin-top:24px';
+    var savedTitle=document.createElement('div');savedTitle.style.cssText='font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bor)';
+    savedTitle.textContent='Saved ('+PH_SAVED_CANDIDATES.length+')';
+    savedWrap.appendChild(savedTitle);
+    PH_SAVED_CANDIDATES.forEach(function(c){
+      var score=c.fit_score||0;var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+      var mini=document.createElement('div');mini.className='ph-card';mini.style.cssText='margin-bottom:10px;border-left:3px solid var(--pip)';
+      var row=document.createElement('div');row.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px';
+      var nb=document.createElement('div');nb.style.flex='1';
+      var ne=document.createElement('div');ne.style.cssText='font-size:13px;font-weight:700;color:var(--tx)';ne.textContent=c.name||'';
+      var re2=document.createElement('div');re2.style.cssText='font-size:11px;color:var(--tx3)';re2.textContent=(c.current_title||'')+(c.current_company?' at '+c.current_company:'');
+      nb.appendChild(ne);nb.appendChild(re2);
+      var sn=document.createElement('div');sn.style.cssText='font-size:20px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;margin-left:10px;flex-shrink:0';sn.textContent=score;
+      row.appendChild(nb);row.appendChild(sn);mini.appendChild(row);
+      var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px';
+      var liUrl=c.linkedin_url||('https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((c.name||'')+' '+(c.current_title||'')));
+      var la=document.createElement('a');la.href=liUrl;la.target='_blank';la.rel='noopener';la.style.cssText='font-size:11px;font-weight:700;color:#0a66c2;border:1px solid #0a66c2;padding:4px 10px;border-radius:5px;text-decoration:none;font-family:Outfit,sans-serif;background:none';la.textContent=c.linkedin_url?'View':'Find';
+      btns.appendChild(la);
+      var unBtn=document.createElement('button');unBtn.style.cssText='font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--bor);background:none;color:var(--tx3)';unBtn.textContent='Remove';
+      (function(_c){unBtn.onclick=function(){PH_SAVED_CANDIDATES=PH_SAVED_CANDIDATES.filter(function(x){return !(x.name===_c.name&&x.current_company===_c.current_company);});phSave();renderCandidateBottomSections();showUpsellToast('Removed from saved');};})(c);
+      btns.appendChild(unBtn);mini.appendChild(btns);savedWrap.appendChild(mini);
+    });
+    bottom.appendChild(savedWrap);
+  }
+
+  // ── Trash ─────────────────────────────────────────────────
+  pruneTrash();
+  if(PH_TRASH_CANDIDATES.length){
+    var trashWrap=document.createElement('div');trashWrap.style.cssText='margin-top:20px';
+    var trashTitle=document.createElement('div');trashTitle.style.cssText='font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bor)';
+    trashTitle.textContent='Trash ('+PH_TRASH_CANDIDATES.length+') \u00b7 auto-deletes in 7 days';
+    trashWrap.appendChild(trashTitle);
+    PH_TRASH_CANDIDATES.forEach(function(c){
+      var mini=document.createElement('div');mini.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bor);opacity:.5';
+      var nl=document.createElement('div');nl.style.cssText='font-size:12px;color:var(--tx3)';nl.textContent=(c.name||'')+(c.current_company?' \u00b7 '+c.current_company:'');
+      var rb=document.createElement('button');rb.style.cssText='font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--bor);background:none;color:var(--tx3)';rb.textContent='Restore';
+      (function(_c){rb.onclick=function(){PH_TRASH_CANDIDATES=PH_TRASH_CANDIDATES.filter(function(x){return !(x.name===_c.name&&x.current_company===_c.current_company);});if(!PH_SAVED_CANDIDATES.some(function(x){return x.name===_c.name&&x.current_company===_c.current_company;})){delete _c._trashed_at;PH_SAVED_CANDIDATES.unshift(_c);}phSave();renderCandidateBottomSections();};})(c);
+      mini.appendChild(nl);mini.appendChild(rb);trashWrap.appendChild(mini);
+    });
+    bottom.appendChild(trashWrap);
+  }
+
+  wrap.appendChild(bottom);
+}
+
 
 
 function phApplyJob(id){
@@ -3019,6 +3094,12 @@ function initIdleTimer(){
     document.addEventListener(ev, resetIdleTimer, {passive:true});
   });
   resetIdleTimer();
+}
+
+function pruneTrash(){
+  var week=7*24*60*60*1000;
+  var now=Date.now();
+  PH_TRASH_CANDIDATES=PH_TRASH_CANDIDATES.filter(function(c){return c._trashed_at&&(now-c._trashed_at)<week;});
 }
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
