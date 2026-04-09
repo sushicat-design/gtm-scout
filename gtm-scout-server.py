@@ -955,7 +955,7 @@ function setPage(page, addToHistory) {
   });
   if(page==='dashboard') renderDashboard();
   if(page==='leads') renderLeads();
-  if(page==='piphunt'){ phLoad(); phRenderJobs(); setTimeout(function(){phRenderHistory();},100); }
+  if(page==='piphunt')    { phLoad(); phRenderJobs(); }
   if(page==='inbox') renderInbox();
   if(page==='profile'){profileLoad();renderProfile();}
 }
@@ -1772,18 +1772,27 @@ function phToggleFilter(f){
 
 function phFetch(){
   if(!tierCanPipHunt())return;
-  var inp=document.getElementById('ph-search-input');
-  var query=inp?inp.value.trim():'';
-  if(!query){showUpsellToast('Enter a job title or role first');if(inp)inp.focus();return;}
   var btn=document.getElementById('ph-fetch-btn');
   var status=document.getElementById('ph-status');
   if(btn)btn.disabled=true;
   if(status)status.textContent='Searching...';
+  // Use custom search input if filled, otherwise use category
+  var inp=document.getElementById('ph-search-input');
+  var customQ=inp?inp.value.trim():'';
   var sites='site:linkedin.com/jobs OR site:indeed.com OR site:glassdoor.com OR site:ziprecruiter.com OR site:monster.com OR site:dice.com OR site:flexjobs.com OR site:upwork.com';
-  var fullQuery=sites+' "'+query+'" 2026';
-  var sys='You are a JSON API. Search the web for real open job postings matching the query right now. Return ONLY a raw JSON array starting with [. Each object must have: role, company, location, remote(bool), salary, posted, apply_url, description(1 sentence max), sector. Use null for unknown fields. No markdown, no explanation, no backticks.';
+  var sys, query;
+  if(customQ){
+    sys='You are a JSON API. Search the web for real open job postings matching: "'+customQ+'". Only search these sites: '+sites+'. Return ONLY a raw JSON array starting with [. Each object: role, company, location, remote(bool), salary, posted, apply_method, apply_url, description(1 sentence), sector. Use null for unknown. No markdown.';
+    query=sites+' "'+customQ+'" 2026';
+  } else if(phCategory==='cmo'){
+    sys=PH_SYS_CMO; query=sites+' (CMO OR "VP Marketing" OR "Head of Marketing" OR "Head of Growth") startup 2026';
+  } else if(phCategory==='design'){
+    sys=PH_SYS_DESIGN; query=sites+' ("Head of Design" OR "VP Design" OR "Creative Director") startup 2026';
+  } else {
+    sys=PH_SYS_FRACTIONAL; query=sites+' ("fractional CMO" OR "fractional VP Marketing" OR "fractional marketing" OR "interim CMO" OR "part-time CMO") 2026';
+  }
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:'',company:fullQuery,system:sys,mode:'fetch'})})
+    body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
   .then(function(r){return r.json();})
   .then(function(d){
     if(d.error)throw new Error(d.error);
@@ -1791,23 +1800,26 @@ function phFetch(){
     var a=t.indexOf('['),b=t.lastIndexOf(']');
     var jobs=[];
     if(a>=0&&b>a){try{jobs=JSON.parse(t.slice(a,b+1));}catch(e){}}
-    if(!jobs.length){if(status)status.textContent='No results - try different keywords';setTimeout(function(){if(status)status.textContent='';},3000);return;}
+    if(!jobs.length){if(status)status.textContent='No results - try again';setTimeout(function(){if(status)status.textContent='';},3000);return;}
     jobs=jobs.filter(function(j){return j.company||j.role;});
     jobs.forEach(function(j){
       j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
-      j._query=query;
+      j._cat=customQ?phCategory:phCategory;
       j.role=j.role||j.title||j.position||'Open Role';
       j.company=j.company||j.employer||'Unknown';
       j.apply_url=j.apply_url||j.url||j.link||null;
       j.remote=j.remote||j.is_remote||(j.location&&j.location.toLowerCase().indexOf('remote')>=0)||false;
     });
-    PH_JOBS=jobs;
+    // Replace results for this category
+    PH_JOBS=PH_JOBS.filter(function(j){return j._cat!==phCategory;}).concat(jobs);
     phSave();phRenderJobs();
+    if(inp)inp.value='';
     if(status){status.textContent=jobs.length+' jobs found';setTimeout(function(){status.textContent='';},3000);}
   })
   .catch(function(e){if(status){status.textContent='Error: '+e.message;setTimeout(function(){status.textContent='';},4000);}})
   .finally(function(){if(btn)btn.disabled=false;});
 }
+
 
 
 function phSave(){
@@ -1899,7 +1911,7 @@ function phRenderJobs(){
     if(!PH_SAVED.length){sg.innerHTML='<div style="padding:16px 0;color:var(--tx3);font-size:12px">No saved jobs yet</div>';}
     else{PH_SAVED.forEach(function(job){
       var id=job._id;var mini=document.createElement('div');mini.className='ph-card saved';
-      mini.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+(job.salary?'<span class="ph-tag salary">'+job.salary+'</span>':'')+'</div></div><div class="ph-card-actions"></div>';
+      mini.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job.location?'<span class="ph-tag">'+job.location+'</span>':'')+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+(job.salary?'<span class="ph-tag salary">'+job.salary+'</span>':'')+(job.posted?'<span class="ph-tag new">'+job.posted+'</span>':'')+'</div></div>'+(job.description?'<div class="ph-card-body"><div class="ph-desc">'+job.description+'</div>'+(job.apply_url&&job.apply_url.indexOf('@')<0?'<div class="ph-apply"><a class="ph-apply-link" href="'+job.apply_url+'" target="_blank">'+job.apply_url.replace(/^https?:\/\//,'').slice(0,50)+'</a></div>':'')+'</div>':'')+'<div class="ph-card-actions"></div>';
       var acts=mini.querySelector('.ph-card-actions');
       var ab=document.createElement('button');ab.className='abtn g';ab.textContent=job.apply_url?'Apply':'Mark Applied';
       (function(jid){ab.onclick=function(){phApplyJob(jid);};})(id);acts.appendChild(ab);
@@ -1917,7 +1929,7 @@ function phRenderJobs(){
     if(!PH_APPLIED.length){ag.innerHTML='<div style="padding:16px 0;color:var(--tx3);font-size:12px">No applications yet - click Apply on any job to track it here</div>';}
     else{PH_APPLIED.forEach(function(job){
       var id=job._id;var mini=document.createElement('div');mini.className='ph-card saved';
-      mini.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job._applied_at?'<span class="ph-tag">Applied '+job._applied_at+'</span>':'')+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+'</div></div><div class="ph-card-actions"></div>';
+      mini.innerHTML='<div class="ph-card-header"><div class="ph-card-role">'+(job.role||'')+'</div><div class="ph-card-company">'+(job.company||'')+'</div><div class="ph-card-meta">'+(job._applied_at?'<span class="ph-tag">Applied '+job._applied_at+'</span>':'')+(job.location?'<span class="ph-tag">'+job.location+'</span>':'')+(job.remote?'<span class="ph-tag remote">Remote</span>':'')+(job.salary?'<span class="ph-tag salary">'+job.salary+'</span>':'')+'</div></div>'+(job.description?'<div class="ph-card-body"><div class="ph-desc">'+job.description+'</div></div>':'')+'<div class="ph-card-actions"></div>';
       var acts=mini.querySelector('.ph-card-actions');
       if(job.apply_url&&job.apply_url.indexOf('@')<0){var oa2=document.createElement('a');oa2.href=job.apply_url;oa2.target='_blank';oa2.className='abtn g';oa2.style.textDecoration='none';oa2.textContent='Open Application';acts.appendChild(oa2);}
       var rmBtn2=document.createElement('button');rmBtn2.className='abtn ghost';rmBtn2.textContent='Remove';
@@ -2610,7 +2622,7 @@ function closeProfileMenu(){
   if(dd) dd.style.display='none';
 }
 function initApp(){
-  profileLoad();phLoad();updateCreditsBar();renderTopbar();
+  profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   load(function(){ setPage('dashboard'); document.body.classList.add('app-ready'); });
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-action]')||e.target;
@@ -2729,7 +2741,7 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'White-label Pitches',action:function(){navTo('profile');}},
+      {label:'White-label Pitches',action:function(){showUpsellToast('Open any lead and click ⚡ White-label to generate a pitch link');}},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -2964,6 +2976,29 @@ function phShowBottomTab(tab){
   if(st){st.style.borderBottomColor=tab==='saved'?'var(--pip)':'transparent';st.style.color=tab==='saved'?'var(--tx)':'var(--tx3)';}
   if(at2){at2.style.borderBottomColor=tab==='applied'?'var(--pip)':'transparent';at2.style.color=tab==='applied'?'var(--tx)':'var(--tx3)';}
 }
+
+var _idleTimer = null;
+var IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+function resetIdleTimer(){
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(function(){
+    // Auto sign out after 30 min idle
+    var u = authGetUser();
+    if(u){
+      authSignOut();
+      showAuthScreen('login');
+      showLimitToast('You have been signed out after 30 minutes of inactivity.');
+    }
+  }, IDLE_TIMEOUT);
+}
+
+function initIdleTimer(){
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(function(ev){
+    document.addEventListener(ev, resetIdleTimer, {passive:true});
+  });
+  resetIdleTimer();
+}
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -3154,9 +3189,14 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</div>"
   "</div>"
   "<div id='ph-hunt-mode' style='padding:0 24px 24px'>"
-  "<div style='display:flex;gap:8px;margin-bottom:14px;align-items:center'>"
-  "  <input id='ph-search-input' type='text' placeholder='e.g. fractional CMO, VP Marketing, Head of Growth...' style='flex:1;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:10px 14px;border-radius:8px;outline:none' onkeydown='if(event.key===\"Enter\")phFetch()'>"
-  "  <button id='ph-fetch-btn' onclick='phFetch()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;white-space:nowrap'>Search Jobs</button>"
+  "<div style='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px'>"
+  "  <button class='ph-tab active' data-cat='cmo' onclick='phSetCategory(\"cmo\")' style='background:var(--pip);color:#fff;border:1px solid var(--pip);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>CMO / VP Marketing</button>"
+  "  <button class='ph-tab' data-cat='design' onclick='phSetCategory(\"design\")' style='background:var(--sur2);color:var(--tx3);border:1px solid var(--bor2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Design Leadership</button>"
+  "  <button class='ph-tab' data-cat='fractional' onclick='phSetCategory(\"fractional\")' style='background:var(--sur2);color:var(--tx3);border:1px solid var(--bor2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif'>Fractional Roles</button>"
+  "</div>"
+  "<div style='display:flex;gap:8px;margin-bottom:12px;align-items:center'>"
+  "  <input id='ph-search-input' type='text' placeholder='Search a specific role... (optional)' style='flex:1;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:9px 14px;border-radius:8px;outline:none' onkeydown='if(event.key===\"Enter\")phFetch()'>"
+  "  <button id='ph-fetch-btn' onclick='phFetch()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:9px 20px;border-radius:8px;cursor:pointer;white-space:nowrap'>Search Jobs</button>"
   "  <span id='ph-status' style='font-size:12px;color:var(--tx3);white-space:nowrap'></span>"
   "</div>"
   "<div style='display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap'>"
@@ -3424,7 +3464,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
     <a href="/app" id="nav-cta" class="ncta">Start free</a>
-<script>try{var _t=localStorage.getItem('sb_token');var _nc=document.getElementById('nav-cta');if(_t&&_nc){_nc.textContent='Dashboard';}}catch(e){}</script>
+<script>try{var _t=localStorage.getItem('sb_token');var _u=localStorage.getItem('sb_user');var _nc=document.getElementById('nav-cta');if(_t&&_u&&_nc){_nc.textContent='Dashboard';_nc.style.background='var(--pip,#2d9de8)';}}catch(e){}</script>
   </div>
   <script>
     (function(){
