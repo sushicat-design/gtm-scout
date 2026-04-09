@@ -2199,8 +2199,9 @@ var TIER_LABELS = {free:'Free',starter:'Starter',pro:'Pro',agency:'Agency'};
 
 function tierLoad(){
   var _u=authGetUser();
-  if(_u&&_u.email==='cara@sushicat.info'){
-    return {plan:'agency',research_used:0,fetch_used:0,period:new Date().toISOString(),_master:true};
+  var _masters=['cara@sushicat.info','scott@cndtlabs.io'];
+  if(_u&&_masters.indexOf(_u.email)>=0){
+    return {plan:'agency',research_used:0,fetch_used:0,piphunt_used:0,period:new Date().toISOString(),_master:true};
   }
 
   try{
@@ -2413,8 +2414,15 @@ function sourcerRun(){
     if(PH_HISTORY.length>20)PH_HISTORY.pop();
     try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
     phSave();
+    // Make sure source mode and candidate section are visible
+    var srcSection=document.getElementById('sourcer-search-section');
+    if(srcSection)srcSection.style.display='block';
     renderCandidateCards(candidates);
-    var hw=document.getElementById('ph-history-wrap');if(hw)hw.style.display='block';
+    // Scroll to candidates
+    setTimeout(function(){
+      var wrap=document.getElementById('sourcer-candidates-section');
+      if(wrap)wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },100);
   }).catch(function(e){if(status)status.textContent='Error: '+e.message;});
 }
 
@@ -2813,11 +2821,6 @@ function exportToNotion(r){
 
 function generateWhitelabelLink(r){
   if(!r){showUpsellToast('No lead selected');return;}
-  var t=tierLoad();
-  if(t.plan!=='agency'&&t.plan!=='pro'&&!t._master){
-    showLimitToast('White-label pitches are a Pro & Agency feature. <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">Upgrade →</a>');
-    return;
-  }
   profileLoad();
   var data = {
     lead: {
