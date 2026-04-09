@@ -2071,7 +2071,7 @@ function profileCopyShare(){
 
 
 // ── TIER / CREDITS SYSTEM ─────────────────────────────────────────────────────
-var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:5}, starter:{research:50,fetch:5,piphunt:20}, pro:{research:300,fetch:30,piphunt:999}, agency:{research:1000,fetch:100,piphunt:9999}};
+var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:5}, starter:{research:50,fetch:5,piphunt:20}, pro:{research:300,fetch:30,piphunt:999}, agency:{research:750,fetch:100,piphunt:9999}};
 var TIER_LABELS = {free:'Free',starter:'Starter',pro:'Pro',agency:'Agency'};
 
 function tierLoad(){
@@ -2170,7 +2170,7 @@ function selectTier(plan){
     closePricing();updateCreditsBar();renderTopbar();
     return;
   }
-  var urls={starter:'STRIPE_STARTER',pro:'STRIPE_PRO',agency:'STRIPE_AGENCY'};
+  var urls={starter:'https://buy.stripe.com/8x28wPfrA9WughedmqbjW05',pro:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',agency:'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'};
   if(urls[plan])window.open(urls[plan],'_blank');
   closePricing();
 }
@@ -2728,7 +2728,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</div>"
   "</div>"
   "<div class='modal-overlay' id='profile-modal'><div class='modal' style='max-width:600px'><div class='modal-title'>Edit Profile</div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:4px'>Identity</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='e.g. Jane Smith' type='text'></div><div class='modal-field'><label class='modal-label'>Email</label><input class='modal-input' id='pm-email' placeholder='you@yoursite.com' type='text'></div><div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Scout' type='text'></div><div class='modal-field'><label class='modal-label'>Your Role</label><input class='modal-input' id='pm-role' placeholder='Fractional CMO' type='text'></div><div class='modal-field'><label class='modal-label'>Location</label><input class='modal-input' id='pm-location' placeholder='New York, USA' type='text'></div><div class='modal-field'><label class='modal-label'>Years Experience</label><input class='modal-input' id='pm-experience' placeholder='10+' type='text'></div></div><div class='modal-field' style='margin-top:4px'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div><div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are...'></textarea></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Ideal Client</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>Target Industries</label><input class='modal-input' id='pm-industries' placeholder='AI, SaaS, Fintech' type='text'></div><div class='modal-field'><label class='modal-label'>Ideal Funding Stage</label><input class='modal-input' id='pm-funding_stage' placeholder='Seed – Series B' type='text'></div><div class='modal-field'><label class='modal-label'>Ideal Company Size</label><input class='modal-input' id='pm-company_size' placeholder='10–100 employees' type='text'></div><div class='modal-field'><label class='modal-label'>Deal Size / Rate</label><input class='modal-input' id='pm-deal_size' placeholder='$5k–$15k/mo' type='text'></div><div class='modal-field'><label class='modal-label'>Typical Engagement</label><input class='modal-input' id='pm-client_size' placeholder='3–6 month retainers' type='text'></div><div class='modal-field'><label class='modal-label'>Availability</label><input class='modal-input' id='pm-availability' placeholder='2 spots open Q2 2026' type='text'></div></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Links</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>LinkedIn</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/you' type='text'></div><div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://x.com/yourhandle' type='text'></div><div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com' type='text'></div><div class='modal-field'><label class='modal-label'>Book a Call</label><input class='modal-input' id='pm-calendly' placeholder='https://calendly.com/you' type='text'></div></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Settings</div><div class='modal-field'><label class='modal-label'>Min GTM Score to show (0 = show all)</label><input class='modal-input' id='pm-min_score' placeholder='0' type='number' min='0' max='100'></div><div class='modal-actions'><button class='modal-cancel' onclick='closeProfileModal()'>Cancel</button><button class='modal-save' onclick='profileSaveInfo()'>Save changes</button></div></div></div>"
-  "<div class='modal-overlay' id='pricing-overlay'><div class='pricing-modal'><div class='modal-title'>Upgrade Scout</div><div id='pricing-msg' style='font-size:13px;color:var(--tx3);margin-bottom:20px;text-align:center'></div><div class='pricing-grid' style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px'><div style='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:20px;text-align:center'><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Starter</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$19<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>50 researches/mo</div><button onclick='selectTier(\"starter\")' style='width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Starter</button></div><div style='background:var(--sur2);border:2px solid var(--pip);border-radius:var(--r);padding:20px;text-align:center;position:relative'><div style='position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:9px;font-weight:700;padding:2px 12px;border-radius:4px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em'>Popular</div><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Pro</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$49<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>300 researches/mo</div><button onclick='selectTier(\"pro\")' style='width:100%;background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Pro</button></div><div style='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:20px;text-align:center'><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Agency</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$149<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>1,000 researches/mo</div><button onclick='selectTier(\"agency\")' style='width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Agency</button></div></div><div style='text-align:center'><button onclick='selectTier(\"free\")' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Stay on free plan (5 researches/mo)</button></div><div style='text-align:center;margin-top:12px'><button onclick='closePricing()' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif'>Maybe later</button></div></div></div>"
+  "<div class='modal-overlay' id='pricing-overlay'><div class='pricing-modal'><div class='modal-title'>Upgrade Scout</div><div id='pricing-msg' style='font-size:13px;color:var(--tx3);margin-bottom:20px;text-align:center'></div><div class='pricing-grid' style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px'><div style='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:20px;text-align:center'><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Starter</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$19<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>50 researches/mo</div><button onclick='selectTier(\"starter\")' style='width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Starter</button></div><div style='background:var(--sur2);border:2px solid var(--pip);border-radius:var(--r);padding:20px;text-align:center;position:relative'><div style='position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:9px;font-weight:700;padding:2px 12px;border-radius:4px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em'>Popular</div><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Pro</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$49<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>300 researches/mo</div><button onclick='selectTier(\"pro\")' style='width:100%;background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Pro</button></div><div style='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:20px;text-align:center'><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Agency</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$179<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>750 researches/mo</div><button onclick='selectTier(\"agency\")' style='width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Agency</button></div></div><div style='text-align:center'><button onclick='selectTier(\"free\")' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Stay on free plan (5 researches/mo)</button></div><div style='text-align:center;margin-top:12px'><button onclick='closePricing()' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif'>Maybe later</button></div></div></div>"
   "<div class='modal-overlay' id='case-modal'><div class='modal' style='max-width:500px'><div class='modal-title'>Case Study</div><input type='hidden' id='cm-idx'><div class='modal-field'><label class='modal-label'>Client</label><input class='modal-input' id='cm-client' placeholder='Acme Corp'></div><div class='modal-field'><label class='modal-label'>Title</label><input class='modal-input' id='cm-title' placeholder='GTM strategy for Series A launch'></div><div class='modal-field'><label class='modal-label'>Result</label><input class='modal-input' id='cm-result' placeholder='3x pipeline in 90 days'></div><div class='modal-field'><label class='modal-label'>Metrics (comma separated)</label><input class='modal-input' id='cm-metrics' placeholder='3x pipeline, $2M ARR, 6 months'></div><div class='modal-actions'><button class='modal-cancel' onclick='closeCaseModal()'>Cancel</button><button class='modal-cancel' onclick='profileDeleteCase()' style='color:var(--red);border-color:rgba(239,68,68,0.2)'>Delete</button><button class='modal-save' onclick='profileSaveCase()'>Save</button></div></div></div>"
 "<script>" + JS + "</script>\n"
   "</body>\n</html>\n")
@@ -3055,29 +3055,37 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 
 
 <div class="ps" id="pricing">
-  <div style="text-align:center;margin-bottom:56px">
+  <div style="text-align:center;margin-bottom:40px">
     <div class="slbl" style="text-align:center">Pricing</div>
     <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
     <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
   </div>
-  <div class="pg">
-    <div class="prc">
-      <div class="pn">Free</div>
-      <div class="pp">$0<span class="pper">/mo</span></div>
-      <div class="pd">Try Scout and see if it fits.</div>
-      <button class="pb2 out" onclick="location.href='/app'">Get started</button>
-      <ul class="pfl">
-        <li>5 researches/month</li>
-        <li>2 lead fetches</li>
-        <li>Dashboard &amp; Pipeline</li>
-        <li>5 Pip Hunt searches</li>
-      </ul>
+
+  <!-- Free tier — full width banner above paid plans -->
+  <div style="background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:16px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:20px;font-weight:800;color:var(--tx);font-family:'JetBrains Mono',monospace">Free</span>
+        <span style="font-size:28px;font-weight:800;color:var(--tx);font-family:'JetBrains Mono',monospace">$0</span>
+        <span style="font-size:13px;color:var(--tx3)">forever</span>
+      </div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--tx2)">&#10003; 5 researches/month</span>
+        <span style="font-size:13px;color:var(--tx2)">&#10003; 2 lead fetches</span>
+        <span style="font-size:13px;color:var(--tx2)">&#10003; Dashboard &amp; Pipeline</span>
+        <span style="font-size:13px;color:var(--tx2)">&#10003; 5 Pip Hunt searches</span>
+      </div>
     </div>
+    <button class="pb2 out" onclick="location.href='/app'" style="white-space:nowrap">Start for free</button>
+  </div>
+
+  <!-- Paid plans — 3 columns -->
+  <div class="pg">
     <div class="prc">
       <div class="pn">Starter</div>
       <div class="pp">$19<span class="pper">/mo</span></div>
       <div class="pd">For consultants testing the waters.</div>
-      <button class="pb2 out" onclick="location.href='/app'">Get Starter</button>
+      <button class="pb2 out" onclick="location.href='https://buy.stripe.com/8x28wPfrA9WughedmqbjW05'">Get Starter</button>
       <ul class="pfl">
         <li>50 researches/month</li>
         <li>5 lead fetches</li>
@@ -3090,22 +3098,22 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       <div class="pn">Pro</div>
       <div class="pp">$49<span class="pper">/mo</span></div>
       <div class="pd">For active prospectors closing deals.</div>
-      <button class="pb2" onclick="location.href='STRIPE_PRO'">Get Pro</button>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button>
       <ul class="pfl">
         <li>300 researches/month</li>
         <li>30 lead fetches/month</li>
-        <li>Pip Hunt — find jobs &amp; source candidates</li>
+        <li>Pip Hunt — jobs &amp; candidate sourcing</li>
         <li>CSV export</li>
         <li>Priority support</li>
       </ul>
     </div>
     <div class="prc">
       <div class="pn">Agency</div>
-      <div class="pp">$149<span class="pper">/mo</span></div>
+      <div class="pp">$179<span class="pper">/mo</span></div>
       <div class="pd">For teams running multiple client pipelines.</div>
-      <button class="pb2" onclick="location.href='STRIPE_AGENCY'">Get Agency</button>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button>
       <ul class="pfl">
-        <li>1,000 researches/month</li>
+        <li>750 researches/month</li>
         <li>5 team members</li>
         <li>100 lead fetches</li>
         <li>White-label pitches</li>
@@ -3113,7 +3121,9 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       </ul>
     </div>
   </div>
-  <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+
+  <!-- Top-up credits -->
+  <div style="margin-top:16px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
     <div>
       <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
       <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
