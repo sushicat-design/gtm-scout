@@ -766,11 +766,23 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .sourcer-copy-btn{background:var(--pip);color:#fff;border:none;font-size:10px;font-weight:700;padding:5px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;flex-shrink:0}
 .candidate-card{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:16px;margin-bottom:10px}
 .candidate-inmail{font-size:12px;color:var(--tx2);line-height:1.6;margin-top:10px;padding:10px;background:var(--sur);border-radius:6px;border:1px solid var(--bor)}
+/* Full-width dashboard kanban */
+.kanban-board{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;min-height:400px}
+.kanban-col{background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:12px;min-height:300px;display:flex;flex-direction:column}
+.kanban-col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.kanban-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3)}
+.kanban-col-count{font-size:10px;font-weight:700;color:var(--tx3);background:var(--sur3);padding:2px 7px;border-radius:999px}
+.kanban-card{background:var(--sur);border:1px solid var(--bor);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:grab;transition:transform .15s,box-shadow .15s;user-select:none}
+.kanban-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+.kanban-card.dragging{opacity:.5;transform:scale(.97)}
+.kanban-col.drag-over{border-color:var(--pip);background:rgba(45,157,232,0.05)}
+.kanban-card-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-card-meta{font-size:11px;color:var(--tx3)}
+.kanban-card-score{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
+.kanban-empty{font-size:12px;color:var(--tx3);text-align:center;padding:24px 0;opacity:.5}
 """
 
 JS = """
-function goHome(){window.location.href='/';}
-
 function openProfileModal(){
   profileLoad();
   var m = document.getElementById('profile-modal');
@@ -869,6 +881,12 @@ function setPage(page) {
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   var pg = document.getElementById('page-'+page);
   if(pg) pg.classList.add('active');
+  // Hide inbox sidebar item for non-agency
+  (function(){
+    var t=tierLoad();
+    var inboxSi=document.getElementById('si-inbox');
+    if(inboxSi) inboxSi.style.display=(t.plan==='agency'||t._master)?'':'none';
+  })();
   ['dashboard','search','piphunt','profile','leads','inbox','pipeline'].forEach(function(p){
     var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
@@ -1074,96 +1092,152 @@ function dismissInboxCard(id){
 
 function renderDashboard(){
   // Stat cards
-  var stats = document.getElementById('dash-stats');
-  if(!stats) return;
-  var hot = DB.filter(function(r){return (r.gtm_readiness_score||0)>=75;}).length;
-  var contacted = DB.filter(function(r){return r.outreach_status==='contacted'||r.outreach_status==='in_talks';}).length;
-  var closed = DB.filter(function(r){return r.outreach_status==='closed';}).length;
-  stats.innerHTML =
-    '<div class="stat-card" onclick=\"navTo(\\\"search\\\")\">' +
-      '<div class="stat-card-n">'+DB.length+'</div>' +
-      '<div class="stat-card-l">Total Leads</div>' +
-      '<div class="stat-card-accent" style="background:var(--pip)"></div>' +
-    '</div>' +
-    '<div class="stat-card" onclick=\"filterAndGoToLeads(\\\"hot\\\")\">' +
-      '<div class="stat-card-n" style="color:var(--pip2)">'+hot+'</div>' +
-      '<div class="stat-card-l">Hot Leads</div>' +
-      '<div class="stat-card-accent" style="background:var(--pip2)"></div>' +
-    '</div>' +
-    '<div class="stat-card">' +
-      '<div class="stat-card-n" style="color:var(--amb)">'+contacted+'</div>' +
-      '<div class="stat-card-l">In Progress</div>' +
-      '<div class="stat-card-accent" style="background:var(--amb)"></div>' +
-    '</div>' +
-    '<div class="stat-card">' +
-      '<div class="stat-card-n" style="color:var(--grn)">'+closed+'</div>' +
-      '<div class="stat-card-l">Closed</div>' +
-      '<div class="stat-card-accent" style="background:var(--grn)"></div>' +
+  var stats=document.getElementById('dash-stats');
+  if(!stats)return;
+  var hot=DB.filter(function(r){return(r.gtm_readiness_score||0)>=75;}).length;
+  var contacted=DB.filter(function(r){return r.outreach_status==='contacted'||r.outreach_status==='in_talks';}).length;
+  var won=DB.filter(function(r){return r.outreach_status==='closed';}).length;
+  var refused=DB.filter(function(r){return r.outreach_status==='refused';}).length;
+  stats.innerHTML=
+    '<div class="stat-card" data-nav="search">'+
+      '<div class="stat-card-n">'+DB.length+'</div>'+
+      '<div class="stat-card-l">Total Leads</div>'+
+      '<div class="stat-card-accent" style="background:var(--pip)"></div>'+
+    '</div>'+
+    '<div class="stat-card" data-action="hot-leads">'+
+      '<div class="stat-card-n" style="color:var(--pip2)">'+hot+'</div>'+
+      '<div class="stat-card-l">Hot Leads</div>'+
+      '<div class="stat-card-accent" style="background:var(--pip2)"></div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-card-n" style="color:var(--amb)">'+contacted+'</div>'+
+      '<div class="stat-card-l">In Progress</div>'+
+      '<div class="stat-card-accent" style="background:var(--amb)"></div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-card-n" style="color:var(--grn)">'+won+'</div>'+
+      '<div class="stat-card-l">Won</div>'+
+      '<div class="stat-card-accent" style="background:var(--grn)"></div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-card-n" style="color:var(--tx3)">'+refused+'</div>'+
+      '<div class="stat-card-l">Closed Lost</div>'+
+      '<div class="stat-card-accent" style="background:var(--tx3)"></div>'+
     '</div>';
 
-  // CRM leads list
-  var list = document.getElementById('crm-leads-list');
-  if(list){
-    if(!DB.length){
-      list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--tx3);font-size:13px">No leads yet — <button onclick=\"setPage(\\\"search\\\")\" style="background:none;border:none;color:var(--pip2);cursor:pointer;font-family:Outfit,sans-serif;font-size:13px">research your first company</button></div>';
+  // Show inbox button only for agency
+  var t=tierLoad();
+  var inboxBtn=document.getElementById('inbox-agency-btn');
+  if(inboxBtn){
+    if(t.plan==='agency'||t._master){
+      var cnt=INBOX.length?(' <b style="color:var(--pip2)">'+INBOX.length+'</b>'):'';
+      inboxBtn.innerHTML='<button id="inbox-nav-btn" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Inbox'+cnt+'</button>';
+      setTimeout(function(){var b=document.getElementById('inbox-nav-btn');if(b)b.onclick=function(){navTo('inbox');};},10);
     } else {
-      var statusColors = {not_contacted:'var(--tx3)',contacted:'var(--amb)',in_talks:'var(--pip)',closed:'var(--grn)'};
-      var statusLabels = {not_contacted:'New',contacted:'Contacted',in_talks:'In Talks',closed:'Closed'};
-      list.innerHTML = DB.slice(0,20).map(function(r){
-        var n = r.gtm_readiness_score||0;
-        var c = sc(n);
-        var s = r.outreach_status||'not_contacted';
-        return '<div class="crm-row" data-action="open-lead" data-id="'+r._id+'">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div class="crm-co">'+(r.company||'')+'</div>' +
-            '<div class="crm-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</div>' +
-          '</div>' +
-          '<div class="crm-status" style="color:'+statusColors[s]+';border-color:'+statusColors[s]+'">'+statusLabels[s]+'</div>' +
-          '<div class="crm-score" style="color:'+c+'">'+n+'</div>' +
-        '</div>';
-      }).join('');
+      inboxBtn.innerHTML='';
     }
   }
 
-  // Inbox preview
-  var inb = document.getElementById('dash-inbox');
-  if(inb){
-    if(!INBOX.length){
-      inb.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3);font-size:12px">No new leads in inbox</div>';
-    } else {
-      inb.innerHTML = INBOX.slice(0,5).map(function(r){
-        var n = r.gtm_readiness_score||0;
-        return '<div class="inbox-row" data-action="approve-inbox" data-id="'+r._id+'">' +
-          '<div class="inbox-badge-dot"></div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.company||'')+'</div>' +
-            '<div style="font-size:11px;color:var(--tx3)">'+(r.sector||'')+'</div>' +
-          '</div>' +
-          '<div style="font-size:14px;font-weight:800;color:'+sc(n)+';font-family:JetBrains Mono,monospace">'+n+'</div>' +
-        '</div>';
-      }).join('') +
-      (INBOX.length > 5 ? '<div style="padding:10px 18px;font-size:11px;color:var(--tx3);text-align:center">+' + (INBOX.length-5) + ' more in inbox</div>' : '');
-    }
-    var badge = document.getElementById('inbox-badge-dash');
-    if(badge) badge.textContent = INBOX.length ? INBOX.length + ' new' : '';
-  }
+  renderKanbanBoard();
+  // Wire stat card clicks
+  setTimeout(function(){
+    var sc=document.getElementById('dash-stats');
+    if(sc) sc.addEventListener('click',function(e){
+      var card=e.target.closest('[data-nav]');
+      if(card) navTo(card.getAttribute('data-nav'));
+      var act=e.target.closest('[data-action]');
+      if(act && act.getAttribute('data-action')==='hot-leads') filterAndGoToLeads('hot');
+    });
+  },50);
+}
 
-  // Mini kanban
-  var kb = document.getElementById('dash-kanban');
-  if(kb){
-    var stages = ['not_contacted','contacted','in_talks','closed'];
-    var labels = {not_contacted:'New',contacted:'Contacted',in_talks:'Talking',closed:'Closed'};
-    var colors = {not_contacted:'var(--tx3)',contacted:'var(--amb)',in_talks:'var(--pip)',closed:'var(--grn)'};
-    kb.innerHTML = stages.map(function(stage){
-      var items = DB.filter(function(r){return (r.outreach_status||'not_contacted')===stage;});
-      return '<div class="kb-col-mini">' +
-        '<div class="kb-col-mini-label"><span style="color:'+colors[stage]+'">'+labels[stage]+'</span><span style="color:var(--tx3)">'+items.length+'</span></div>' +
-        items.slice(0,3).map(function(r){
-          return '<div class="kb-card-mini" data-action="open-lead" data-id="'+r._id+'">' +(r.company||'')+'</div>';
-        }).join('') +
-      '</div>';
-    }).join('');
-  }
+
+
+function renderKanbanBoard(){
+  var board=document.getElementById('dash-kanban-board');
+  if(!board)return;
+  var stages=[
+    {id:'not_contacted',label:'Not Contacted',color:'var(--tx3)'},
+    {id:'contacted',    label:'Contacted',    color:'var(--amb)'},
+    {id:'in_talks',     label:'In Talks',     color:'var(--pip)'},
+    {id:'closed',       label:'Won',          color:'var(--grn)'},
+    {id:'refused',      label:'Closed Lost',  color:'rgba(239,68,68,0.7)'}
+  ];
+  board.innerHTML='';
+  stages.forEach(function(stage){
+    var leads=DB.filter(function(r){return(r.outreach_status||'not_contacted')===stage.id;});
+    var col=document.createElement('div');
+    col.className='kanban-col';
+    col.setAttribute('data-stage',stage.id);
+
+    var hdr=document.createElement('div');
+    hdr.className='kanban-col-header';
+    hdr.innerHTML='<span class="kanban-col-title" style="color:'+stage.color+'">'+stage.label+'</span><span class="kanban-col-count">'+leads.length+'</span>';
+    col.appendChild(hdr);
+
+    if(!leads.length){
+      var emp=document.createElement('div');
+      emp.className='kanban-empty';
+      emp.textContent='Drop here';
+      col.appendChild(emp);
+    }
+
+    leads.forEach(function(r){
+      var score=r.gtm_readiness_score||0;
+      var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+      var card=document.createElement('div');
+      card.className='kanban-card';
+      card.draggable=true;
+      card.setAttribute('data-id',r._id);
+
+      var inner=document.createElement('div');
+      inner.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;gap:6px';
+
+      var left=document.createElement('div');
+      left.style.cssText='min-width:0';
+      var name=document.createElement('div');
+      name.className='kanban-card-name';
+      name.textContent=r.company||'Unknown';
+      var meta=document.createElement('div');
+      meta.className='kanban-card-meta';
+      meta.textContent=r.sector||r.stage||'';
+      left.appendChild(name);
+      left.appendChild(meta);
+
+      var scoreEl=document.createElement('div');
+      scoreEl.className='kanban-card-score';
+      scoreEl.style.color=scol;
+      scoreEl.textContent=score;
+
+      inner.appendChild(left);
+      inner.appendChild(scoreEl);
+      card.appendChild(inner);
+
+      card.addEventListener('dragstart',function(e){
+        e.dataTransfer.setData('text/plain',r._id);
+        card.classList.add('dragging');
+        e.stopPropagation();
+      });
+      card.addEventListener('dragend',function(){card.classList.remove('dragging');});
+      card.addEventListener('click',function(e){e.stopPropagation();openLeadDetail(r._id);});
+      col.appendChild(card);
+    });
+
+    col.addEventListener('dragover',function(e){e.preventDefault();col.classList.add('drag-over');});
+    col.addEventListener('dragleave',function(){col.classList.remove('drag-over');});
+    col.addEventListener('drop',function(e){
+      e.preventDefault();col.classList.remove('drag-over');
+      var id=e.dataTransfer.getData('text/plain');
+      var lead=DB.find(function(r){return r._id===id;});
+      if(lead){lead.outreach_status=stage.id;save();renderKanbanBoard();}
+    });
+
+    board.appendChild(col);
+  });
+}
+
+function renderDashStats(){
+  renderDashboard();
 }
 
 function filterAndGoToLeads(filter){
@@ -2480,7 +2554,7 @@ function closeProfileMenu(){
   if(dd) dd.style.display='none';
 }
 function initApp(){
-  load();profileLoad();updateCreditsBar();setPage('dashboard');renderTopbar();
+  load();profileLoad();updateCreditsBar();renderTopbar();setPage('dashboard');
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-action]')||e.target;
     var a=t?t.getAttribute('data-action'):null;if(!a)return;
@@ -2539,7 +2613,7 @@ document.addEventListener('DOMContentLoaded',function(){
   else{showAuthScreen('signup');}
 });
 
-function authGoTo(mode){ showAuthScreen(mode); }
+      inboxBtn.innerHTML='<button data-nav="inbox" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Inbox'+(INBOX.length?' <span style="color:var(--pip2)">'+INBOX.length+'</span>':'')+'</button>';
 
 """
 
@@ -2617,28 +2691,16 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
 
  
   "<div class='page' id='page-dashboard'>"
-  "<div class='dash-header'>"
-    "<div class='dash-title'>Dashboard</div>"
-    "<div class='dash-sub'>Your lead pipeline at a glance</div>"
+  "<div style='padding:20px 24px 0'><div class='stat-cards' id='dash-stats'></div></div>"
+  "<div style='padding:12px 24px 24px'>"
+  "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:14px'>"
+  "<div style='font-size:16px;font-weight:700;color:var(--tx)'>Pipeline</div>"
+  "<div style='display:flex;gap:8px;align-items:center'>"
+  "<button onclick=\"navTo('search')\" style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer'>+ Research</button>"
+  "<div id='inbox-agency-btn'></div>"
   "</div>"
-  "<div class='stat-cards' id='dash-stats'></div>"
-  "<div class='dash-grid'>"
-    "<div>"
-      "<div class='dash-panel'>"
-        "<div class='dash-panel-header'><span class='dash-panel-title'>All Leads</span><button class='dash-panel-action' onclick=\"setPage('search')\">+ Research new</button></div>"
-        "<div id='crm-leads-list'></div>"
-      "</div>"
-    "</div>"
-    "<div>"
-      "<div class='dash-panel' style='margin-bottom:16px'>"
-        "<div class='dash-panel-header'><span class='dash-panel-title'>Inbox</span><span id='inbox-badge-dash' style='font-size:10px;color:var(--pip2);font-weight:700'></span></div>"
-        "<div class='inbox-preview' id='dash-inbox'></div>"
-      "</div>"
-      "<div class='dash-panel'>"
-        "<div class='dash-panel-header'><span class='dash-panel-title'>Pipeline</span></div>"
-        "<div class='kanban-mini' id='dash-kanban'></div>"
-      "</div>"
-    "</div>"
+  "</div>"
+  "<div class='kanban-board' id='dash-kanban-board'></div>"
   "</div>"
   "</div>"
 
