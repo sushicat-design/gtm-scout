@@ -409,7 +409,7 @@ body::after{
 .tb-btn:hover{border-color:var(--pip-bor);color:var(--pip2)}
 .tb-btn.danger{color:var(--red);border-color:rgba(239,68,68,0.15)}
 
-/* ── LEAD CARDS — glow on hover ── */
+/* ── LEAD CARDS - glow on hover ── */
 .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .lead-card{
   background:var(--sur);
@@ -627,7 +627,7 @@ body::after{
 .tier-desc{font-size:12px;color:var(--tx3);margin-bottom:20px;line-height:1.65;min-height:36px}
 .tier-features{list-style:none;margin-bottom:22px;display:flex;flex-direction:column;gap:8px}
 .tier-features li{font-size:12px;color:var(--tx2);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
-.tier-features li::before{content:'—';color:var(--pip2);font-weight:700;flex-shrink:0}
+.tier-features li::before{content:'-';color:var(--pip2);font-weight:700;flex-shrink:0}
 .tier-features li.dim{color:var(--tx3)}
 .tier-features li.dim::before{color:var(--tx3)}
 .tier-cta{width:100%;background:var(--pip);color:#fff;border:none;font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;padding:11px;border-radius:var(--r-sm);cursor:pointer;transition:all .2s;box-shadow:var(--glow-sm)}
@@ -826,7 +826,7 @@ function goHome(){window.location.href='/';}
 function openProfileModal(){
   profileLoad();
   var m = document.getElementById('profile-modal');
-  if(!m){ alert('Profile editor not found — please refresh.'); return; }
+  if(!m){ alert('Profile editor not found - please refresh.'); return; }
   var fields = ['name','email','tagline','bio','agency','role','location','experience',
     'client_size','availability','industries','funding_stage','company_size','deal_size',
     'linkedin','twitter','website','calendly','min_score'];
@@ -1186,17 +1186,17 @@ function renderDashboard(){
       '<div class="stat-card-l">Hot Leads</div>'+
       '<div class="stat-card-accent" style="background:var(--pip2)"></div>'+
     '</div>'+
-    '<div class="stat-card">'+
+    '<div class="stat-card" data-action="warm-leads" style="cursor:pointer">'+
       '<div class="stat-card-n" style="color:var(--amb)">'+contacted+'</div>'+
       '<div class="stat-card-l">In Progress</div>'+
       '<div class="stat-card-accent" style="background:var(--amb)"></div>'+
     '</div>'+
-    '<div class="stat-card">'+
+    '<div class="stat-card" data-action="won-leads" style="cursor:pointer">'+
       '<div class="stat-card-n" style="color:var(--grn)">'+won+'</div>'+
       '<div class="stat-card-l">Won</div>'+
       '<div class="stat-card-accent" style="background:var(--grn)"></div>'+
     '</div>'+
-    '<div class="stat-card">'+
+    '<div class="stat-card" data-action="cold-leads" style="cursor:pointer">'+
       '<div class="stat-card-n" style="color:rgba(239,68,68,0.8)">'+refused+'</div>'+
       '<div class="stat-card-l">Closed Lost</div>'+
       '<div class="stat-card-accent" style="background:rgba(239,68,68,0.5)"></div>'+
@@ -1345,7 +1345,7 @@ function renderDashStats(){
 
 function filterAndGoToLeads(filter){
   fil = filter;
-  setPage('leads');
+  navTo('leads');
 }
 
 function openLeadDetail(id){
@@ -1401,7 +1401,7 @@ function renderLeadDetail(r){
     '<div class="ld-grid">'+
       '<div class="ld-section">'+
         '<div class="ld-section-title">Pitch Opener</div>'+
-        '<div id="ld-pitch-text" style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">'+(r.pitch_opener||'—')+'</div>'+
+        '<div id="ld-pitch-text" style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">'+(r.pitch_opener||'-')+'</div>'+
         '<button data-action="copy-pitch" style="background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:8px 18px;border-radius:var(--r);cursor:pointer;font-family:Outfit,sans-serif">Copy pitch</button>'+
       '</div>'+
       '<div>'+
@@ -1437,6 +1437,9 @@ function renderLeadDetail(r){
       '<button onclick="generateWhitelabelLink(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:var(--pip);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">'+
         '&#9889; White-label'+
       '</button>'+
+    '</div>'+
+    '<div class="ld-section" style="margin:12px 0;padding-top:8px;border-top:1px solid var(--bor)">'+
+      '<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0">'+
       '<div class="ld-section-title">Notes</div>'+
@@ -1485,7 +1488,11 @@ function renderRecentLeads(){
 
 function renderLeads(){
   var shown=fil==='all'?DB:DB.filter(function(r){
-    return r.gtm_label===(fil==='hot'?'Hot Lead':fil==='warm'?'Warm Lead':'Cold Lead');
+    if(fil==='hot') return r.gtm_label==='Hot Lead';
+    if(fil==='warm') return r.gtm_label==='Warm Lead';
+    if(fil==='cold') return r.gtm_label==='Cold Lead';
+    if(fil==='won') return r.outreach_status==='closed';
+    return true;
   });
   var cont=document.getElementById('leads-grid');
   if(!cont)return;
@@ -1532,20 +1539,20 @@ function renderLeads(){
       '<div class="lead-card-body">'+
         '<div class="lc-sec">Profile</div>'+
         '<div class="lc-grid">'+
-          '<div class="lc-cell"><div class="lc-key">HQ</div><div class="lc-val'+(r.hq?'':' dim')+'">'+(r.hq||'—')+'</div></div>'+
-          '<div class="lc-cell"><div class="lc-key">Founded</div><div class="lc-val'+(r.founded?'':' dim')+'">'+(r.founded||'—')+'</div></div>'+
-          '<div class="lc-cell"><div class="lc-key">Team</div><div class="lc-val'+(r.employee_count?'':' dim')+'">'+(r.employee_count||'—')+'</div></div>'+
-          '<div class="lc-cell"><div class="lc-key">Funding</div><div class="lc-val'+(r.funding_amount?'':' dim')+'">'+(r.funding_amount||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">HQ</div><div class="lc-val'+(r.hq?'':' dim')+'">'+(r.hq||'-')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Founded</div><div class="lc-val'+(r.founded?'':' dim')+'">'+(r.founded||'-')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Team</div><div class="lc-val'+(r.employee_count?'':' dim')+'">'+(r.employee_count||'-')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Funding</div><div class="lc-val'+(r.funding_amount?'':' dim')+'">'+(r.funding_amount||'-')+'</div></div>'+
         '</div>'+
         (inv?'<div class="lc-sec">Investors</div><div class="lc-text">'+inv+'</div>':'') +
         '<div class="lc-sec">Socials</div>'+socHtml+
         '<div class="lc-sec">Founders</div>'+fndHtml+
         '<div class="lc-sec">GTM Signals</div><div>'+sigsHtml+'</div>'+
-        '<div class="lc-sec">Why They Fit</div><div class="lc-text">'+(r.why_fit||'—')+'</div>'+
+        '<div class="lc-sec">Why They Fit</div><div class="lc-text">'+(r.why_fit||'-')+'</div>'+
         '<div class="lc-sec">Reach Out To</div><div class="lc-text" style="color:var(--pip)">'+
-          (r.best_contact_name&&r.best_contact_title?r.best_contact_name+' — '+r.best_contact_title:r.best_contact_title||r.decision_maker||'—')+
+          (r.best_contact_name&&r.best_contact_title?r.best_contact_name+' - '+r.best_contact_title:r.best_contact_title||r.decision_maker||'-')+
         '</div>'+
-        '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'—')+'</div></div>'+
+        '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'-')+'</div></div>'+
         '<div class="lc-sec" style="margin-top:12px">Notes</div>'+
         '<textarea class="notes-area" id="note'+id+'" placeholder="Add notes...">'+(r._notes||'')+'</textarea>'+
       '</div>'+
@@ -1628,40 +1635,63 @@ function renderPipelinePage(){
   var stages=['not_contacted','contacted','in_talks','closed'];
   var labels={'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed'};
   var colors={'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--pip)','closed':'var(--grn)'};
-  var icons={'not_contacted':'○','contacted':'◎','in_talks':'◉','closed':'●'};
+  // Group leads by stage
+  var groups={};
+  stages.forEach(function(s){ groups[s]=[]; });
+  DB.forEach(function(r){ var s=r.outreach_status||'not_contacted'; if(groups[s]) groups[s].push(r); });
+  // Render each stage as a compact section
   stages.forEach(function(stage){
-    var col=document.createElement('div');col.className='pipeline-col';
-    var items=DB.filter(function(r){return(r.outreach_status||'not_contacted')===stage;});
-    var hdr=document.createElement('div');hdr.className='pipeline-col-header';
-    hdr.innerHTML='<span style="color:'+colors[stage]+'">'+icons[stage]+' '+labels[stage]+'</span>'+
-      '<span style="background:var(--bor2);color:var(--tx3);font-size:10px;padding:2px 8px;border-radius:999px">'+items.length+'</span>';
-    col.appendChild(hdr);
-    if(!items.length){
-      var empty=document.createElement('div');empty.className='pipeline-empty';empty.textContent='No leads';col.appendChild(empty);
-    }
-    items.forEach(function(r){
-      var score=r.gtm_readiness_score||0,c=sc(score);
-      var item=document.createElement('div');item.className='pipeline-card';
-      item.innerHTML=
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
-          '<div class="pipeline-card-name">'+(r.company||'')+'</div>'+
-          '<span style="font-size:14px;font-weight:800;color:'+c+'">'+score+'</span>'+
-        '</div>'+
-        '<div class="pipeline-card-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</div>'+
-        (r._followup?'<div class="pipeline-card-date"> '+r._followup+'</div>':'')+
-        (r._notes?'<div class="pipeline-card-note">'+(r._notes.slice(0,80))+(r._notes.length>80?'...':'')+'</div>':'')+
-        '<div style="margin-top:8px;font-size:11px;color:var(--pip)">'+(r.best_contact_title||r.decision_maker||'')+'</div>';
-      (function(rec){item.onclick=function(){
-        var order=['not_contacted','contacted','in_talks','closed'];
-        var cur=rec.outreach_status||'not_contacted';
-        rec.outreach_status=order[(order.indexOf(cur)+1)%order.length];
-        save();renderPipelinePage();
-      };})(r);
-      col.appendChild(item);
+    var leads=groups[stage];
+    if(!leads.length) return;
+    var section=document.createElement('div');
+    section.style.cssText='margin-bottom:20px';
+    var hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    var dot=document.createElement('div');
+    dot.style.cssText='width:8px;height:8px;border-radius:50%;background:'+colors[stage]+';flex-shrink:0';
+    var lbl=document.createElement('span');
+    lbl.style.cssText='font-size:12px;font-weight:700;color:'+colors[stage]+';text-transform:uppercase;letter-spacing:.08em';
+    lbl.textContent=labels[stage]+' ('+leads.length+')';
+    hdr.appendChild(dot); hdr.appendChild(lbl);
+    section.appendChild(hdr);
+    leads.forEach(function(r){
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:border-color .15s';
+      row.onmouseover=function(){this.style.borderColor='var(--pip-bor)';};
+      row.onmouseout=function(){this.style.borderColor='var(--bor)';};
+      row.onclick=function(){ openLeadDetail(r._id); };
+      var left=document.createElement('div');left.style.minWidth='0';
+      var name=document.createElement('div');name.style.cssText='font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';name.textContent=r.company||'';
+      var meta=document.createElement('div');meta.style.cssText='font-size:11px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';meta.textContent=(r.sector||'')+(r.stage?' · '+r.stage:'');
+      left.appendChild(name);left.appendChild(meta);
+      var right=document.createElement('div');right.style.cssText='display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:12px';
+      var score=document.createElement('div');
+      var sc=r.gtm_readiness_score||0;
+      var scol=sc>=75?'var(--pip2)':sc>=50?'var(--amb)':'var(--tx3)';
+      score.style.cssText='font-size:18px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;letter-spacing:-.04em';
+      score.textContent=sc;
+      var del=document.createElement('button');
+      del.style.cssText='background:none;border:none;color:rgba(239,68,68,0.5);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1';
+      del.textContent='×';
+      del.title='Delete';
+      del.onclick=function(e){
+        e.stopPropagation();
+        if(!confirm('Delete '+( r.company||'this lead')+'?'))return;
+        DB=DB.filter(function(x){return x._id!==r._id;});
+        save();updateBadges();renderPipelinePage();
+        showUpsellToast((r.company||'Lead')+' deleted');
+      };
+      right.appendChild(score);right.appendChild(del);
+      row.appendChild(left);row.appendChild(right);
+      section.appendChild(row);
     });
-    cont.appendChild(col);
+    cont.appendChild(section);
   });
+  if(!DB.length){
+    cont.innerHTML='<div style="text-align:center;padding:40px 0;color:var(--tx3);font-size:13px">No leads in pipeline yet.</div>';
+  }
 }
+
 
 // ── RENDER: INBOX ─────────────────────────────────────────────────────────────
 function renderInbox(){
@@ -2136,12 +2166,12 @@ function renderProfile(){
       '<div class="prof-section">'+
         '<div class="prof-section-title" style="margin-bottom:12px">Business Details</div>'+
         '<div class="prof-grid">'+
-          '<div class="prof-field"><div class="prof-field-label">Role</div><div class="prof-field-val">'+(PROFILE.role||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Location</div><div class="prof-field-val">'+(PROFILE.location||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Industries</div><div class="prof-field-val">'+(PROFILE.industries||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Ideal Stage</div><div class="prof-field-val">'+(PROFILE.funding_stage||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Deal Size</div><div class="prof-field-val">'+(PROFILE.deal_size||'—')+'</div></div>'+
-          '<div class="prof-field"><div class="prof-field-label">Availability</div><div class="prof-field-val">'+(PROFILE.availability||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Role</div><div class="prof-field-val">'+(PROFILE.role||'-')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Location</div><div class="prof-field-val">'+(PROFILE.location||'-')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Industries</div><div class="prof-field-val">'+(PROFILE.industries||'-')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Ideal Stage</div><div class="prof-field-val">'+(PROFILE.funding_stage||'-')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Deal Size</div><div class="prof-field-val">'+(PROFILE.deal_size||'-')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Availability</div><div class="prof-field-val">'+(PROFILE.availability||'-')+'</div></div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -2715,8 +2745,8 @@ function closeProfileMenu(){
   if(dd) dd.style.display='none';
 }
 function initApp(){
-  profileLoad();phLoad();updateCreditsBar();renderTopbar();document.body.classList.add('app-ready');
-  load(function(){ setPage('dashboard'); });
+  profileLoad();phLoad();updateCreditsBar();renderTopbar();
+  load(function(){ setPage('dashboard'); document.body.classList.add('app-ready'); });
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-action]')||e.target;
     var a=t?t.getAttribute('data-action'):null;if(!a)return;
@@ -2832,7 +2862,7 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'White-label Pitches',action:function(){navTo('leads');}},
+      {label:'White-label Pitches',action:function(){navTo('profile');}},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -2877,20 +2907,20 @@ function exportToNotion(r){
   var text = [
     '# '+( r.company||'Lead'),
     '',
-    '**Sector:** '+(r.sector||'—'),
-    '**Stage:** '+(r.stage||'—'),
-    '**HQ:** '+(r.hq||'—'),
-    '**Funding:** '+(r.funding_amount||'—'),
-    '**GTM Score:** '+(r.gtm_readiness_score||'—')+' ('+( r.gtm_label||'—')+')',
+    '**Sector:** '+(r.sector||'-'),
+    '**Stage:** '+(r.stage||'-'),
+    '**HQ:** '+(r.hq||'-'),
+    '**Funding:** '+(r.funding_amount||'-'),
+    '**GTM Score:** '+(r.gtm_readiness_score||'-')+' ('+( r.gtm_label||'-')+')',
     '',
     '## Why They Need You',
-    r.why_fit||'—',
+    r.why_fit||'-',
     '',
     '## Pitch Opener',
-    r.pitch_opener||'—',
+    r.pitch_opener||'-',
     '',
     '## Contact',
-    (r.best_contact_name?r.best_contact_name+' — ':'')+( r.best_contact_title||r.decision_maker||'—'),
+    (r.best_contact_name?r.best_contact_name+' - ':'')+( r.best_contact_title||r.decision_maker||'-'),
     '',
     '## Status',
     r.outreach_status||'not_contacted'
@@ -2898,7 +2928,7 @@ function exportToNotion(r){
   navigator.clipboard.writeText(text).then(function(){
     showUpsellToast('Copied for Notion ✓ Paste with Ctrl/Cmd+V');
   }).catch(function(){
-    showUpsellToast('Could not copy — try again');
+    showUpsellToast('Could not copy - try again');
   });
 }
 
@@ -2982,6 +3012,17 @@ function findOnLinkedIn(){
   if(!r) return;
   var url = 'https://www.linkedin.com/search/results/companies/?keywords=' + encodeURIComponent(r.company||'');
   window.open(url, '_blank');
+}
+
+function deleteCurrentLead(){
+  var r = window._currentLead;
+  if(!r) return;
+  if(!confirm('Delete ' + (r.company||'this lead') + '? This cannot be undone.')) return;
+  DB = DB.filter(function(x){ return x._id !== r._id; });
+  INBOX = INBOX.filter(function(x){ return x._id !== r._id; });
+  save(); updateBadges();
+  showUpsellToast((r.company||'Lead') + ' deleted');
+  setPage('leads');
 }
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
@@ -3084,12 +3125,12 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div id='err'></div>"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
-      "<div class='fetch-hero-sub'>Pull recently funded companies from the web — they land in your Inbox for review</div>"
+      "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
       "<div id='fetch-results'>"
-        "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px;text-align:center'>Select companies to research — they go to your Inbox:</div>"
+        "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px;text-align:center'>Select companies to research - they go to your Inbox:</div>"
         "<div class='fetch-list' id='fetch-list'></div>"
         "<div style='display:flex;align-items:center;justify-content:center;margin-top:12px'>"
           "<button id='res-sel-btn'>Research Selected →</button>"
@@ -3150,7 +3191,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<div class='page' id='page-inbox'>"
     "<div class='inbox-header'>"
       "<h2>Inbox</h2>"
-      "<span style='font-size:12px;color:var(--tx3)'>Review fetched leads — save to Pipeline or dismiss</span>"
+      "<span style='font-size:12px;color:var(--tx3)'>Review fetched leads - save to Pipeline or dismiss</span>"
     "</div>"
     "<div class='inbox-grid' id='inbox-grid'></div>"
   "</div>\n"
@@ -3230,7 +3271,7 @@ LANDING_HTML = '''<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Scout — Find your next client</title>
+<title>Scout - Find your next client</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAP80lEQVR42u1aaXQVVbb+9jlVd8ocEhKGMBpAJoGAgogJo2grDpioTUvb+FQQu/WJU2u3IY7t6laaBiccHg7PIXmKiDjShsgkkGgACcpomIkhuRnvvVV1zu4fdRPR9d5rQEKv98yXVatWUpU65+yzh2/vfYB2tKMd7WjHzxf0f23C+fn5YiVyBAB0HPAdF+XlqZ/9Jubns/h/v8r8/HwBAHcXbRh6xcub/nbNK+X3PLdqZ5ZftDw/OSGcpOT49JoOM1VggAEAzbaTvTvIv/3yqHx0wVcozX6qdPU7a8qHFhSQzuc21gR3F6KLLyyUp1sLcgsLJTPLd9dvHb+0dEfenMIv/9rzkTX26Kc32a+t3jb8ZDSBTvBdNgDYzJKITpvz+eij8phqCnaeNilnxx1vfH5bcV3yvIbaaj28a+yLvx0aeHv6J+HnO3ssXjkrZTAho5YBEBGfMhOISpVf+/uXAyYtKiseteCLihmvlj3KzAbz/2AOzMQ/8couLjYA4J1aNfvZb1O/XPjxpvF94qz3z+3svbdHetrjG4K+f7u/pOau2/pG5h/SsV1ufqN6Bog4Z+5Kecp8ADNTwVwwM/sXV4SK1tXG5Gyt0X1WBxPumfX6l9OIiLPz3Ym2qCnABCKmn3iVjH2KubBQbjvcdGFpFcW8UmEt69LvHO++S7ovoucvPXxh/OH5O8KxOaYpu6fomuAXR5zLTAAlyNHHKwDj+JSf+PChnXH7mnGG1Ry0feTo75ps2uJEBvzgvcJCWZSXp3wAQlzox5p6A3aYYfq+15JQvNgVkF7DG5ABBMA+zV59MJJQH3LgixdH7GSfMptVfGIH0bHP6CrKK0Lmg596/dLibXXsL1hesdYaPyEcPLAnZbr89spikXDr8t0Rf6zXWHOgXmVbzERE2vVV/9wMjH++dmLks0hPR3Va4EhxtZkyKdTUaHcJkDkgSZatAZADAPnFRkneWOexZRsvKgkm/H7IM+hOWnmZhAZDQADk7osgyR6DYLAGSBAr7hLRgANmYRL7tGJlGALnv7Rjx8XpjXe+8lWostr2jPLYIfubo4hNHHZD7PlDvi741bTpb02Y/9kWj/R97nGsdOHXfQBIgNXxujc6vijERER4b/36tLkfHHjz0Hd15+WNGTD/iatG3A3AobkrJQrGOnOKymZ+WJ3w9P6vt8Kp+Ds40ggS0h2GqHU0ZgCs3TsAEgIEAlhDaw3BDBgmPIMmIK3PAJ2V0LT/k2+dbsphJmJW0s8DUn3BGZmhKTPHD1vrAFDMHmCrh2hgY4vDPqVRIDs72ygpKXHOGtRzdkjJP2+v2BkAgKwbnzXLF91kzylcf9/SmvSHDn1apK237mVLWYKjs6D/ZWA+5k4/eu4hYt/F94qEcdNg1VWhWXkBQTAE2w5M2b+DUTOph39qwcV9Vx3vgn8SEWJmcmJSY2xhIP8/in1gFl8susm+s7A0f1lt54cOvLfIaS66gyLaljBMImmQMEwi00NwDZIIIMPwkelPIMMTQ1FDJQBEpofIMAnSIBgmRYhE3bKHuX75U2z5OiIpwEj2gaU/wfR5PaIy4k/ZurfqZWb25eezaGGLJwLjhEgDEZ85fIjWykFyfYiJSM96dd2cJcHOcw998LwTeu9hqUm42qwcd7mawczwJneFd+ilMHsOg4hPBXljAGWBg4dh71qPcPlyhI/uc7VASLBWIGZIbyzVrViIJMPQNOVWcU7M0ZLmxuCbEaKUnsnW4az0xDUAIgUFYKCA21QAACCEgJTSuPXWiyKPLt3wq/88mPqXg+8tVOHlj0otJREA1hpEAlorSCERN2EWvGOuhWg+DL1zNdQ3y8B2M1h6ITtkIGZoDmLG3wBr/duoff8JOHYIRITE8TfBP/oa1L/3OIIf/lU4kYgqnXLLmLxu1t8emTrqmZY53fATSNYJq4wpBUgamjlfrKjyzz5Qvoablz/CjiCiqIcjIcCsYfoTkHLTYvhHXQH1/h+AN2Yi8btS9OrZFZlDhqNnr+5IC+2GXPZ72EvvhLf/aHSc9RK8sSkAMzyZ58LuPhS+Lv2hQGgofhp1m1bJTw7H55fe+KyZ9Wyp+VP5/wlrgIYAK62wrt5bZflS7a3FpAAhpAEoBwCBAQhhIOW6JyGTkqBen4GkjAFIvflFxPceCh8pCG3D4/EC0oPqygrsXzoPwVd/DTN3HlJnvYTDC65GcMmDCGz5GA2bPgIJgmaIUPn7aBw6rsu2MRn+smuHN/VaUUinUwDStiNkO5b9esWApIgVTtJ2CASQa+sACQBKIWnSbIjUTrAXX4uErMlIzX0QZsMR7F+2AM27NoLsJkhvLHu7DkTH8/Nwxk3P0OH3nsChd++GuPo5JF50O6rfLkD4yE7XQ0oDrB1yQg0s4aRU+vx9AJQWFeXBjf04qdzkuDlzjx49RGVlperavceoSKh+cvH60ilNGedlqMpyjuzfQiTdT7FW8CV2RcK0x8ArHoUvPglJUx+EtWMdqt68D01ffwrdXAM73IBw8BBZB76imi8+Jn9CGgJn56JpXwXCZW/DnDgHavs6OI1HQUK6MY41fJ36Qp8xBl+9cPtFvbvEd8y54JI9W8rLa062unW89iNKSkqcoaPPntHQWHeXjk01bXb6kbIBZVNL3Cbhfs6fdSlUzW4Yh8oRd8G/I9xQi6PvPoZw9W6Ijv2APheAu46O/Oa6W754csFzxYP7dv96V9GDOPptBfvH3gJfuBpUvR3ekdeAtPoBRyACQUWoOdLY9QjH3rOhbO2mkeefe68Qgk/Gp4njfEefd+GFfYK11S80DZ7WMTLxIQjDp4U0wccKnhUkAG//bKgdK4GkDDipmWje+BbQeADeXiPBw6/iGn8asoYMrr3/d9cv6pXRte6+u/7QyceRprp1b5BO6wuj2xA4FR9DZgyAEC6zjbpY18lCg4TB1th8p2HEzbHVdcGHR44bMxyAzs3NladUALm5uQQAzcHqng5Mdnpmq4j0E7EWwvCASLRyN1Ya0hsDSkwHaveCOg2G1dAAe/c6wBMDs984KE8AFGlCc0MwLhKxKjt1SPyscv+R9+ENCBzczE7wCMJpg6GrdkDGdYCMTQH09zrAYDAJEAlypNdQvcc6YXh03aEDnQCgqK2coAQcEBEiTURMUI4NrblV7VvprMcPhgDZIdixadDhMCgUBJuxUNIHxwqRLxBA2bbdvl/fP/+FwZk9qpYUrz2jydJ+n93A4dpq2DGpEGyBpQR8MeD6Yy1cACShtQLbYXC4gQAWWttOm0YBNyECSBCgKFoYc1neD1i9bbl2SwI6VA8FE17TD4o0QNkRwPCBQDC8Pln85fbOK0orOnsMgVhTgMggmzxAqN41LaUA22oZP+oDBACCYIDZJVxggiNlmzpBOOwQM2kWEpAShuGBEK5nbpkgEUGFG2CHGoHEDIgj38DxJsLp2B+I1EHvLYPQDtjwgALx8MUlcGxcAntVI8hqhJPcG1ZcZ8ije8AJXaBDTdANVaDWFNIdj6BBUriZpjDclD0SaVsmaJDPEnCEJK0oJpE1Aay5VQAgAgkJDYazdwtE5hiYNd+AGr+D1Ws8FAtgz1p4KkvhMb0w4lJAcckEq46Mpv1QtgOrZw4QaYBxoBQycyx01W5oxwKkPCbV09EfBvxJLASUJIdi4pPaRgBFRUUaAPUcNqwsxiO3eFc/bvq2vkXa0cplfj9mikBkQyEo9UzYRgByw/NQXbKgB+WCtAWx5zPILUtBO4sh966DJ/g1yGkG+k+BPmMCPBtehtMYBLqPRGTjf0EBILdaEC3IE0hpQGnlrXib/CvmegKC9w0ccV4pAII731NOhKhi40Zr8sSrCpsPVxDv23iGAxmnB10Gp3IzIvs2u+rIGpACTu1BeDtmQvTLhljzJCixG6yzroH2JoNqKiHq90M0HQFZjVD+ZNhDpsMacT3MvWshV80DZ98OVVeL4McLXFVvyS+0hi+9D4z+Y1lUvCviqzc1dhCRxYOHjfrNq88+e/BECiEnzAQB0ObNG5sPHaz65Mrp1y9WWh4N9508tmHbGrL2byEi6TqlaC7gVG6Gf9xsIKkzzFVPQCgNp/d4OL3GQXcZAdVzNOzMybAHXg3q0Bfere/AWP0XOCOuA/pMRv3Lt8EO14Egol8kMGsYKb118tmXUA9nz59zzp1w/ZKit14p37ix7mQWf1J9uKysLBMAYv1eDFyw7Ujg7GsYIC2k0VrNFVIyARzTLYvT5n7Ona+fx116deUu/Qdy2qW3ccrMlzj5tiWcPPs1Tpv6e+48aBh36p7O6dMe4E4PbOCYzNFMAB/7TZIGA2Bvvwl68MLtupy5JwBkZd1onnyH68STIS4rK7MBUMNdU8xBrI7KhLSOURfdGoZYa5CUaN5bBrUgD3FXFED+8mXw9k9A+zbCs/tTCGVDSw9UIBlOn7EQfSeB62pQ/+Qv0XxkJ4Q0wFr9sCsDsJGYRoJ108GVK223AjRXlZUt0ie9oyfZo5KiKE9NeK7s7dJtVZc3zL/Mcdg2iER00u50SUho5UAACAy9HN5zcmF06ArWEZAdgTa9gAyAaw/AKluCpg1FUNqBkBKsj1kTCYAAobSTOPtN2btv5oqyW4dOUlcWShT9C9rjudG+4NMfrpvY96k9HHvRH20PoAlgktJV3Za7YTJFTUIC7EtI40C3szgm81z298hib1Jnlq7tMkmDyTCYhPzh5f6vDuTcYvV6ch/f8dqqy4+dx7+oXe1WYq59pfSeHgsr2f+L+x1PbEdbAo4AFAFaABztprbe8d9cLc9b3on+rgWgJOB4Akl2YPzvnO7zd/HUFzfOEz+hHX5KT4hk5xcbqwvGOjPfKH1gbUPSH/cfDCJycDsQaoCQ5KquVtEM7vviN5MACze8cfR562RIAEKAoaGVBvnj4UnvjU6dUjEqpvrpxdPPvtl6s1AiL1cfT+enTQXgqgILUUB62frNw1/ZZUw86ngnsaCEvVs+79V09FACGEzMxNBu4tTSKHG9RNS18fc2H22geGOTmzKGZm8TioMJpr32krTGD2dOzFrnuC0vnKqQR6fIHgQKCjQAeACYAhiUk7Nof4N9vWRtk5Bmazp/zNKJyN19ciM9MwNaO1oYRppPLP/qs5IpDgP29wMJoECf0rh+ynwCsyiYu1LgUBxh0XAn/5O9FyzdHflgV62CgIq2wzhaNXY3kZldBYhWkwQEbGZ0S/Lh0ozIjD/94szFyC80s5Gq2+pAFLWNg8wXDz9QoOcs2Tpj5QFnVtiyUgW7/o1IIOyoJsVwfIaIIWKDSMJxtKUZHBcTsEem4+WFUwf+6b77WRQUkG5LZ97mZ328BIQ1e3/0Z8snicOKj2VxTnQ+Knq647RQ2zbmCyxPRsinM76fntNePz5GQ63lJPox12191o52tKMd7WhHO9rRjna0ox3taEcbJalM7VL4mYIAYMOGDRn/AE1W062rTF8gAAAAAElFTkSuQmCC">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -3368,7 +3409,7 @@ h2{font-size:52px;font-weight:700;letter-spacing:-.04em;line-height:.98;color:va
 .pb2.out:hover{border-color:var(--pip);color:var(--pip2)}
 .pfl{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:9px}
 .pfl li{font-size:13px;color:var(--tx2);display:flex;gap:8px;align-items:baseline;line-height:1.4}
-.pfl li::before{content:'—';color:var(--pip2);font-weight:700;flex-shrink:0}
+.pfl li::before{content:'-';color:var(--pip2);font-weight:700;flex-shrink:0}
 /* CTA */
 .ctaw{position:relative;z-index:1;padding:0 48px 120px;max-width:1240px;margin:0 auto}
 .ctac{background:var(--sur);border:1px solid var(--bor2);border-radius:12px;padding:80px 48px;text-align:center;position:relative;overflow:hidden}
@@ -3441,6 +3482,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
     <a href="/app" id="nav-cta" class="ncta">Start free</a>
+<script>try{var _t=localStorage.getItem('sb_token');var _nc=document.getElementById('nav-cta');if(_t&&_nc){_nc.textContent='Dashboard';}}catch(e){}</script>
   </div>
   <script>
     (function(){
@@ -3459,9 +3501,9 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 
 <section class="hero">
   <div>
-    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div>AI-powered client acquisition</div>
+    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div>AI client acquisition</div>
     <h1>Your next<br><em>best lead</em></h1>
-    <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds — so you spend time closing, not researching.</p>
+    <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.</p>
     <div class="actions">
       <a href="/app" class="btnp">Discover Scout</a>
       <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng">Book a call</a>
@@ -3478,7 +3520,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
         <div class="dw-dot" style="background:#ff5f57"></div>
         <div class="dw-dot" style="background:#febc2e"></div>
         <div class="dw-dot" style="background:#28c840"></div>
-        <span class="dw-lbl">scout — research</span>
+        <span class="dw-lbl">scout - research</span>
       </div>
       <div class="dw-search">
         <div class="dw-icon"></div>
@@ -3534,8 +3576,8 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
   <p class="ssub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
   <div class="fg">
     <div class="fc"><div class="fn">01</div><div class="ft">Know before you pitch</div><p class="fd">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
-    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room — funding news, team gaps, recent hires — and writes a pitch opener that references something real.</p></div>
-    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans funding databases daily. Hot companies land in your Inbox automatically — just approve or dismiss.</p></div>
+    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.</p></div>
+    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans funding databases daily. Hot companies land in your Inbox automatically - just approve or dismiss.</p></div>
     <div class="fc"><div class="fn">04</div><div class="ft">Never lose track</div><p class="fd">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
     <div class="fc"><div class="fn">05</div><div class="ft">Two businesses, one tool</div><p class="fd">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
     <div class="fc"><div class="fn">06</div><div class="ft">Your digital pitch deck</div><p class="fd">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
@@ -3550,7 +3592,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
   </div>
 
-  <!-- Free tier — full width banner above paid plans -->
+  <!-- Free tier - full width banner above paid plans -->
   <div style="background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;margin-bottom:16px">
     <div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
@@ -3568,7 +3610,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <button class="pb2 out" onclick="location.href='/app'" style="white-space:nowrap">Start for free</button>
   </div>
 
-  <!-- Paid plans — 3 columns -->
+  <!-- Paid plans - 3 columns -->
   <div class="pg">
     <div class="prc">
       <div class="pn">Starter</div>
@@ -3591,7 +3633,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       <ul class="pfl">
         <li>300 researches/month</li>
         <li>30 lead fetches/month</li>
-        <li>Pip Hunt — jobs &amp; candidate sourcing</li>
+        <li>Pip Hunt - jobs &amp; candidate sourcing</li>
         <li>CSV export</li>
         <li>Priority support</li>
       </ul>
@@ -3640,7 +3682,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <div>
       <div class="slbl">Early access</div>
       <h2 style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
-      <p style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam — just Scout updates and GTM tips from Pip.</p>
+      <p style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam - just Scout updates and GTM tips from Pip.</p>
     </div>
     <div>
       <div class="wl-row">
@@ -3667,17 +3709,17 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 <script>
 var cos=[
   {n:'Ambience Healthcare',m:'Series B · Healthcare AI · SF',s:87,
-   sigs:['Recently funded — $70M Series B','No CMO listed on LinkedIn','3 open marketing roles','Has PR agency, no growth lead'],
+   sigs:['Recently funded - $70M Series B','No CMO listed on LinkedIn','3 open marketing roles','Has PR agency, no growth lead'],
    dots:['g','g','g','a'],
-   p:"Saw the Series B — congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap..."},
+   p:"Saw the Series B - congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap..."},
   {n:'Fathom Video',m:'Series A · AI Productivity · New York',s:79,
    sigs:['Raised $46M 8 weeks ago','Marketing team of 2','Actively hiring demand gen','No head of growth'],
    dots:['g','g','g','a'],
-   p:"Noticed Fathom just closed the Series A — impressive traction. With a 2-person marketing team and demand gen role open, the timing for fractional support is usually right about now..."},
+   p:"Noticed Fathom just closed the Series A - impressive traction. With a 2-person marketing team and demand gen role open, the timing for fractional support is usually right about now..."},
   {n:'Cohere',m:'Series C · Enterprise AI · Toronto',s:61,
    sigs:['$270M raised, 18 months ago','CMO hired 6 months back','Growing marketing team','Strong content presence'],
    dots:['a','a','g','g'],
-   p:"Cohere’s been building out the marketing org since the Series C — strong moves. If there’s a gap in the enterprise GTM motion, happy to share what’s worked for similar API-first companies..."}
+   p:"Cohere’s been building out the marketing org since the Series C - strong moves. If there’s a gap in the enterprise GTM motion, happy to share what’s worked for similar API-first companies..."}
 ];
 var ci=0;
 
@@ -3770,7 +3812,7 @@ LEGAL_HTML = '''<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Scout — Terms of Service & Privacy Policy</title>
+<title>Scout - Terms of Service & Privacy Policy</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -3843,7 +3885,7 @@ strong{color:var(--tx);font-weight:700}
 <p>We may update these terms at any time. Continued use of the Service after changes constitutes acceptance of the updated terms. We will notify active subscribers of material changes by email.</p>
 
 <h2 id="t2">2. Description of Service</h2>
-<p>Scout is a SaaS platform that provides AI-powered company research, lead scoring, pitch generation, and pipeline management tools for marketing professionals. Scout also includes Pip Hunt, a job intelligence feature that surfaces open marketing and design leadership roles.</p>
+<p>Scout is a SaaS platform that provides AI company research, lead scoring, pitch generation, and pipeline management tools for marketing professionals. Scout also includes Pip Hunt, a job intelligence feature that surfaces open marketing and design leadership roles.</p>
 <p>The Service uses artificial intelligence to generate research, scores, and content. All AI-generated content is provided for informational purposes and should be independently verified before use.</p>
 
 <h2 id="t3">3. Account Registration</h2>
@@ -3959,11 +4001,11 @@ strong{color:var(--tx);font-weight:700}
 <h2>4. Third-Party Services</h2>
 <p>Scout uses the following third-party services:</p>
 <ul>
-  <li><strong>Anthropic (Claude API)</strong> — AI research generation. <a href="https://www.anthropic.com/privacy" target="_blank">Privacy policy</a></li>
-  <li><strong>Stripe</strong> — Payment processing. <a href="https://stripe.com/privacy" target="_blank">Privacy policy</a></li>
-  <li><strong>Railway</strong> — Application hosting. <a href="https://railway.app/legal/privacy" target="_blank">Privacy policy</a></li>
-  <li><strong>GitHub</strong> — Data persistence (private Gist). <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank">Privacy policy</a></li>
-  <li><strong>Google Fonts</strong> — Typography. <a href="https://policies.google.com/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>Anthropic (Claude API)</strong> - AI research generation. <a href="https://www.anthropic.com/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>Stripe</strong> - Payment processing. <a href="https://stripe.com/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>Railway</strong> - Application hosting. <a href="https://railway.app/legal/privacy" target="_blank">Privacy policy</a></li>
+  <li><strong>GitHub</strong> - Data persistence (private Gist). <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank">Privacy policy</a></li>
+  <li><strong>Google Fonts</strong> - Typography. <a href="https://policies.google.com/privacy" target="_blank">Privacy policy</a></li>
 </ul>
 
 <h2>5. Your Rights (GDPR)</h2>
@@ -4145,7 +4187,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             manifest = {
                 "name": "Scout",
                 "short_name": "Scout",
-                "description": "AI-powered lead generation for marketing pros",
+                "description": "AI lead generation for marketing pros",
                 "start_url": "/app",
                 "display": "standalone",
                 "background_color": "#020408",
@@ -4267,7 +4309,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{company} &mdash; GTM Pitch by {bname}</title>
+<title>{company} - GTM Pitch by {bname}</title>
 <style>
 *{{box-sizing:border-box;margin:0;padding:0}}
 body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a2332;padding:0}}
@@ -4317,7 +4359,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
     <div class="pitch-box">{pitch}</div>
   </div>
 
-  {'<div class="card"><div class="section-title">Best contact</div><div class="contact-row"><div class="contact-dot"></div><div>' + (contact_name + (' &mdash; ' if contact_name else '') + contact_title) + '</div></div></div>' if contact_title or contact_name else ''}
+  {'<div class="card"><div class="section-title">Best contact</div><div class="contact-row"><div class="contact-dot"></div><div>' + (contact_name + (' - ' if contact_name else '') + contact_title) + '</div></div></div>' if contact_title or contact_name else ''}
 
   <div style="text-align:center;margin-top:8px">
     {cta_html}
