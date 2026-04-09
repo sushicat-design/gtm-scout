@@ -860,7 +860,8 @@ function load() {
       DB = d.filter(function(x){return !x._inbox;});
       INBOX = d.filter(function(x){return x._inbox;});
       updateBadges();
-      if(currentPage==='profile'){profileLoad();renderProfile();}
+      if(currentPage==='dashboard') renderDashboard();
+      else if(currentPage==='profile'){profileLoad();renderProfile();}
       else if(currentPage==='leads') renderLeads();
       else if(currentPage==='pipeline') renderPipelinePage();
       else if(currentPage==='inbox') renderInbox();
@@ -2799,22 +2800,31 @@ function renderSidebarTier(){
   var t=tierLoad();
   var plan=t.plan||'free';
   var features={
-    free:    [],
-    starter: [],
-    pro:     ['CSV Export','Priority Support'],
-    agency:  ['Inbox & Review','White-label Pitches','Dedicated Support']
+    free:[],
+    starter:[],
+    pro:[
+      {label:'CSV Export',action:function(){var b=document.getElementById('csvbtn');if(b)b.click();}},
+      {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
+    ],
+    agency:[
+      {label:'White-label Pitches',action:function(){navTo('leads');}},
+      {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
+    ]
   };
-  var planLabel={free:'Free',starter:'Starter',pro:'Pro Plan',agency:'Agency Plan'};
   var list=features[plan]||[];
   if(!list.length){wrap.style.display='none';return;}
   wrap.style.display='block';
-  if(label) label.textContent=planLabel[plan]||'';
-  items.innerHTML=list.map(function(f){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor);color:var(--tx2);font-size:12px">'+
-      '<span style="color:var(--pip2);font-size:10px;flex-shrink:0">&#10003;</span>'+f+
-    '</div>';
-  }).join('');
+  if(label) label.textContent=(plan==='pro'?'Pro Plan':'Agency Plan');
+  items.innerHTML='';
+  list.forEach(function(f){
+    var btn=document.createElement('button');
+    btn.style.cssText='display:flex;align-items:center;gap:8px;width:100%;padding:9px 0;background:none;border:none;border-bottom:1px solid var(--bor);color:var(--tx2);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-align:left';
+    btn.innerHTML='<span style="color:var(--pip2);font-size:10px">&#10003;</span>'+f.label;
+    btn.onclick=function(){closeSidebar();f.action();};
+    items.appendChild(btn);
+  });
 }
+
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -2884,7 +2894,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<button class='sidebar-close' onclick='closeSidebar()'>&#215;</button>"
     "</div>"
     "<div class='sidebar-nav'>"
-  "<button class='sidebar-item' id='si-dashboard' onclick='navTo(\"dashboard\")'>Dashboard<span style='margin-left:auto;font-size:10px;color:var(--tx3);font-family:JetBrains Mono,monospace' id='leads-badge'>0</span></button>"
+
   "<button class='sidebar-item' id='si-search' onclick='navTo(\"search\")'>Research</button>"
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
 
@@ -4237,4 +4247,4 @@ if __name__ == '__main__':
     "<div id='sb-tier-features' style='padding:12px 16px;border-top:1px solid var(--bor);margin-top:8px'>"
     "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'></div>"
     "<div id='sb-tier-items' style='font-size:12px;color:var(--tx2);line-height:1.8'></div>"
-    "</div>"
+
