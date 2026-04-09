@@ -849,7 +849,7 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
+var SYS = "Return ONLY a valid JSON object, no markdown, no backticks, no text before or after. Fields: company, tagline, website, sector, hq, founded, stage, funding_amount, funding_date, lead_investor, other_investors, employee_count, socials (object: twitter, linkedin, discord, telegram, github), founders (array of: name/role/background), has_cmo (bool), has_marketing_hire (bool), marketing_notes, product_status, community_size, hiring_remote (bool - true if they have open remote job listings especially marketing/growth/comms roles), gtm_readiness_score (integer 0-100), gtm_label (exactly Hot Lead if 80+, Warm Lead if 50-79, Cold Lead if below 50), gtm_signals (object of booleans: recently_funded, no_cmo, pre_launch_or_early, active_community, has_product, small_team, marketing_gap_visible), why_fit, risks, pitch_opener, decision_maker, outreach_status (always set to not_contacted), best_contact_title (the exact title of the best person to reach out to for fractional CMO services - prefer CMO, VP Marketing, Head of Growth, Head of Marketing, Co-founder if no marketing hire, or CEO as last resort), best_contact_name (their name if known, else null). Use null for unknown. IMPORTANT: Only research companies that are likely to need fractional CMO services — recently funded startups WITHOUT an established CMO or marketing team. If a company clearly has a mature marketing org, set gtm_readiness_score below 40.";
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load() {
@@ -932,33 +932,1931 @@ function setPage(page, addToHistory) {
   renderSidebarTier();
   var pg = document.getElementById('page-'+page);
   if(pg) pg.classList.add('active');
-  // Sidebar inbox visibility
+  // Hide inbox sidebar item for non-agency
   (function(){
     var t=tierLoad();
     var inboxSi=document.getElementById('si-inbox');
     if(inboxSi) inboxSi.style.display=(t.plan==='agency'||t._master)?'':'none';
   })();
-  // Back button visibility
   var bb=document.getElementById('page-back-btn');
-  if(bb){
-    var showBack=['search','inbox','leads','pipeline','piphunt','profile'].indexOf(page)>=0;
-    bb.style.display=showBack?'flex':'none';
-  }
-  // Sidebar active state
+  if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
+  // Show inbox sidebar item only for agency
+  var _inboxSi=document.getElementById('si-inbox');
+  if(_inboxSi){ var _t=tierLoad(); _inboxSi.style.display=(_t.plan==='agency'||_t._master)?'':'none'; }
+  var _inboxBadgeSi=document.getElementById('inbox-badge-si');
+  if(_inboxBadgeSi&&INBOX.length){ _inboxBadgeSi.textContent=INBOX.length; _inboxBadgeSi.style.display=''; }
   ['dashboard','search','piphunt','profile','leads','inbox','pipeline'].forEach(function(p){
-    var el=document.getElementById('si-'+p);
+    var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
   });
-  // Render page content
-  if(page==='dashboard')  renderDashboard();
-  if(page==='search')     renderRecentLeads();
-  if(page==='leads')      renderLeads();
-  if(page==='pipeline')   renderPipelinePage();
-  if(page==='inbox')      renderInbox();
-  if(page==='piphunt')    { phLoad(); setTimeout(function(){phRenderHistory();},50); }
-  if(page==='profile')    { profileLoad(); renderProfile(); }
+  if(page==='dashboard') renderDashboard();
+  if(page==='search') renderRecentLeads();
+  if(page==='leads') renderLeads();
+  if(page==='pipeline') renderPipelinePage();
+  if(page==='piphunt'){phLoad();setTimeout(function(){phRenderHistory();},50);}
+  if(page==='inbox') renderInbox();
+  if(page==='dashboard') renderDashboard();
+  if(page==='leads') renderLeads();
+  if(page==='piphunt'){ phLoad(); phRenderJobs(); setTimeout(function(){phRenderHistory();},100); }
+  if(page==='inbox') renderInbox();
+  if(page==='profile'){profileLoad();renderProfile();}
 }
-;
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function sc(n){return n>=80?'var(--pip)':n>=50?'var(--amb)':'var(--tx3)';}
+function su(v){if(!v||v==='null'||v==='undefined')return '';return String(v).indexOf('http')===0?v:'https://'+v;}
+
+// ── SEARCH PAGE ──────────────────────────────────────────────────────────────
+function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)return;if(!tierCanResearch())return;document.getElementById('ci').value='';run(v);}
+
+function bulk(){
+  if(busy)return;
+  var names=document.getElementById('bi').value.trim().split('\\n').map(function(s){return s.trim();}).filter(Boolean);
+  if(!names.length)return;
+  document.getElementById('bi').value='';
+  var i=0;function next(){if(i>=names.length)return;run(names[i++],next);}next();
+}
+
+function importJSON(){
+  var raw=document.getElementById('ii').value.trim();
+  var errEl=document.getElementById('ierr');errEl.style.display='none';
+  try{
+    var clean=raw.replace(/```json/g,'').replace(/```/g,'').trim();
+    var parsed=clean.charAt(0)==='['?JSON.parse(clean):[JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1))];
+    var added=0;
+    for(var i=0;i<parsed.length;i++){var r=parsed[i];if(r&&r.company){r._id='id'+Date.now()+Math.floor(Math.random()*9999);r._open=true;DB.unshift(r);added++;}}
+    if(!added)throw new Error('No valid company objects found');
+    save();updateBadges();document.getElementById('ii').value='';
+    document.getElementById('ipanel').style.display='none';
+  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
+}
+
+function showPanel(id){
+  ['bpanel','ipanel'].forEach(function(pid){
+    var el=document.getElementById(pid);
+    if(el) el.style.display=(pid===id&&el.style.display!=='block')?'block':'none';
+  });
+  var btog=document.getElementById('btog');
+  var itog=document.getElementById('itog');
+  if(btog) btog.textContent=document.getElementById('bpanel').style.display==='block'?'− Bulk':'+ Bulk';
+  if(itog) itog.textContent=document.getElementById('ipanel').style.display==='block'?'− Import JSON':'+ Import JSON';
+}
+
+
+function run(company,callback){
+  busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
+  document.getElementById('err').style.display='none';document.getElementById('lname').textContent=company;
+  document.getElementById('ldg').style.display='flex';
+  var secs=0;document.getElementById('ltimer').textContent='0s';
+  ti=setInterval(function(){document.getElementById('ltimer').textContent=(++secs)+'s';},1000);
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('No JSON returned');
+    var _js=t.slice(a,b+1),res;
+    try{res=JSON.parse(_js);}catch(e){
+      var _r=_js.replace(/,\s*"[^"]*"\s*:[^,}]*$/,'').replace(/,$/,'');
+      if(_r.slice(-1)!=='}')_r+='}';
+      try{res=JSON.parse(_r);}catch(e2){throw new Error('Parse failed: '+e2.message);}
+    }
+    if(!res.company)throw new Error('Missing company data');
+    res._open=true;
+    tierUseResearch();
+    // Update existing or add new
+    var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
+    if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
+    save();renderAll();
+  }).catch(function(e){var el=document.getElementById('err');el.textContent='Error: '+e.message;el.style.display='block';})
+  .finally(function(){clearInterval(ti);document.getElementById('ldg').style.display='none';document.getElementById('rb').disabled=false;document.getElementById('ci').disabled=false;busy=false;if(callback)setTimeout(callback,400);});
+}
+
+
+// ── FETCH / INBOX FLOW ───────────────────────────────────────────────────────
+
+function fetchLeads() {
+  var btn=document.getElementById('fetch-btn');
+  var ldg=document.getElementById('fetch-ldg');
+  var errEl=document.getElementById('fetch-err');
+  var res=document.getElementById('fetch-results');
+  btn.disabled=true; errEl.style.display='none'; res.style.display='none'; ldg.style.display='flex';
+  var srcNames=activeSources.map(function(s){
+    return s==='techcrunch'?'TechCrunch':s==='blockworks'?'Blockworks':s==='theblock'?'The Block':
+           s==='producthunt'?'Product Hunt':s==='linkedinjobs'?'LinkedIn Jobs':'crypto-fundraising.info';
+  }).join(', ');
+  var extraInstructions = '';
+  if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
+  if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
+  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    var t=d.text||'';t=t.replace(/```json/g,'').replace(/```/g,'').trim();
+    // Try to find array in response
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    var _arr,cos;
+    if(a>=0&&b>a){
+      _arr=t.slice(a,b+1);
+    } else {
+      // No brackets - try to wrap content in array
+      // Sometimes AI returns objects without wrapping []
+      var _ob=t.indexOf('{'),_cb=t.lastIndexOf('}');
+      if(_ob>=0&&_cb>_ob){ _arr='['+t.slice(_ob,_cb+1)+']'; }
+      else{ throw new Error('No results returned - try again'); }
+    }
+    try{cos=JSON.parse(_arr);}catch(e){
+      // Strip last incomplete entry
+      var _lc=_arr.lastIndexOf(',{');
+      if(_lc>0)_arr=_arr.slice(0,_lc)+']';
+      try{cos=JSON.parse(_arr);}catch(e2){
+        // Last resort: extract individual objects
+        var _objs=[],_m,_re=/{[^{}]+}/g;
+        while((_m=_re.exec(_arr))!==null){try{_objs.push(JSON.parse(_m[0]));}catch(ex){}}
+        if(_objs.length){cos=_objs;}
+        else{throw new Error('Could not parse results - try again');}
+      }
+    }
+    // Filter out error messages or non-company results
+    var badWords=['insufficient','unable','error','no data','no results','no companies','n/a','unknown','failed'];
+    cos=cos.filter(function(co){
+      if(!co.company||typeof co.company!=='string')return false;
+      var lower=co.company.toLowerCase();
+      return !badWords.some(function(w){return lower.indexOf(w)>=0;});
+    });
+    if(!cos.length)throw new Error('No valid companies found in results');
+    var list=document.getElementById('fetch-list');list.innerHTML='';
+    cos.forEach(function(co){
+      var item=document.createElement('div');item.className='fetch-item sel';
+      item.innerHTML='<input type="checkbox" checked data-co="'+encodeURIComponent(JSON.stringify(co))+'"><div><div class="fetch-item-name">'+(co.company||'?')+'</div><div class="fetch-item-meta">'+[co.sector,co.funding,co.stage,co.source].filter(Boolean).join(' · ')+'</div></div>';
+      item.onclick=function(e){if(e.target.type==='checkbox')return;var cb=item.querySelector('input');cb.checked=!cb.checked;item.classList.toggle('sel',cb.checked);updateCount();};
+      item.querySelector('input').onchange=function(){item.classList.toggle('sel',this.checked);updateCount();};
+      list.appendChild(item);
+    });
+    updateCount();ldg.style.display='none';res.style.display='block';btn.disabled=false;
+  }).catch(function(e){ldg.style.display='none';errEl.textContent='Error: '+e.message;errEl.style.display='block';btn.disabled=false;});
+
+
+
+}
+function updateCount(){var n=document.querySelectorAll('#fetch-list input:checked').length;document.getElementById('fetch-count').textContent=n+' selected';}
+
+
+function researchSelected(){
+  closeFetchModal();
+  var cbs=document.querySelectorAll('#fetch-list input:checked');
+  var names=[];
+  cbs.forEach(function(cb){
+    try{var co=JSON.parse(decodeURIComponent(cb.getAttribute('data-co')));if(co.company)names.push(co.company);}catch(e){}
+  });
+  if(!names.length)return;
+  document.getElementById('fetch-results').style.display='none';
+  closeFetchModal();
+  var i=0;
+  function next(){
+    if(i>=names.length){
+      updateBadges();
+      setPage('inbox');
+      showUpsellToast('Done! '+INBOX.length+' lead'+(INBOX.length!==1?'s':'')+' in Inbox');
+      return;
+    }
+    var name=names[i++];
+    runToInbox(name,next);
+  }
+  next();
+}
+
+function runToInbox(company, callback){
+  var ind=document.getElementById('save-ind');
+  if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('{'),b=t.lastIndexOf('}');
+    if(a<0||b<0)throw new Error('No JSON');
+    var _s=t.slice(a,b+1),res;
+    try{res=JSON.parse(_s);}catch(e){
+      var _f=_s.replace(/,\s*"[^"]*"\s*:[^,}]*$/,'').replace(/,$/,'');
+      if(_f.slice(-1)!=='}')_f+='}';
+      try{res=JSON.parse(_f);}catch(e2){throw new Error('Parse error: '+e2.message);}
+    }
+    if(!res.company)throw new Error('Missing company');
+    res._id='id'+Date.now()+Math.floor(Math.random()*9999);
+    res._inbox=true;
+    res._open=false;
+    INBOX.unshift(res);
+    save();updateBadges();
+    if(typeof currentPage!=='undefined'&&currentPage==='inbox')renderInbox();
+    if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
+    setTimeout(function(){if(ind)ind.textContent='';},2000);
+  }).catch(function(e){
+    if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}
+    setTimeout(function(){if(ind)ind.textContent='';},3000);
+  }).finally(function(){
+    if(callback)setTimeout(callback,300);
+  });
+}
+
+function approveInboxCard(id){
+  var idx=INBOX.findIndex(function(x){return x._id===id;});
+  if(idx<0)return;
+  var card=INBOX.splice(idx,1)[0];
+  card._inbox=false;
+  card.outreach_status='not_contacted';
+  DB.unshift(card);
+  save();updateBadges();renderInbox();
+}
+
+function dismissInboxCard(id){
+  INBOX=INBOX.filter(function(x){return x._id!==id;});
+  save();updateBadges();renderInbox();
+}
+
+// ── RENDER: SAVED LEADS (3-col open cards) ───────────────────────────────────
+
+function renderDashboard(){
+  // Stat cards
+  var stats=document.getElementById('dash-stats');
+  if(!stats)return;
+  var hot=DB.filter(function(r){return(r.gtm_readiness_score||0)>=75;}).length;
+  var contacted=DB.filter(function(r){return r.outreach_status==='contacted'||r.outreach_status==='in_talks';}).length;
+  var won=DB.filter(function(r){return r.outreach_status==='closed';}).length;
+  var refused=DB.filter(function(r){return r.outreach_status==='refused';}).length;
+    stats.innerHTML=
+    '<div class="stat-card" data-action="hot-leads">'+
+      '<div class="stat-card-n" style="color:var(--pip2)">'+hot+'</div>'+
+      '<div class="stat-card-l">Hot Leads</div>'+
+      '<div class="stat-card-accent" style="background:var(--pip2)"></div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-card-n" style="color:var(--amb)">'+contacted+'</div>'+
+      '<div class="stat-card-l">In Progress</div>'+
+      '<div class="stat-card-accent" style="background:var(--amb)"></div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-card-n" style="color:var(--grn)">'+won+'</div>'+
+      '<div class="stat-card-l">Won</div>'+
+      '<div class="stat-card-accent" style="background:var(--grn)"></div>'+
+    '</div>'+
+    '<div class="stat-card">'+
+      '<div class="stat-card-n" style="color:rgba(239,68,68,0.8)">'+refused+'</div>'+
+      '<div class="stat-card-l">Closed Lost</div>'+
+      '<div class="stat-card-accent" style="background:rgba(239,68,68,0.5)"></div>'+
+    '</div>';
+
+  // Show inbox button only for agency
+  var t=tierLoad();
+  var inboxBtn=document.getElementById('inbox-agency-btn');
+  if(inboxBtn){
+    if(t.plan==='agency'||t._master){
+      var cnt=INBOX.length?(' <b style="color:var(--pip2)">'+INBOX.length+'</b>'):'';
+      inboxBtn.innerHTML='<button id="inbox-nav-btn" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Inbox'+cnt+'</button>';
+      setTimeout(function(){var b=document.getElementById('inbox-nav-btn');if(b)b.onclick=function(){navTo('inbox');};},10);
+    } else {
+      inboxBtn.innerHTML='';
+    }
+  }
+
+  // Recent fetched leads
+  var recentDiv = document.getElementById('dash-recent-leads');
+  if(recentDiv){
+    var recent = DB.slice().sort(function(a,b){return (b._ts||0)-(a._ts||0);}).slice(0,5);
+    if(recent.length){
+      recentDiv.innerHTML='';
+      recent.forEach(function(r){
+        var score=r.gtm_readiness_score||0;
+        var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:border-color .15s';
+        row.setAttribute('data-action','open-lead');
+        row.setAttribute('data-id',r._id);
+        row.onmouseover=function(){this.style.borderColor='rgba(45,157,232,0.3)';};
+        row.onmouseout=function(){this.style.borderColor='var(--bor)';};
+        var left=document.createElement('div');left.style.minWidth='0';
+        var nm=document.createElement('div');nm.style.cssText='font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';nm.textContent=r.company||'Unknown';
+        var mt=document.createElement('div');mt.style.cssText='font-size:11px;color:var(--tx3);margin-top:1px';mt.textContent=r.sector||r.stage||'';
+        left.appendChild(nm);left.appendChild(mt);
+        var sc=document.createElement('div');sc.style.cssText='font-size:22px;font-weight:800;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;flex-shrink:0;margin-left:12px;color:'+scol;sc.textContent=score;
+        row.appendChild(left);row.appendChild(sc);
+        recentDiv.appendChild(row);
+      });
+    } else {
+      var emp=document.createElement('div');
+      emp.style.cssText='font-size:13px;color:var(--tx3);text-align:center;padding:24px 0';
+      emp.textContent='No leads yet — ';
+      var btn=document.createElement('button');
+      btn.style.cssText='background:none;border:none;color:var(--pip);cursor:pointer;font-family:Outfit,sans-serif;font-size:13px;font-weight:700';
+      btn.textContent='research a company';
+      btn.onclick=function(){navTo('search');};
+      emp.appendChild(btn);
+      var end=document.createTextNode(' to get started.');
+      emp.appendChild(end);
+      recentDiv.appendChild(emp);
+    }
+  }
+
+  renderKanbanBoard();
+  // Wire stat card clicks
+  setTimeout(function(){
+    var sc=document.getElementById('dash-stats');
+    if(sc) sc.addEventListener('click',function(e){
+      var card=e.target.closest('[data-nav]');
+      if(card) navTo(card.getAttribute('data-nav'));
+      var act=e.target.closest('[data-action]');
+      if(act && act.getAttribute('data-action')==='hot-leads') filterAndGoToLeads('hot');
+    });
+  },50);
+}
+
+
+
+function renderKanbanBoard(){
+  var board=document.getElementById('dash-kanban-board');
+  if(!board)return;
+  var stages=[
+    {id:'not_contacted',label:'Not Contacted',color:'var(--tx3)'},
+    {id:'contacted',    label:'Contacted',    color:'var(--amb)'},
+    {id:'in_talks',     label:'In Talks',     color:'var(--pip)'},
+    {id:'closed',       label:'Won',          color:'var(--grn)'},
+    {id:'refused',      label:'Closed Lost',  color:'rgba(239,68,68,0.7)'}
+  ];
+  board.innerHTML='';
+  stages.forEach(function(stage){
+    var leads=DB.filter(function(r){return(r.outreach_status||'not_contacted')===stage.id;});
+    var col=document.createElement('div');
+    col.className='kanban-col';
+    col.setAttribute('data-stage',stage.id);
+
+    var hdr=document.createElement('div');
+    hdr.className='kanban-col-header';
+    hdr.innerHTML='<span class="kanban-col-title" style="color:'+stage.color+'">'+stage.label+'</span><span class="kanban-col-count">'+leads.length+'</span>';
+    col.appendChild(hdr);
+
+    if(!leads.length){
+      var emp=document.createElement('div');
+      emp.className='kanban-empty';
+      emp.textContent='Drop here';
+      col.appendChild(emp);
+    }
+
+    leads.forEach(function(r){
+      var score=r.gtm_readiness_score||0;
+      var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
+      var card=document.createElement('div');
+      card.className='kanban-card';
+      card.draggable=true;
+      card.setAttribute('data-id',r._id);
+
+      var inner=document.createElement('div');
+      inner.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;gap:6px';
+
+      var left=document.createElement('div');
+      left.style.cssText='min-width:0';
+      var name=document.createElement('div');
+      name.className='kanban-card-name';
+      name.textContent=r.company||'Unknown';
+      var meta=document.createElement('div');
+      meta.className='kanban-card-meta';
+      meta.textContent=r.sector||r.stage||'';
+      left.appendChild(name);
+      left.appendChild(meta);
+
+      var scoreEl=document.createElement('div');
+      scoreEl.className='kanban-card-score';
+      scoreEl.style.color=scol;
+      scoreEl.textContent=score;
+
+      inner.appendChild(left);
+      inner.appendChild(scoreEl);
+      card.appendChild(inner);
+
+      card.addEventListener('dragstart',function(e){
+        e.dataTransfer.setData('text/plain',r._id);
+        card.classList.add('dragging');
+        e.stopPropagation();
+      });
+      card.addEventListener('dragend',function(){card.classList.remove('dragging');});
+      card.addEventListener('click',function(e){e.stopPropagation();openLeadDetail(r._id);});
+      col.appendChild(card);
+    });
+
+    col.addEventListener('dragover',function(e){e.preventDefault();col.classList.add('drag-over');});
+    col.addEventListener('dragleave',function(){col.classList.remove('drag-over');});
+    col.addEventListener('drop',function(e){
+      e.preventDefault();col.classList.remove('drag-over');
+      var id=e.dataTransfer.getData('text/plain');
+      var lead=DB.find(function(r){return r._id===id;});
+      if(lead){lead.outreach_status=stage.id;save();renderKanbanBoard();}
+    });
+
+    board.appendChild(col);
+  });
+}
+
+function renderDashStats(){
+  renderDashboard();
+}
+
+function filterAndGoToLeads(filter){
+  fil = filter;
+  setPage('leads');
+}
+
+function openLeadDetail(id){
+  var r = DB.find(function(x){return x._id===id;});
+  if(!r) return;
+  setPage('lead-detail');
+  renderLeadDetail(r);
+}
+
+function renderLeadDetail(r){
+  var cont = document.getElementById('lead-detail-content');
+  if(!cont) return;
+  var n = r.gtm_readiness_score||0;
+  var c = sc(n);
+  var g = r.gtm_signals||{};
+  var ff = Array.isArray(r.founders)?r.founders:[];
+  var site = r.website?(String(r.website).indexOf('http')===0?r.website:'https://'+r.website):'';
+  var statusColors = {not_contacted:'var(--tx3)',contacted:'var(--amb)',in_talks:'var(--pip)',closed:'var(--grn)'};
+  var statusLabels = {not_contacted:'Not Contacted',contacted:'Contacted',in_talks:'In Talks',closed:'Closed'};
+  var curStatus = r.outreach_status||'not_contacted';
+  var signals = [['recently_funded','Recently funded'],['no_cmo','No CMO'],
+    ['pre_launch_or_early','Pre-launch'],['has_product','Has product'],
+    ['small_team','Small team'],['marketing_gap_visible','Marketing gap']];
+  var sigsHtml = signals.map(function(x){
+    var v=g[x[0]],cls=v===true?'sy':v===false?'sn':'su',t=v===true?'Yes':v===false?'No':'?';
+    return '<div class="sig-row"><span style="color:var(--tx2);font-size:12px">'+x[1]+'</span><span class="'+cls+'">'+t+'</span></div>';
+  }).join('');
+  var foundersHtml = ff.length ? ff.map(function(f){
+    var ini=String(f.name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();
+    return '<div class="founder-row"><div class="fav">'+ini+'</div><div><div class="fname">'+(f.name||'')+'</div><div class="frole">'+(f.role||'')+'</div></div></div>';
+  }).join('') : '<span style="color:var(--tx3);font-size:13px">Unknown</span>';
+  var detailPairs = [['Funding',r.funding_amount],['Stage',r.stage],['Team',r.employee_count],['HQ',r.hq]];
+  var detailHtml = detailPairs.filter(function(x){return x[1];}).map(function(x){
+    return '<div><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">'+x[0]+'</div><div style="font-size:13px;color:var(--tx);font-weight:600;margin-top:2px">'+x[1]+'</div></div>';
+  }).join('');
+  var statusBtns = ['not_contacted','contacted','in_talks','closed'].map(function(s){
+    var active=curStatus===s;
+    var col=statusColors[s];
+    return '<button data-action="set-status" data-id="'+r._id+'" data-status="'+s+'" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid '+col+';color:'+col+';background:'+(active?col+'22':'none')+'">'+statusLabels[s]+'</button>';
+  }).join('');
+  var companyLink = site ? ' <a href="'+site+'" target="_blank" style="font-size:12px;color:var(--pip);text-decoration:none;border:1px solid var(--bor2);padding:2px 8px;border-radius:4px">visit</a>' : '';
+  cont.innerHTML =
+    '<div class="ld-header">'+
+      '<div>'+
+        '<div class="ld-name">'+(r.company||'')+companyLink+'</div>'+
+        '<div class="ld-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+(r.hq?' · '+r.hq:'')+'</div>'+
+      '</div>'+
+      '<div style="text-align:right">'+
+        '<div class="ld-score" style="color:'+c+'">'+n+'</div>'+
+        '<div style="font-size:11px;font-weight:700;color:'+c+';text-transform:uppercase;letter-spacing:.1em">'+(r.gtm_label||'')+'</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ld-grid">'+
+      '<div class="ld-section">'+
+        '<div class="ld-section-title">Pitch Opener</div>'+
+        '<div id="ld-pitch-text" style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">'+(r.pitch_opener||'—')+'</div>'+
+        '<button data-action="copy-pitch" style="background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:8px 18px;border-radius:var(--r);cursor:pointer;font-family:Outfit,sans-serif">Copy pitch</button>'+
+      '</div>'+
+      '<div>'+
+        '<div class="ld-section" style="margin-bottom:12px">'+
+          '<div class="ld-section-title">Status</div>'+
+          '<div style="display:flex;gap:6px;flex-wrap:wrap">'+statusBtns+'</div>'+
+        '</div>'+
+        '<div class="ld-section">'+
+          '<div class="ld-section-title">Details</div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+detailHtml+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="ld-section">'+
+        '<div class="ld-section-title">GTM Signals</div>'+sigsHtml+
+      '</div>'+
+      '<div class="ld-section">'+
+        '<div class="ld-section-title">Founders</div>'+foundersHtml+
+      '</div>'+
+    '</div>'+
+    '<div class="ld-section" style="margin:12px 0">'+
+      '<div class="ld-section-title">Notes</div>'+
+      '<textarea id="ld-notes" placeholder="Add notes..." style="width:100%;min-height:80px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:10px;border-radius:var(--r);resize:vertical;outline:none">'+(r._notes||'')+'</textarea>'+
+    '</div>';
+  // Wire notes
+  setTimeout(function(){
+    var ta = document.getElementById('ld-notes');
+    if(ta) ta.addEventListener('input',function(){
+      r._notes=ta.value; clearTimeout(r._nt);
+      r._nt=setTimeout(function(){save();},800);
+    });
+  },50);
+  // Store current lead for delegation
+  window._currentLead = r;
+}
+
+function updateLeadStatus(id, status){
+  var r = DB.find(function(x){return x._id===id;});
+  if(!r) return;
+  r.outreach_status = status;
+  save();
+  renderLeadDetail(r);
+}
+
+
+function renderRecentLeads(){
+  var grid = document.getElementById('recent-grid');
+  var sec = document.getElementById('recent-leads-section');
+  if(!grid) return;
+  if(!DB.length){ if(sec) sec.style.display='none'; return; }
+  if(sec) sec.style.display='block';
+  grid.innerHTML = DB.slice(0,6).map(function(r){
+    var n = r.gtm_readiness_score||0;
+    var c = sc(n);
+    var lbl = (r.gtm_label||'').replace(' Lead','');
+    return '<div class="recent-card" data-action="open-lead" data-id="'+r._id+'">' +
+      '<div class="recent-card-name">'+(r.company||'')+'</div>'+
+      '<div class="recent-card-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</div>'+
+      '<div class="recent-card-score" style="color:'+c+'">'+n+
+        '<span style="font-size:11px;color:'+c+';margin-left:4px">'+lbl+'</span>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderLeads(){
+  var shown=fil==='all'?DB:DB.filter(function(r){
+    return r.gtm_label===(fil==='hot'?'Hot Lead':fil==='warm'?'Warm Lead':'Cold Lead');
+  });
+  var cont=document.getElementById('leads-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  if(!shown.length){
+    cont.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-title">No saved leads yet</div><p>Research companies on the Search page or approve leads from your Inbox.</p></div>';
+    return;
+  }
+  shown.forEach(function(r){
+    var n=r.gtm_readiness_score||0,c=sc(n),s=r.socials||{},g=r.gtm_signals||{},ff=Array.isArray(r.founders)?r.founders:[],id=r._id,site=su(r.website);
+    var card=document.createElement('div');card.className='lead-card';
+    var statusColors={'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--pip)','closed':'var(--grn)'};
+    var statusLabels={'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed ✓'};
+    var curStatus=r.outreach_status||'not_contacted';
+    var remoteBadge=r.hiring_remote?'<span class="hiring-badge">hiring remotely</span>':'';
+    var inv=[r.lead_investor,r.other_investors].filter(function(v){return v&&v!=='null';}).join(', ');
+
+    // Signals
+    var sigsHtml='';
+    [['recently_funded','Recently funded'],['no_cmo','No CMO'],['pre_launch_or_early','Pre-launch'],['has_product','Has product'],['small_team','Small team'],['marketing_gap_visible','Marketing gap'],['active_community','Active community']].forEach(function(x){
+      var v=g[x[0]],cls=v===true?'sy':v===false?'sn':'su',t=v===true?'Yes':v===false?'No':'?';
+      sigsHtml+='<div class="sig-row"><span style="color:var(--tx2);font-size:12px">'+x[1]+'</span><span class="'+cls+'">'+t+'</span></div>';
+    });
+
+    // Founders
+    var fndHtml='';
+    if(ff.length){ff.forEach(function(f){var ini=String(f.name||'?').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase();fndHtml+='<div class="founder-row"><div class="fav">'+ini+'</div><div><div class="fname">'+(f.name||'')+'</div><div class="frole">'+(f.role||'')+(f.background?' · '+f.background:'')+'</div></div></div>';});}
+    else fndHtml='<div class="lc-text dim">Unknown</div>';
+
+    // Social links
+    var tw=s.twitter?'https://twitter.com/'+String(s.twitter).replace('@',''):'';
+    var socHtml='<div class="social-links">';
+    [[tw,'Twitter'],[s.linkedin,'LinkedIn'],[s.discord,'Discord'],[s.telegram,'Telegram'],[s.github,'GitHub']].forEach(function(x){var u=su(x[0]);if(u)socHtml+='<a href="'+u+'" target="_blank">'+x[1]+'</a>';});
+    socHtml+='</div>';
+
+    card.innerHTML=
+      '<div class="lead-card-header">'+
+        '<div class="lead-card-top">'+
+          '<div><div class="lead-card-name">'+(r.company||'')+(site?'&nbsp;<a href="'+site+'" target="_blank" style="font-size:10px;color:var(--pip);border:1px solid var(--pip-bor);padding:1px 7px;border-radius:999px;text-decoration:none;font-weight:700">visit</a>':'')+'</div>'+
+          '<div class="lead-card-meta" style="margin-top:4px">'+remoteBadge+'<span class="lead-card-sector">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</span></div></div>'+
+          '<div style="text-align:right"><div class="lead-card-score" style="color:'+c+'">'+n+'</div><div class="lead-card-tag" style="color:'+c+';border-color:'+c+';font-size:9px;padding:2px 8px;border-radius:999px;border:1px solid;display:inline-block;margin-top:4px">'+(r.gtm_label||'')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="lead-card-body">'+
+        '<div class="lc-sec">Profile</div>'+
+        '<div class="lc-grid">'+
+          '<div class="lc-cell"><div class="lc-key">HQ</div><div class="lc-val'+(r.hq?'':' dim')+'">'+(r.hq||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Founded</div><div class="lc-val'+(r.founded?'':' dim')+'">'+(r.founded||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Team</div><div class="lc-val'+(r.employee_count?'':' dim')+'">'+(r.employee_count||'—')+'</div></div>'+
+          '<div class="lc-cell"><div class="lc-key">Funding</div><div class="lc-val'+(r.funding_amount?'':' dim')+'">'+(r.funding_amount||'—')+'</div></div>'+
+        '</div>'+
+        (inv?'<div class="lc-sec">Investors</div><div class="lc-text">'+inv+'</div>':'') +
+        '<div class="lc-sec">Socials</div>'+socHtml+
+        '<div class="lc-sec">Founders</div>'+fndHtml+
+        '<div class="lc-sec">GTM Signals</div><div>'+sigsHtml+'</div>'+
+        '<div class="lc-sec">Why They Fit</div><div class="lc-text">'+(r.why_fit||'—')+'</div>'+
+        '<div class="lc-sec">Reach Out To</div><div class="lc-text" style="color:var(--pip)">'+
+          (r.best_contact_name&&r.best_contact_title?r.best_contact_name+' — '+r.best_contact_title:r.best_contact_title||r.decision_maker||'—')+
+        '</div>'+
+        '<div class="pitch-box"><div class="pitch-label">Pitch Opener</div><div class="pitch-text" id="pt'+id+'">'+(r.pitch_opener||'—')+'</div></div>'+
+        '<div class="lc-sec" style="margin-top:12px">Notes</div>'+
+        '<textarea class="notes-area" id="note'+id+'" placeholder="Add notes...">'+(r._notes||'')+'</textarea>'+
+      '</div>'+
+      '<div class="lead-card-actions" id="act'+id+'"></div>';
+
+    // Wire notes
+    card.querySelector('.notes-area').addEventListener('input', function(e){
+      r._notes=e.target.value;
+      clearTimeout(r._nt);
+      r._nt=setTimeout(function(){save();},800);
+    });
+
+    // Build action buttons
+    var acts=card.querySelector('.lead-card-actions');
+
+    var cpBtn=document.createElement('button');cpBtn.className='abtn g';cpBtn.textContent='Copy Pitch';
+    (function(cid){cpBtn.onclick=function(){var el=document.getElementById('pt'+cid);if(el)navigator.clipboard.writeText(el.textContent);cpBtn.textContent='Copied!';setTimeout(function(){cpBtn.textContent='Copy Pitch';},1800);};})(id);
+    acts.appendChild(cpBtn);
+
+    // LinkedIn search
+    var liQ=encodeURIComponent(((r.best_contact_name||'')+' '+(r.best_contact_title||r.decision_maker||'')+' '+(r.company||'')).trim());
+    var liBtn=document.createElement('button');liBtn.className='abtn';liBtn.textContent='Find on LinkedIn';
+    liBtn.onclick=function(){window.open('https://www.linkedin.com/search/results/people/?keywords='+liQ,'_blank');};
+    acts.appendChild(liBtn);
+
+    // Status button
+    var stBtn=document.createElement('button');stBtn.className='abtn';
+    stBtn.textContent=statusLabels[curStatus]||'Not Contacted';
+    stBtn.style.color=statusColors[curStatus]||'var(--tx3)';
+    stBtn.style.borderColor=statusColors[curStatus]||'var(--bor2)';
+    (function(rec){stBtn.onclick=function(){
+      var order=['not_contacted','contacted','in_talks','closed'];
+      var cur=rec.outreach_status||'not_contacted';
+      rec.outreach_status=order[(order.indexOf(cur)+1)%order.length];
+      save();renderLeads();
+    };})(r);
+    acts.appendChild(stBtn);
+
+    // Follow-up date
+    var fuWrap=document.createElement('div');fuWrap.style.cssText='display:flex;align-items:center;gap:5px';
+    var fuLabel=document.createElement('span');fuLabel.style.cssText='font-size:10px;color:var(--tx3)';fuLabel.textContent='Follow-up:';
+    var fuInput=document.createElement('input');fuInput.type='date';
+    fuInput.style.cssText='background:var(--bg);border:1px solid var(--bor2);color:var(--tx2);font-family:Outfit,sans-serif;font-size:11px;padding:4px 8px;outline:none;border-radius:4px';
+    fuInput.value=r._followup||'';
+    (function(rec){fuInput.onchange=function(){rec._followup=fuInput.value;save();};})(r);
+    fuWrap.appendChild(fuLabel);fuWrap.appendChild(fuInput);acts.appendChild(fuWrap);
+
+    // Re-research
+    var rrBtn=document.createElement('button');rrBtn.className='abtn';rrBtn.textContent='↻ Re-research';
+    (function(rec){rrBtn.onclick=function(){
+      rrBtn.textContent='Researching...';rrBtn.disabled=true;
+      fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:rec.company,system:SYS})})
+      .then(function(r){return r.json();}).then(function(d){
+        if(d.error)throw new Error(d.error);
+        var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+        var a=t.indexOf('{'),b=t.lastIndexOf('}');
+        var fresh=JSON.parse(t.slice(a,b+1));
+        fresh._id=rec._id;fresh._open=true;fresh._notes=rec._notes;fresh._followup=rec._followup;fresh.outreach_status=rec.outreach_status;
+        var idx=DB.findIndex(function(x){return x._id===rec._id;});
+        if(idx>=0)DB[idx]=fresh;
+        save();renderLeads();
+      }).catch(function(e){rrBtn.textContent='↻ Re-research';rrBtn.disabled=false;});
+    };})(r);
+    acts.appendChild(rrBtn);
+
+    // Remove
+    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';rmBtn.textContent='Remove';
+    (function(cid){rmBtn.onclick=function(){if(confirm('Remove this lead?')){DB=DB.filter(function(x){return x._id!==cid;});save();updateBadges();renderLeads();}};})(id);
+    acts.appendChild(rmBtn);
+
+    cont.appendChild(card);
+  });
+}
+
+// ── RENDER: PIPELINE (kanban) ─────────────────────────────────────────────────
+function renderPipelinePage(){
+  var cont=document.getElementById('pipeline-board');
+  if(!cont)return;
+  cont.innerHTML='';
+  var stages=['not_contacted','contacted','in_talks','closed'];
+  var labels={'not_contacted':'Not Contacted','contacted':'Contacted','in_talks':'In Talks','closed':'Closed'};
+  var colors={'not_contacted':'var(--tx3)','contacted':'var(--amb)','in_talks':'var(--pip)','closed':'var(--grn)'};
+  var icons={'not_contacted':'○','contacted':'◎','in_talks':'◉','closed':'●'};
+  stages.forEach(function(stage){
+    var col=document.createElement('div');col.className='pipeline-col';
+    var items=DB.filter(function(r){return(r.outreach_status||'not_contacted')===stage;});
+    var hdr=document.createElement('div');hdr.className='pipeline-col-header';
+    hdr.innerHTML='<span style="color:'+colors[stage]+'">'+icons[stage]+' '+labels[stage]+'</span>'+
+      '<span style="background:var(--bor2);color:var(--tx3);font-size:10px;padding:2px 8px;border-radius:999px">'+items.length+'</span>';
+    col.appendChild(hdr);
+    if(!items.length){
+      var empty=document.createElement('div');empty.className='pipeline-empty';empty.textContent='No leads';col.appendChild(empty);
+    }
+    items.forEach(function(r){
+      var score=r.gtm_readiness_score||0,c=sc(score);
+      var item=document.createElement('div');item.className='pipeline-card';
+      item.innerHTML=
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+          '<div class="pipeline-card-name">'+(r.company||'')+'</div>'+
+          '<span style="font-size:14px;font-weight:800;color:'+c+'">'+score+'</span>'+
+        '</div>'+
+        '<div class="pipeline-card-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</div>'+
+        (r._followup?'<div class="pipeline-card-date"> '+r._followup+'</div>':'')+
+        (r._notes?'<div class="pipeline-card-note">'+(r._notes.slice(0,80))+(r._notes.length>80?'...':'')+'</div>':'')+
+        '<div style="margin-top:8px;font-size:11px;color:var(--pip)">'+(r.best_contact_title||r.decision_maker||'')+'</div>';
+      (function(rec){item.onclick=function(){
+        var order=['not_contacted','contacted','in_talks','closed'];
+        var cur=rec.outreach_status||'not_contacted';
+        rec.outreach_status=order[(order.indexOf(cur)+1)%order.length];
+        save();renderPipelinePage();
+      };})(r);
+      col.appendChild(item);
+    });
+    cont.appendChild(col);
+  });
+}
+
+// ── RENDER: INBOX ─────────────────────────────────────────────────────────────
+function renderInbox(){
+  var cont=document.getElementById('inbox-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  updateBadges();
+  if(!INBOX.length){
+    cont.innerHTML='<div class="inbox-empty" style="grid-column:1/-1"><div class="inbox-empty-title">Inbox is empty</div><p style="color:var(--tx3);font-size:13px">Fetch leads from the Search page and they will appear here for review.</p></div>';
+    return;
+  }
+  // Event delegation for approve/dismiss
+  cont.addEventListener('click',function(e){
+    var a=e.target.closest('.btn-approve');
+    var d=e.target.closest('.btn-dismiss');
+    if(a)approveInboxCard(a.getAttribute('data-id'));
+    if(d)dismissInboxCard(d.getAttribute('data-id'));
+  });
+  INBOX.forEach(function(r){
+    var n=r.gtm_readiness_score||0,c=sc(n),id=r._id;
+    var inv=[r.lead_investor,r.other_investors].filter(function(v){return v&&v!=='null';}).join(', ');
+    var card=document.createElement('div');card.className='inbox-card';
+    var whyFit=r.why_fit?'<div style="margin-bottom:8px;font-size:12px;color:var(--tx2)">'+r.why_fit+'</div>':'';
+    var pitch=r.pitch_opener?'<div style="font-size:11px;color:var(--pip-light);font-style:italic;padding:10px;background:var(--pip-dim);border-radius:8px;border:1px solid var(--pip-bor)">'+r.pitch_opener+'</div>':'';
+    var contact=(r.best_contact_title||r.decision_maker)?'<div style="margin-top:8px;font-size:11px;color:var(--pip)">Contact: '+(r.best_contact_name?r.best_contact_name+' - ':''+(r.best_contact_title||r.decision_maker||''))+'</div>':'';
+    var investors=inv?'<div style="margin-top:6px;font-size:11px;color:var(--tx3)">Investors: '+inv+'</div>':'';
+    card.innerHTML=
+      '<div class="inbox-card-header">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+          '<div>'+
+            '<div class="inbox-card-name">'+(r.company||'')+'</div>'+
+            '<div class="inbox-card-meta">'+(r.sector||'')+(r.stage?' - '+r.stage:'')+(r.hq?' - '+r.hq:'')+'</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-size:20px;font-weight:800;color:'+c+'">'+n+'</div>'+
+            '<div style="font-size:9px;font-weight:700;color:'+c+';border:1px solid '+c+';padding:2px 8px;border-radius:999px;display:inline-block;margin-top:3px">'+(r.gtm_label||'')+'</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="inbox-card-body">'+whyFit+pitch+contact+investors+'</div>'+
+      '<div class="inbox-card-actions">'+
+        '<button class="btn-approve" data-id="'+id+'">Save to Pipeline</button>'+
+        '<button class="btn-dismiss" data-id="'+id+'">Dismiss</button>'+
+      '</div>';
+    cont.appendChild(card);
+  });
+}
+
+// ── PIP HUNT ─────────────────────────────────────────────────────────────────
+var PH_HISTORY = []; // Array of {type, query, results, ts}
+var PH_JOBS = [];
+var PH_SAVED = [];
+var phCategory = 'cmo';
+var phFilters = {remote: false, startup: false, week: false};
+
+var PH_SYS_CMO = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: CMO, VP Marketing, Head of Marketing, Head of Growth, VP Growth at funded tech and AI startups. Return 6-8 real current openings only.";
+
+var PH_SYS_DESIGN = "You are a JSON API. Search the web for open job postings right now. Return ONLY a raw JSON array with no other text, no markdown, no explanation, no backticks. Start your response with [ and end with ]. Each object must have these exact keys: role, company, location, remote (true/false), salary (string or null), posted (e.g. 2 days ago), apply_method (link or email or linkedin), apply_url (full URL or email), description (one sentence), sector. Search for: Head of Design, VP Design, Creative Director, Brand Director, Head of Brand at funded tech and AI startups. Return 6-8 real current openings only.";
+
+function phSetCategory(cat){
+  phCategory=cat;
+  document.querySelectorAll('.ph-tab').forEach(function(b){
+    var on=b.getAttribute('data-cat')===cat;
+    b.style.cssText='background:'+(on?'var(--pip)':'var(--sur2)')+';color:'+(on?'#fff':'var(--tx3)')+';border:1px solid '+(on?'var(--pip)':'var(--bor2)')+';font-size:12px;font-weight:600;padding:7px 16px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif';
+  });
+  phRenderJobs();
+}
+
+function phToggleFilter(f){
+  phFilters[f] = !phFilters[f];
+  document.querySelector('[data-filter="'+f+'"]').classList.toggle('on', phFilters[f]);
+  phRenderJobs();
+}
+
+function phFetch(){
+  if(!tierCanPipHunt())return;
+  var btn = document.getElementById('ph-fetch-btn');
+  var status = document.getElementById('ph-status');
+  btn.disabled = true;
+  status.textContent = 'Searching job boards...';
+  var sys = phCategory === 'cmo' ? PH_SYS_CMO : PH_SYS_DESIGN;
+  var query = phCategory === 'cmo' ? 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co CMO VP Marketing Head of Marketing startup 2025 2026' : 'site:linkedin.com/jobs OR site:greenhouse.io OR site:lever.co Head of Design VP Design Creative Director startup 2025 2026';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:query,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error) throw new Error(d.error);
+    var t=(d.text||'');
+    // Try to extract JSON array - be very permissive
+    t = t.replace(/```json/g,'').replace(/```/g,'');
+    var a=t.indexOf('['), b=t.lastIndexOf(']');
+    var jobs = [];
+    if(a>=0 && b>a){
+      try{ jobs=JSON.parse(t.slice(a,b+1)); }catch(e){
+        // Try to find any JSON objects
+        var objs=[];
+        var re=/{[^{}]+}/g, m;
+        while((m=re.exec(t))!==null){
+          try{var o=JSON.parse(m[0]);if(o.company||o.role)objs.push(o);}catch(e){}
+        }
+        jobs=objs;
+      }
+    }
+    if(!Array.isArray(jobs)||!jobs.length){
+      // Last resort: ask Claude to convert the text to JSON
+      status.textContent='Reformatting results...';
+      fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({key:'',company:'Convert this job listing text to a JSON array. Return ONLY the JSON array starting with [. Each item needs: role, company, location, remote, salary, posted, apply_method, apply_url, description, sector. Text: '+t.slice(0,3000),
+        system:'Return ONLY a valid JSON array starting with [. No explanation, no markdown.'})})
+      .then(function(r2){return r2.json();})
+      .then(function(d2){
+        var t2=(d2.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+        var a2=t2.indexOf('['),b2=t2.lastIndexOf(']');
+        if(a2>=0&&b2>a2){
+          try{
+            jobs=JSON.parse(t2.slice(a2,b2+1));
+            jobs.forEach(function(j){
+              j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
+              j._cat=phCategory;
+              j.role=j.role||j.title||'Open Role';
+              j.company=j.company||'Unknown';
+            });
+            jobs=jobs.filter(function(j){return j.company&&j.role;});
+            PH_JOBS=PH_JOBS.concat(jobs);
+            phSave();phRenderJobs();
+            status.textContent=jobs.length+' jobs found';
+          }catch(e2){status.textContent='Could not parse results. Try again.';}
+        } else {
+          status.textContent='No structured results. Try again.';
+        }
+        setTimeout(function(){status.textContent='';},4000);
+        btn.disabled=false;
+      }).catch(function(){
+        status.textContent='Parse failed. Try again.';
+        setTimeout(function(){status.textContent='';},3000);
+        btn.disabled=false;
+      });
+      return;
+    }
+    // Filter junk
+    var bad=['error','unable','insufficient','no results','no jobs','n/a'];
+    jobs=jobs.filter(function(j){
+      if(!j.company&&!j.role) return false;
+      var lower=((j.company||'')+(j.role||'')).toLowerCase();
+      return !bad.some(function(w){return lower.indexOf(w)>=0;});
+    });
+    // Normalize fields
+    jobs.forEach(function(j){
+      j._id='ph'+Date.now()+Math.floor(Math.random()*9999);
+      j._cat=phCategory;
+      j.role=j.role||j.title||j.position||'Open Role';
+      j.company=j.company||j.employer||'Unknown';
+      j.apply_url=j.apply_url||j.url||j.link||j.application_url||null;
+      j.apply_method=j.apply_method||(j.apply_url&&j.apply_url.indexOf('@')>=0?'email':j.apply_url?'link':null);
+      j.remote=j.remote||j.is_remote||(j.location&&j.location.toLowerCase().indexOf('remote')>=0)||false;
+    });
+    // Dedupe
+    jobs.forEach(function(j){
+      var exists=PH_JOBS.some(function(x){return x.company===j.company&&x.role===j.role;});
+      if(!exists) PH_JOBS.unshift(j);
+    });
+    phSave();
+    phRenderJobs();
+    status.textContent=jobs.length+' jobs found';
+    setTimeout(function(){status.textContent='';},4000);
+  })
+  .catch(function(e){
+    status.textContent='Error: '+e.message;
+    setTimeout(function(){status.textContent='';},5000);
+  })
+  .finally(function(){btn.disabled=false;});
+}
+
+function phSave(){
+  try{localStorage.setItem('ph_jobs',JSON.stringify(PH_JOBS));}catch(e){}
+  try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
+  try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
+}
+
+function phLoad(){
+  try{var j=localStorage.getItem('ph_jobs');if(j)PH_JOBS=JSON.parse(j);}catch(e){}
+  try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
+  try{var ph=localStorage.getItem('ph_history');if(ph){PH_HISTORY=JSON.parse(ph);}}catch(e){}
+}
+
+function phSaveJob(id){
+  var job=PH_JOBS.find(function(j){return j._id===id;});
+  if(!job)return;
+  var already=PH_SAVED.some(function(j){return j._id===id;});
+  if(!already){PH_SAVED.unshift(job);}
+  phSave();
+  phRenderJobs();
+}
+
+function phRemoveSaved(id){
+  PH_SAVED=PH_SAVED.filter(function(j){return j._id!==id;});
+  phSave();
+  phRenderJobs();
+}
+
+function phResearchInScout(company){
+  setPage('dashboard');
+  var ci=document.getElementById('ci');
+  if(ci){ci.value=company;ci.focus();}
+}
+
+function phCopyApply(val){
+  navigator.clipboard.writeText(val);
+}
+
+function phRenderJobs(){
+  var cont=document.getElementById('ph-jobs-grid');
+  if(!cont)return;
+  cont.innerHTML='';
+  var jobs=PH_JOBS.filter(function(j){return j._cat===phCategory;});
+  if(phFilters.remote) jobs=jobs.filter(function(j){return j.remote;});
+  if(phFilters.startup) jobs=jobs.filter(function(j){
+    var s=(j.sector||'').toLowerCase();
+    return s.indexOf('ai')>=0||s.indexOf('tech')>=0||s.indexOf('saas')>=0||s.indexOf('fintech')>=0;
+  });
+  if(phFilters.week) jobs=jobs.filter(function(j){
+    var p=(j.posted||'').toLowerCase();
+    return p.indexOf('day')>=0||p.indexOf('hour')>=0||p.indexOf('today')>=0||p.indexOf('1 week')>=0;
+  });
+
+  if(!jobs.length){
+    cont.innerHTML='<div class="ph-empty" style="grid-column:1/-1"><div class="ph-empty-title">No jobs yet</div><p>Click "Search Jobs" to find open '+(phCategory==='cmo'?'marketing leadership':'design leadership')+' roles.</p></div>';
+    return;
+  }
+
+  jobs.forEach(function(job){
+    var id=job._id;
+    var isSaved=PH_SAVED.some(function(j){return j._id===id;});
+    var card=document.createElement('div');
+    card.className='ph-card'+(isSaved?' saved':'');
+
+    var applyHtml='';
+    if(job.apply_url){
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var isLinkedIn=job.apply_method==='linkedin'||(job.apply_url||'').indexOf('linkedin')>=0;
+      var methodLabel=isEmail?'Email':isLinkedIn?'LinkedIn':'Apply';
+      var displayUrl=isEmail?job.apply_url:(job.apply_url.replace(/^https?:\/\//,'').slice(0,50)+(job.apply_url.length>55?'...':''));
+      applyHtml='<div class="ph-apply">'+
+        '<span class="ph-apply-method">'+methodLabel+'</span>'+
+        (isEmail
+          ? '<span class="ph-apply-link">'+job.apply_url+'</span>'
+          : '<a class="ph-apply-link" href="'+job.apply_url+'" target="_blank">'+displayUrl+'</a>')+
+        '</div>';
+    }
+
+    card.innerHTML=
+      '<div class="ph-card-header">'+
+        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
+        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
+        '<div class="ph-card-meta">'+
+          (job.location?'<span class="ph-tag">'+(job.location)+'</span>':'')+
+          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
+          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
+          (job.posted?'<span class="ph-tag new">'+(job.posted)+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="ph-card-body">'+
+        (job.description?'<div class="ph-desc">'+(job.description)+'</div>':'')+
+        applyHtml+
+      '</div>'+
+      '<div class="ph-card-actions" id="pha-'+id+'"></div>';
+
+    // Wire action buttons
+    var acts=card.querySelector('.ph-card-actions');
+
+    // Apply / Copy button
+    if(job.apply_url){
+      var applyBtn=document.createElement('button');
+      applyBtn.className='abtn g';
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      applyBtn.textContent=isEmail?'Copy Email':'Open Application';
+      (function(url,isEm){
+        applyBtn.onclick=function(){
+          if(isEm){navigator.clipboard.writeText(url);applyBtn.textContent='Copied!';setTimeout(function(){applyBtn.textContent='Copy Email';},1800);}
+          else{window.open(url,'_blank');}
+        };
+      })(job.apply_url, isEmail);
+      acts.appendChild(applyBtn);
+    }
+
+    // Save / unsave
+    var saveBtn=document.createElement('button');
+    saveBtn.className='abtn'+(isSaved?' g':'');
+    saveBtn.textContent=isSaved?'Saved ✓':'Save';
+    (function(jid,saved){
+      saveBtn.onclick=function(){
+        if(saved){phRemoveSaved(jid);}
+        else{phSaveJob(jid);}
+      };
+    })(id, isSaved);
+    acts.appendChild(saveBtn);
+
+    // Research company in Scout
+    var rBtn=document.createElement('button');rBtn.className='abtn';
+    rBtn.textContent='Research in Scout';
+    (function(co){rBtn.onclick=function(){phResearchInScout(co);};})(job.company);
+    acts.appendChild(rBtn);
+
+    // Remove from list
+    var rmBtn=document.createElement('button');rmBtn.className='abtn ghost';
+    rmBtn.textContent='Remove';
+    (function(jid){rmBtn.onclick=function(){
+      PH_JOBS=PH_JOBS.filter(function(j){return j._id!==jid;});
+      phSave();phRenderJobs();
+    };})(id);
+    acts.appendChild(rmBtn);
+
+    cont.appendChild(card);
+  });
+
+  // Render saved section
+  var savedCont=document.getElementById('ph-saved-grid');
+  if(!savedCont)return;
+  savedCont.innerHTML='';
+  var savedJobs=PH_SAVED.filter(function(j){return j._cat===phCategory;});
+  if(!savedJobs.length){
+    document.getElementById('ph-saved-section').style.display='none';
+    return;
+  }
+  document.getElementById('ph-saved-section').style.display='block';
+  savedJobs.forEach(function(job){
+    var id=job._id;
+    var mini=document.createElement('div');mini.className='ph-card saved';
+    mini.innerHTML=
+      '<div class="ph-card-header">'+
+        '<div class="ph-card-role">'+(job.role||'')+'</div>'+
+        '<div class="ph-card-company">'+(job.company||'')+'</div>'+
+        '<div class="ph-card-meta">'+
+          (job.remote?'<span class="ph-tag remote">Remote</span>':'')+
+          (job.salary?'<span class="ph-tag salary">'+(job.salary)+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="ph-card-actions"></div>';
+    var acts=mini.querySelector('.ph-card-actions');
+    if(job.apply_url){
+      var isEmail=job.apply_method==='email'||job.apply_url.indexOf('@')>=0;
+      var ab=document.createElement('button');ab.className='abtn g';
+      ab.textContent=isEmail?'Copy Email':'Open Application';
+      (function(url,isEm){ab.onclick=function(){
+        if(isEm){navigator.clipboard.writeText(url);ab.textContent='Copied!';setTimeout(function(){ab.textContent='Copy Email';},1800);}
+        else window.open(url,'_blank');
+      };})(job.apply_url,isEmail);
+      acts.appendChild(ab);
+    }
+    var unBtn=document.createElement('button');unBtn.className='abtn ghost';unBtn.textContent='Remove';
+    (function(jid){unBtn.onclick=function(){phRemoveSaved(jid);phRenderJobs();};})(id);
+    acts.appendChild(unBtn);
+    savedCont.appendChild(mini);
+  });
+}
+// ── DOM READY ─────────────────────────────────────────────────────────────────
+
+
+
+function openFetchModal(){
+  var m=document.getElementById('fetch-modal');
+  if(m){m.style.display='flex';}
+  // Wire src pills if not already
+  document.querySelectorAll('#fetch-modal .src-pill').forEach(function(p){
+    p.onclick=function(){
+      var s=p.getAttribute('data-src');
+      var i=activeSources.indexOf(s);
+      if(i>=0){activeSources.splice(i,1);p.classList.remove('on');}
+      else{activeSources.push(s);p.classList.add('on');}
+    };
+  });
+}
+function closeFetchModal(){
+  var m=document.getElementById('fetch-modal');
+  if(m){m.style.display='none';}
+}
+
+
+
+
+
+// ── PROFILE ──────────────────────────────────────────────────────────────────
+var PROFILE = {
+  name: '', tagline: '', bio: '',
+  linkedin: '', twitter: '', website: '',
+  avatar: null,
+  services: [],
+  cases: []
+};
+
+function profileLoad(){
+  try{var p=localStorage.getItem('scout_profile');if(p)PROFILE=JSON.parse(p);}catch(e){}
+}
+
+function profileSave(){
+  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  renderProfile();
+}
+
+function renderProfile(){
+  profileLoad();
+  var cont = document.getElementById('profile-root');
+  if(!cont) return;
+  var initials = PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : '?';
+  var avatarHtml = PROFILE.avatar
+    ? '<img src="'+PROFILE.avatar+'" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'
+    : '<span style="font-size:28px;font-weight:700;color:var(--pip)">'+initials+'</span>';
+  var plan = (tierLoad().plan||'free');
+  var planLabel = {free:'Free',pro:'Pro',agency:'Agency'}[plan]||'Free';
+  var planColor = plan==='free' ? 'var(--tx3)' : 'var(--pip2)';
+  var socials = '';
+  if(PROFILE.linkedin) socials += '<a class="prof-social" href="'+PROFILE.linkedin+'" target="_blank">LinkedIn</a>';
+  if(PROFILE.twitter) socials += '<a class="prof-social" href="'+PROFILE.twitter+'" target="_blank">Twitter/X</a>';
+  if(PROFILE.website) socials += '<a class="prof-social" href="'+PROFILE.website+'" target="_blank">Website</a>';
+  if(PROFILE.calendly) socials += '<a class="prof-social" href="'+PROFILE.calendly+'" target="_blank">Book a call</a>';
+  var servicesHtml = (PROFILE.services_list||[]).map(function(s){
+    return '<span class="prof-tag">'+s+'</span>';
+  }).join('') + '<button class="prof-tag-add" onclick="profileAddService()">+ Add</button>';
+  var casesHtml = (PROFILE.cases||[]).map(function(c,i){
+    var metrics = (c.metrics||[]).map(function(m){return '<span class="case-metric">'+m+'</span>';}).join('');
+    return '<div class="case-card" onclick="profileEditCase('+i+')">'
+      +'<div class="case-card-client">'+(c.client||'Client')+'</div>'
+      +'<div class="case-card-title">'+(c.title||'')+'</div>'
+      +'<div class="case-card-result">'+(c.result||'')+'</div>'
+      +(metrics?'<div class="case-metrics">'+metrics+'</div>':'')
+      +'</div>';
+  }).join('') + '<button class="case-card-add" onclick="profileAddCase()">+ Add Case Study</button>';
+  cont.innerHTML =
+    '<div class="prof-wrap">'+
+    '<div class="prof-left">'+
+      '<div class="prof-card">'+
+        '<div class="prof-avatar-wrap">'+
+          '<div class="prof-avatar">'+avatarHtml+'</div>'+
+          '<button class="prof-avatar-btn" onclick="profileUploadAvatar()" title="Change photo">+</button>'+
+          '<input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="profileHandleAvatar(this)">'+
+        '</div>'+
+        '<div class="prof-name">'+(PROFILE.name||'Your Name')+'</div>'+
+        '<div class="prof-tagline">'+(PROFILE.tagline||'Add your tagline')+'</div>'+
+        '<div class="prof-plan-badge" style="color:'+planColor+'">'+planLabel+' plan</div>'+
+        (socials?'<div class="prof-socials">'+socials+'</div>':'')+
+        '<div class="prof-stats">'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+DB.length+'</div><div class="prof-stat-l">Leads</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.cases||[]).length+'</div><div class="prof-stat-l">Cases</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.services_list||[]).length+'</div><div class="prof-stat-l">Services</div></div>'+
+        '</div>'+
+        '<button class="prof-edit-btn" data-action="edit-profile">Edit Profile</button>'+
+        '<button class="prof-edit-btn" onclick="profileCopyShare()" style="margin-top:8px;background:none;border:1px solid var(--bor2);color:var(--tx2)">Copy Share Link</button>'+
+        (plan==='free'?'<button class="prof-upgrade-btn" onclick="showPricing()">Upgrade to Pro</button>':'')+
+      '</div>'+
+      '<div class="prof-card">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
+          '<div class="prof-section-title">Services</div>'+
+        '</div>'+
+        servicesHtml+
+      '</div>'+
+    '</div>'+
+    '<div class="prof-right">'+
+      '<div class="prof-section">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+          '<div class="prof-section-title">About</div>'+
+          '<button onclick="openProfileModal()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Edit</button>'+
+        '</div>'+
+        (PROFILE.bio?'<div style="font-size:14px;color:var(--tx2);line-height:1.8">'+PROFILE.bio+'</div>':'<div style="font-size:13px;color:var(--tx3)">Add a bio to tell prospects who you are.</div>')+
+      '</div>'+
+      '<div class="prof-section">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+          '<div class="prof-section-title">Case Studies</div>'+
+          '<button onclick="profileAddCase()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">+ Add</button>'+
+        '</div>'+
+        '<div class="case-studies-grid">'+casesHtml+'</div>'+
+      '</div>'+
+      '<div class="prof-section">'+
+        '<div class="prof-section-title" style="margin-bottom:12px">Business Details</div>'+
+        '<div class="prof-grid">'+
+          '<div class="prof-field"><div class="prof-field-label">Role</div><div class="prof-field-val">'+(PROFILE.role||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Location</div><div class="prof-field-val">'+(PROFILE.location||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Industries</div><div class="prof-field-val">'+(PROFILE.industries||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Ideal Stage</div><div class="prof-field-val">'+(PROFILE.funding_stage||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Deal Size</div><div class="prof-field-val">'+(PROFILE.deal_size||'—')+'</div></div>'+
+          '<div class="prof-field"><div class="prof-field-label">Availability</div><div class="prof-field-val">'+(PROFILE.availability||'—')+'</div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '</div>';
+}
+
+function profileUploadAvatar(){
+  document.getElementById('avatar-input').click();
+}
+
+function profileHandleAvatar(input){
+  if(!input.files||!input.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){PROFILE.avatar=e.target.result;profileSave();};
+  reader.readAsDataURL(input.files[0]);
+}
+
+function profileEditInfo(){
+  profileLoad();
+  var m=document.getElementById('profile-modal');
+  if(!m){console.error('profile-modal not found');return;}
+  var map={
+    'pm-name':PROFILE.name,'pm-email':PROFILE.email,'pm-tagline':PROFILE.tagline,
+    'pm-bio':PROFILE.bio,'pm-agency':PROFILE.agency,'pm-role':PROFILE.role,
+    'pm-location':PROFILE.location,'pm-experience':PROFILE.experience,
+    'pm-client_size':PROFILE.client_size,'pm-availability':PROFILE.availability,
+    'pm-industries':PROFILE.industries,'pm-funding_stage':PROFILE.funding_stage,
+    'pm-company_size':PROFILE.company_size,'pm-deal_size':PROFILE.deal_size,
+    'pm-linkedin':PROFILE.linkedin,'pm-twitter':PROFILE.twitter,
+    'pm-website':PROFILE.website,'pm-calendly':PROFILE.calendly,
+    'pm-min_score':PROFILE.min_score
+  };
+  Object.keys(map).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.value=map[id]||'';
+  });
+  m.classList.add('open');
+  m.style.display='flex';
+}
+
+function profileSaveInfo(){
+  var fields=["name","email","tagline","bio","agency","role","location","experience",
+    "client_size","availability","industries","funding_stage","company_size","deal_size",
+    "linkedin","twitter","website","calendly","min_score"];
+  fields.forEach(function(f){
+    var el=document.getElementById("pm-"+f);
+    if(el) PROFILE[f]=el.value.trim();
+  });
+  closeProfileModal();
+  profileSave();
+}
+
+
+
+
+
+function profileAddService(){
+  var name=prompt('Service name (e.g. GTM Strategy):');
+  if(!name)return;
+  var desc=prompt('Short description (optional):');
+  var icons=['','','','','','','',''];
+  var icon=icons[Math.floor(Math.random()*icons.length)];
+  PROFILE.services=PROFILE.services||[];
+  PROFILE.services.push({name:name.trim(),desc:(desc||'').trim(),icon:icon});
+  profileSave();
+}
+
+function profileRemoveService(i){
+  PROFILE.services.splice(i,1);
+  profileSave();
+}
+
+function profileAddCase(){
+  openCaseModal(-1,{client:'',title:'',result:'',metrics:[]});
+}
+
+function profileEditCase(i){
+  openCaseModal(i,PROFILE.cases[i]);
+}
+
+function closeCaseModal(){ document.getElementById("case-modal").classList.remove("open"); }
+
+function openCaseModal(idx,c){
+  document.getElementById('cm-idx').value=idx;
+  document.getElementById('cm-client').value=c.client||'';
+  document.getElementById('cm-title').value=c.title||'';
+  document.getElementById('cm-result').value=c.result||'';
+  document.getElementById('cm-metrics').value=(c.metrics||[]).join(', ');
+  document.getElementById('case-modal').classList.add('open');
+}
+
+function profileSaveCase(){
+  var idx=parseInt(document.getElementById('cm-idx').value);
+  var c={
+    client:document.getElementById('cm-client').value.trim(),
+    title:document.getElementById('cm-title').value.trim(),
+    result:document.getElementById('cm-result').value.trim(),
+    metrics:document.getElementById('cm-metrics').value.split(',').map(function(s){return s.trim();}).filter(Boolean)
+  };
+  PROFILE.cases=PROFILE.cases||[];
+  if(idx>=0)PROFILE.cases[idx]=c;
+  else PROFILE.cases.unshift(c);
+  document.getElementById('case-modal').classList.remove('open');
+  profileSave();
+}
+
+function profileDeleteCase(){
+  var idx=parseInt(document.getElementById('cm-idx').value);
+  if(idx>=0){
+    if(!confirm('Delete this case study?'))return;
+    PROFILE.cases.splice(idx,1);
+    document.getElementById('case-modal').classList.remove('open');
+    profileSave();
+  }
+}
+
+function profileCopyShare(){
+  var url=window.location.origin+'?profile='+encodeURIComponent(PROFILE.name||'me');
+  navigator.clipboard.writeText(url);
+  var btn=document.querySelector('.profile-share-btn');
+  if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Share Profile';},2000);}
+}
+
+
+
+
+
+
+// ── TIER / CREDITS SYSTEM ─────────────────────────────────────────────────────
+var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:5}, starter:{research:50,fetch:5,piphunt:20}, pro:{research:300,fetch:30,piphunt:999}, agency:{research:750,fetch:100,piphunt:9999}};
+var TIER_LABELS = {free:'Free',starter:'Starter',pro:'Pro',agency:'Agency'};
+
+function tierLoad(){
+  var _u=authGetUser();
+  if(_u&&_u.email==='cara@sushicat.info'){
+    return {plan:'agency',research_used:0,fetch_used:0,period:new Date().toISOString(),_master:true};
+  }
+
+  try{
+    var t=localStorage.getItem('scout_tier');
+    if(t) return JSON.parse(t);
+  }catch(e){}
+  return {plan:'free', research_used:0, fetch_used:0, period: new Date().toISOString().slice(0,7)};
+}
+
+function tierSave(t){ try{localStorage.setItem('scout_tier',JSON.stringify(t));}catch(e){} }
+
+function tierReset(t){
+  // Reset monthly usage if new month
+  var thisMonth = new Date().toISOString().slice(0,7);
+  if(t.period !== thisMonth){ t.research_used=0; t.fetch_used=0; t.period=thisMonth; tierSave(t); }
+  return t;
+}
+
+function tierCanResearch(){
+  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
+  var t = tierReset(tierLoad());
+  var limit = TIER_LIMITS[t.plan||'free'].research;
+  if(t.research_used >= limit){
+    showPricing('You have used your '+limit+' free research credits this month.');
+    return false;
+  }
+  return true;
+}
+
+function tierCanFetch(){
+  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
+  var t = tierReset(tierLoad());
+  var limit = TIER_LIMITS[t.plan||'free'].fetch;
+  if(t.fetch_used >= limit){
+    showPricing('You have used your '+limit+' free fetch credits this month.');
+    return false;
+  }
+  return true;
+}
+
+function tierCanPipHunt(){
+  var u=authGetUser();if(u&&u.email==='cara@sushicat.info')return true;
+  var t = tierReset(tierLoad());
+  if(t.plan==='free'){
+    showPricing('Pip Hunt is available on Pro and Agency plans.');
+    return false;
+  }
+  return true;
+}
+
+function tierUseResearch(){
+  var t = tierReset(tierLoad());
+  t.research_used = (t.research_used||0) + 1;
+  tierSave(t);
+  updateCreditsBar();
+  maybeShowUpsell();
+}
+
+function tierUseFetch(){
+  var t = tierReset(tierLoad());
+  t.fetch_used = (t.fetch_used||0) + 1;
+  tierSave(t);
+  updateCreditsBar();
+}
+
+function updateCreditsBar(){
+  var t = tierReset(tierLoad());
+  var plan = t.plan||'free';
+  var lim = TIER_LIMITS[plan];
+  var barEl = document.getElementById('credits-bar');
+  var upBtn = document.getElementById('upgrade-btn');
+  if(plan !== 'free'){
+    if(barEl) barEl.style.display='none';
+    if(upBtn) upBtn.style.display='none';
+    return;
+  }
+  if(barEl) barEl.style.display='flex';
+  if(upBtn) upBtn.style.display='';
+  var used = t.research_used||0;
+  var pct = Math.min(100, Math.round(used/lim.research*100));
+  var fillEl = document.getElementById('credits-fill');
+  var countEl = document.getElementById('credits-count');
+  if(fillEl){ fillEl.style.width = pct+'%'; fillEl.style.background = pct>=80?'var(--red)':'var(--pip)'; }
+  if(countEl) countEl.textContent = (lim.research-used)+' research credits left';
+}
+
+function showPricing(msg){
+  if(msg) document.getElementById('pricing-msg').textContent = msg;
+  document.getElementById('pricing-overlay').classList.add('open');
+}
+
+function closePricing(){
+  document.getElementById('pricing-overlay').classList.remove('open');
+}
+function selectTier(plan){
+  if(plan==='free'){
+    var t=tierLoad();t.plan='free';tierSave(t);
+    closePricing();updateCreditsBar();renderTopbar();
+    return;
+  }
+  var urls={starter:'https://buy.stripe.com/8x28wPfrA9WughedmqbjW05',pro:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',agency:'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'};
+  if(urls[plan])window.open(urls[plan],'_blank');
+  closePricing();
+}
+function earnCredit(){
+  var t = tierReset(tierLoad());
+  if(t.plan !== 'free') return;
+  t.research_used = Math.max(0, (t.research_used||0) - 1);
+  tierSave(t);
+  updateCreditsBar();
+  var ind = document.getElementById('save-ind');
+  if(ind){ind.textContent='+1 credit earned!';ind.style.color='var(--pip)';setTimeout(function(){ind.textContent='';},2500);}
+}
+
+// Smart upsell - show after every 3rd research for free users
+function showUpsellToast(msg){
+  var existing = document.getElementById("upsell-toast");
+  if(existing) existing.remove();
+  var toast = document.createElement("div");
+  toast.id = "upsell-toast";
+  toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--pip-bor);border-radius:var(--r);padding:14px 18px;max-width:300px;z-index:500;font-size:12px;color:var(--tx2);display:flex;flex-direction:column;gap:8px";
+  var span = document.createElement("span"); span.textContent = msg;
+  var btn = document.createElement("button");
+  btn.textContent = "Upgrade to Pro";
+  btn.style.cssText = "background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif";
+  btn.onclick = function(){ showPricing(); toast.remove(); };
+  toast.appendChild(span); toast.appendChild(btn);
+  document.body.appendChild(toast);
+  setTimeout(function(){ if(toast.parentNode) toast.remove(); }, 8000);
+}
+
+function maybeShowUpsell(){
+  var t = tierLoad();
+  if(t.plan !== 'free') return;
+  var used = t.research_used||0;
+  if(used > 0 && used % 3 === 0){
+    var msgs = [
+      'You have used '+used+' of your 5 free researches this month.',
+      'Enjoying Scout? Pro gives you unlimited research for $29/month.',
+      'Running low on credits? Upgrade to Pro for unlimited access.'
+    ];
+    var msg = msgs[Math.min(Math.floor(used/3)-1, msgs.length-1)];
+    // Show subtle toast instead of full modal
+    showUpsellToast(msg);
+  }
+}
+
+
+
+
+
+
+
+
+
+var PAGE_HISTORY = [];
+var SOURCER_MODE = 'hunt';
+var SOURCER_JD = '';
+var SOURCER_CANDIDATES = [];
+
+function phSetMode(mode){
+  SOURCER_MODE=mode;
+  var act='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:5px;cursor:pointer';
+  var inact='background:none;color:var(--tx3);border:none;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:7px 16px;border-radius:5px;cursor:pointer';
+  var hb=document.getElementById('ph-mode-hunt'),sb=document.getElementById('ph-mode-source');
+  if(hb)hb.style.cssText=mode==='hunt'?act:inact;
+  if(sb)sb.style.cssText=mode==='source'?act:inact;
+  var hd=document.getElementById('ph-hunt-mode'),sd=document.getElementById('ph-source-mode');
+  if(hd)hd.style.display=mode==='hunt'?'block':'none';
+  if(sd)sd.style.display=mode==='source'?'block':'none';
+  var t=document.getElementById('ph-mode-title'),s=document.getElementById('ph-mode-sub');
+  if(t)t.textContent=mode==='hunt'?'Find your next role':'Source candidates';
+  if(s)s.textContent=mode==='hunt'?'Spot open positions at funded startups. Research before you apply.':'Paste a JD, get LinkedIn search strings, score candidates, write InMails.';
+}
+
+function sourcerRun(){
+  var jd=(document.getElementById('sourcer-jd')||{value:''}).value.trim();
+  if(!jd){alert('Please enter a job description or requirements.');return;}
+  SOURCER_JD=jd;
+  // Clear input so user can start a new search
+  var jdEl=document.getElementById('sourcer-jd');
+  if(jdEl) jdEl.value='';
+  var status=document.getElementById('sourcer-status');
+  if(status)status.textContent='Generating search strings...';
+  var sys='You are a Boolean search expert for LinkedIn recruiting. Generate 5 X-Ray Google search strings to find candidates on LinkedIn for this role. Return ONLY a JSON array of strings. Each uses site:linkedin.com/in plus relevant keywords. Vary: job title, skills, companies to poach from, seniority+location, broad. No markdown, just the JSON array.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:'',company:jd,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    var searches=[];
+    if(a>=0&&b>a){try{searches=JSON.parse(t.slice(a,b+1));}catch(e){}}
+    if(!searches.length){if(status)status.textContent='Try again';return;}
+    // Save directly to history
+    PH_HISTORY.unshift({type:'source',query:jd,searches:searches,candidates:[],ts:Date.now()});
+    if(PH_HISTORY.length>20)PH_HISTORY.pop();
+    try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
+    phSave();
+    phRenderHistory();
+    var hw=document.getElementById('ph-history-wrap');
+    if(hw)hw.style.display='block';
+    var cs2=document.getElementById('sourcer-candidates-section');
+    if(cs2)cs2.style.display='block';
+    if(false){
+      cont.innerHTML=searches.map(function(s){
+        var enc=encodeURIComponent(s);
+        return '<div class="sourcer-search-card" data-search="'+enc+'">'+
+          '<div class="sourcer-search-str">'+s+'</div>'+
+          '<button class="sourcer-copy-btn" data-action="copy-search">Copy</button>'+
+          '</div>';
+      }).join('');
+    }
+    var cs=document.getElementById('sourcer-candidates-section');
+    if(cs)cs.style.display='block';
+    if(status){status.textContent=searches.length+' search strings ready';setTimeout(function(){status.textContent='';},3000);}
+  }).catch(function(e){if(status)status.textContent='Error: '+e.message;});
+}
+
+function sourcerScore(){
+  var paste=(document.getElementById('sourcer-paste')||{value:''}).value.trim();
+  if(!paste){alert('Paste candidate names and roles first.');return;}
+  if(!SOURCER_JD){alert('Run a search first so I have the JD context.');return;}
+  var status=document.getElementById('sourcer-status');
+  if(status)status.textContent='Scoring candidates...';
+  var sys='You are a recruiting AI. Score each candidate 0-100 for fit and write a personalised 3-sentence LinkedIn InMail. Return ONLY a JSON array. Each object: name, role, company, score (number), fit_reason (1 sentence), inmail (3 sentences, personalised). No markdown.';
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:'',company:'JD:'+String.fromCharCode(10)+SOURCER_JD+String.fromCharCode(10)+String.fromCharCode(10)+'Candidates:'+String.fromCharCode(10)+paste,system:sys,mode:'fetch'})})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
+    var a=t.indexOf('['),b=t.lastIndexOf(']');
+    if(a>=0&&b>a){try{SOURCER_CANDIDATES=JSON.parse(t.slice(a,b+1));}catch(e){}}
+    sourcerRenderCandidates();
+    if(status){status.textContent=SOURCER_CANDIDATES.length+' candidates scored';setTimeout(function(){status.textContent='';},3000);}
+  }).catch(function(e){if(status)status.textContent='Error: '+e.message;});
+}
+
+function sourcerRenderCandidates(){
+  var cont=document.getElementById('sourcer-results');
+  if(!cont||!SOURCER_CANDIDATES.length)return;
+  var sorted=SOURCER_CANDIDATES.slice().sort(function(a,b){return(b.score||0)-(a.score||0);});
+  cont.innerHTML=sorted.map(function(c){
+    var n=c.score||0;
+    var col=n>=75?'var(--pip2)':n>=50?'var(--amb)':'var(--tx3)';
+    var enc=encodeURIComponent(c.inmail||'');
+    return '<div class="candidate-card">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'+
+        '<div style="flex:1">'+
+          '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:2px">'+(c.name||'')+'</div>'+
+          '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">'+(c.role||'')+(c.company?' at '+c.company:'')+'</div>'+
+          '<div style="font-size:12px;color:var(--tx2)">'+(c.fit_reason||'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;flex-shrink:0">'+
+          '<div style="font-size:28px;font-weight:800;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1;color:'+col+'">'+n+'</div>'+
+          '<div style="font-size:10px;color:var(--tx3)">fit</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="candidate-inmail">'+(c.inmail||'')+'</div>'+
+      '<button data-action="copy-inmail" data-inmail="'+enc+'" style="margin-top:8px;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:700;padding:5px 14px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Copy InMail</button>'+
+    '</div>';
+  }).join('');
+}
+
+
+var SUPA_URL = 'https://lisamrtqlpjpkftncfzg.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxpc2FtcnRxbHBqcGtmdG5jZnpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NzQ1MzYsImV4cCI6MjA5MTI1MDUzNn0.QM4Yl9oTt2nfUqmdpboPk9Xbr_qCYPHIUYSgz6E_2HE';
+var SUPA_USER = null;
+
+function supaPost(path, body) {
+  var token = localStorage.getItem('sb_token');
+  var h = {'apikey':SUPA_KEY,'Content-Type':'application/json'};
+  if(token) h['Authorization'] = 'Bearer '+token;
+  return fetch(SUPA_URL+path,{method:'POST',headers:h,body:JSON.stringify(body)}).then(function(r){return r.json();});
+}
+function authGetUser(){var u=localStorage.getItem('sb_user');if(u){try{return JSON.parse(u);}catch(e){}}return null;}
+function authSignOut(){
+  var h={'apikey':SUPA_KEY};var t=localStorage.getItem('sb_token');if(t)h['Authorization']='Bearer '+t;
+  fetch(SUPA_URL+'/auth/v1/logout',{method:'POST',headers:h});
+  localStorage.removeItem('sb_token');localStorage.removeItem('sb_user');SUPA_USER=null;
+  showAuthScreen('login');
+}
+function showAuthScreen(mode){
+  mode=mode||'signup';var old=document.getElementById('auth-screen');if(old)old.remove();
+  var sc=document.createElement('div');sc.id='auth-screen';
+  sc.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;overflow-y:auto';
+  var isS=mode==='signup';
+  sc.innerHTML='<div style="width:100%;max-width:400px">'+
+    '<div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:40px">'+
+      '<div style="width:8px;height:8px;border-radius:50%;background:#2d9de8;box-shadow:0 0 16px #2d9de8"></div>'+
+      '<span style="font-size:13px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif">Scout</span>'+
+    '</div>'+
+    '<div style="display:flex;background:rgba(255,255,255,0.05);border-radius:8px;padding:3px;margin-bottom:28px">'+
+      '<button data-auth="login" style="flex:1;padding:9px;border:none;border-radius:6px;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:'+(isS?'none':'#2d9de8')+';color:'+(isS?'#4a7a9a':'#fff')+'">Sign in</button>'+
+      '<button data-auth="signup" style="flex:1;padding:9px;border:none;border-radius:6px;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:'+(isS?'#2d9de8':'none')+';color:'+(isS?'#fff':'#4a7a9a')+'">Create account</button>'+
+    '</div>'+
+    (isS?'<input id="auth-name" placeholder="Your name" autocomplete="name" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 16px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">':'')+
+    '<input id="auth-email" type="email" placeholder="Email address" autocomplete="email" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 16px;border-radius:8px;outline:none;display:block;margin-bottom:10px;box-sizing:border-box">'+
+    '<input id="auth-pass" type="password" placeholder="Password (min 6 chars)" autocomplete="'+(isS?'new-password':'current-password')+'" style="width:100%;background:#0a1220;border:1px solid rgba(45,157,232,0.2);color:#eef4ff;font-family:Outfit,sans-serif;font-size:14px;padding:13px 16px;border-radius:8px;outline:none;display:block;margin-bottom:6px;box-sizing:border-box">'+
+    '<div id="auth-error" style="font-size:12px;color:#f87171;min-height:18px;margin-bottom:10px;padding-left:2px"></div>'+
+    '<button id="auth-btn"  style="width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)">'+
+      (isS?'Create my account &rarr;':'Sign in &rarr;')+
+    '</button>'+
+    '<div style="margin-top:20px;text-align:center;font-size:12px;color:#2a4a6a">'+
+      (isS?'Already have an account? <button data-auth="login" style="background:none;border:none;color:#2d9de8;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px">Sign in</button>':
+           'No account? <button data-auth="signup" style="background:none;border:none;color:#2d9de8;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px">Create one free</button>')+
+    '</div></div>';
+  document.body.appendChild(sc);
+  sc.addEventListener('click',function(e){
+    var authMode=e.target.getAttribute('data-auth');
+    if(authMode) showAuthScreen(authMode);
+  });
+  setTimeout(function(){
+    var first=document.getElementById(isS?'auth-name':'auth-email');if(first)first.focus();
+    ['auth-name','auth-email','auth-pass'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')authSubmit(mode);});
+    });
+    var authBtn=document.getElementById('auth-btn');
+    if(authBtn) authBtn.onclick=function(){authSubmit(mode);};
+  },50);
+}
+function authSubmit(mode){
+  var email=(document.getElementById('auth-email')||{value:''}).value.trim();
+  var pass=(document.getElementById('auth-pass')||{value:''}).value;
+  var errEl=document.getElementById('auth-error'),btn=document.getElementById('auth-btn');
+  if(!email||!pass){if(errEl)errEl.textContent='Please fill in all fields';return;}
+  if(btn){btn.disabled=true;btn.textContent=mode==='signup'?'Creating...':'Signing in...';}
+  if(errEl)errEl.textContent='';
+  if(mode==='signup'){
+    var name=(document.getElementById('auth-name')||{value:''}).value.trim()||email.split('@')[0];
+    supaPost('/auth/v1/signup',{email:email,password:pass,data:{name:name}}).then(function(d){
+      if(d.error){if(errEl)errEl.textContent=d.error.message;if(btn){btn.disabled=false;btn.textContent='Create my account';}return;}
+      if(d.access_token){
+        localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
+        SUPA_USER=d.user;PROFILE.name=name;PROFILE.email=email;
+        try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+        authSuccess();
+      } else {
+        var sc=document.getElementById('auth-screen');
+        if(sc)sc.innerHTML='<div style="text-align:center;color:#eef4ff;font-family:Outfit,sans-serif;padding:40px 24px;max-width:400px"><div style="font-size:48px;margin-bottom:16px">&#9993;</div><div style="font-size:20px;font-weight:700;margin-bottom:10px">Check your email</div><div style="font-size:14px;color:#7da8c8;line-height:1.6">Confirmation sent to <b>'+email+'</b>. Click it then sign in.</div><button data-auth="login" style="margin-top:24px;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;cursor:pointer">Sign in</button></div>';
+      }
+    }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Create my account';}});
+  } else {
+    supaPost('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(d){
+      if(d.error){if(errEl)errEl.textContent=d.error.message||'Invalid credentials';if(btn){btn.disabled=false;btn.textContent='Sign in';}return;}
+      localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
+      SUPA_USER=d.user;
+      PROFILE.email=d.user.email||email;if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+      authSuccess();
+    }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Sign in';}});
+  }
+}
+function authSuccess(){
+  var sc=document.getElementById('auth-screen');
+  if(sc){sc.style.opacity='0';sc.style.transition='opacity .3s';setTimeout(function(){sc.remove();initApp();},300);}
+  else{initApp();}
+}
+function renderTopbar(){
+  var right=document.getElementById('topbar-right');
+  if(!right)return;
+  profileLoad();
+  var _tier=tierLoad();
+  var plan=_tier.plan||'free';
+  var initials=PROFILE.name?PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase():'ME';
+  right.innerHTML=
+    '<div id="credits-bar" style="display:none;align-items:center;gap:8px">'+
+      '<div style="width:70px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden">'+
+        '<div id="credits-fill" style="height:100%;background:var(--pip);width:0%;border-radius:2px;transition:width .3s"></div>'+
+      '</div>'+
+      '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>'+
+    '</div>'+
+    (!_tier._master&&plan==='free'?'<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>':'')+
+    '<div style="position:relative" id="profile-menu-wrap">'+
+      '<button id="profile-avatar-btn" style="width:32px;height:32px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;display:flex;align-items:center;justify-content:center" title="Account">'+initials+'</button>'+
+      '<div id="profile-dropdown" style="display:none;position:absolute;top:42px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);min-width:180px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.5);overflow:hidden">'+
+        '<div style="padding:12px 16px;border-bottom:1px solid var(--bor)">'+
+          '<div style="font-size:13px;font-weight:700;color:var(--tx)">'+(PROFILE.name||'My account')+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+(PROFILE.email||'')+'</div>'+
+        '</div>'+
+        '<button data-nav="dashboard" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9783; Dashboard</button>'+
+        '<button data-nav="profile" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">&#9881; Profile</button>'+
+        '<button id="signout-btn" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">Sign out</button>'+
+      '</div>'+
+    '</div>'+
+    '<button class="hamburger" id="hamburger-btn" title="Menu" style="margin-left:8px">'+
+      '<span></span><span></span><span></span>'+
+    '</button>';
+
+  updateCreditsBar();
+
+  setTimeout(function(){
+    // Avatar button toggles dropdown
+    var avatarBtn=document.getElementById('profile-avatar-btn');
+    if(avatarBtn) avatarBtn.onclick=function(e){
+      e.stopPropagation();
+      var dd=document.getElementById('profile-dropdown');
+      if(dd) dd.style.display=dd.style.display==='none'?'block':'none';
+    };
+    // Hamburger opens sidebar
+    var hb=document.getElementById('hamburger-btn');
+    if(hb) hb.onclick=function(e){ e.stopPropagation(); openSidebar(); };
+    // Dropdown nav items
+    var wrap=document.getElementById('profile-menu-wrap');
+    if(wrap) wrap.addEventListener('click',function(e){
+      var btn=e.target.closest('[data-nav]');
+      if(btn){ closeProfileMenu(); navTo(btn.getAttribute('data-nav')); return; }
+      var so=e.target.closest('#signout-btn');
+      if(so){ closeProfileMenu(); authSignOut(); }
+    });
+    // Close dropdown on outside click
+    document.addEventListener('click',function(){
+      var dd=document.getElementById('profile-dropdown');
+      if(dd) dd.style.display='none';
+    });
+  },50);
+}
+
+function closeProfileMenu(){
+  var dd=document.getElementById('profile-dropdown');
+  if(dd) dd.style.display='none';
+}
+function initApp(){
+  profileLoad();updateCreditsBar();renderTopbar();setPage('dashboard');document.body.classList.add('app-ready');load();
+  document.addEventListener('click',function(e){
+    var t=e.target.closest('[data-action]')||e.target;
+    var a=t?t.getAttribute('data-action'):null;if(!a)return;
+    if(a==='open-lead'){var id=t.getAttribute('data-id');if(id)openLeadDetail(id);return;}
+    if(a==='approve-inbox'){var id=t.getAttribute('data-id');if(id)approveInboxCard(id);return;}
+    if(a==='set-status'){var id=t.getAttribute('data-id');var st=t.getAttribute('data-status');if(id&&st)updateLeadStatus(id,st);return;}
+    if(a==='copy-pitch'){var el=document.getElementById('ld-pitch-text');if(el){navigator.clipboard.writeText(el.textContent);t.textContent='Copied!';setTimeout(function(){t.textContent='Copy pitch';},1800);}return;}
+    if(a==='edit-profile'){openProfileModal();return;}
+    if(a==='open-profile'){navTo('profile');return;}
+    if(a==='data-nav' || e.target.hasAttribute && e.target.hasAttribute('data-nav')){
+      var nav=t.getAttribute('data-nav')||e.target.getAttribute('data-nav');
+      if(nav) navTo(nav); return;
+    }
+    if(a==='copy-search'){var c=t.closest('[data-search]');if(c){navigator.clipboard.writeText(decodeURIComponent(c.getAttribute('data-search')));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy';},1500);}return;}
+    if(a==='copy-inmail'){var enc=t.getAttribute('data-inmail');if(enc){navigator.clipboard.writeText(decodeURIComponent(enc));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy InMail';},1500);}return;}
+    var nav=e.target.getAttribute('data-nav');if(nav){var dd=document.getElementById('profile-dropdown');if(dd)dd.style.display='none';navTo(nav);return;}
+    if(!e.target.closest('#profile-menu-wrap')){var dd2=document.getElementById('profile-dropdown');if(dd2)dd2.style.display='none';}
+  });
+  var rb=document.getElementById('rb');if(rb)rb.onclick=go;
+  var ci=document.getElementById('ci');if(ci)ci.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  var brb=document.getElementById('brb');if(brb)brb.onclick=bulk;
+  var fb=document.getElementById('fetch-btn');if(fb)fb.onclick=fetchLeads;
+  var rsb=document.getElementById('res-sel-btn');if(rsb)rsb.onclick=researchSelected;
+  var btog=document.getElementById('btog');if(btog)btog.onclick=function(){showPanel('bpanel');};
+}
+
+function phRenderHistory(){
+  var cont = document.getElementById('ph-history-list');
+  if(!cont || !PH_HISTORY.length) return;
+  cont.innerHTML = '';
+  PH_HISTORY.forEach(function(item, idx){
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);margin-bottom:8px;overflow:hidden';
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer';
+    var left = document.createElement('div');
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px';
+    title.textContent = item.query.slice(0,80) + (item.query.length>80?'...':'');
+    var meta = document.createElement('div');
+    meta.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:2px';
+    meta.textContent = (item.type==='source'?'Candidate sourcing':'Job search') + ' · ' + (item.searches?item.searches.length:0) + ' searches' + (item.candidates&&item.candidates.length?' · '+item.candidates.length+' scored':'');
+    left.appendChild(title);left.appendChild(meta);
+    var toggle = document.createElement('span');
+    toggle.style.cssText = 'font-size:18px;color:var(--tx3);transition:transform .2s;flex-shrink:0';
+    toggle.textContent = '›';
+    header.appendChild(left);header.appendChild(toggle);
+    var body = document.createElement('div');
+    body.style.cssText = 'display:none;padding:0 14px 12px;border-top:1px solid var(--bor)';
+    if(item.searches && item.searches.length){
+      item.searches.forEach(function(s){
+        var row = document.createElement('div');
+        row.style.cssText = 'background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-top:8px;display:flex;align-items:center;gap:10px';
+        var str = document.createElement('div');
+        str.style.cssText = 'font-size:11px;color:var(--tx2);font-family:JetBrains Mono,monospace;flex:1;word-break:break-all';
+        str.textContent = s;
+        var cp = document.createElement('button');
+        cp.style.cssText = 'background:var(--pip);color:#fff;border:none;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;flex-shrink:0';
+        cp.textContent = 'Copy';
+        var _s = s;
+        cp.onclick = function(){ navigator.clipboard.writeText(_s); cp.textContent='Copied!'; setTimeout(function(){cp.textContent='Copy';},1500); };
+        row.appendChild(str);row.appendChild(cp);
+        body.appendChild(row);
+      });
+    }
+    if(item.candidates && item.candidates.length){
+      var candTitle = document.createElement('div');
+      candTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-top:12px;margin-bottom:8px';
+      candTitle.textContent = 'Scored Candidates';
+      body.appendChild(candTitle);
+      item.candidates.forEach(function(c){
+        var crow = document.createElement('div');
+        crow.style.cssText = 'background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px';
+        var cn = document.createElement('div');cn.style.flex='1';
+        var cname = document.createElement('div');cname.style.cssText='font-size:12px;font-weight:700;color:var(--tx)';cname.textContent=c.name||'';
+        var crole = document.createElement('div');crole.style.cssText='font-size:11px;color:var(--tx3)';crole.textContent=(c.role||'')+(c.company?' at '+c.company:'');
+        cn.appendChild(cname);cn.appendChild(crole);
+        var cscore = document.createElement('div');cscore.style.cssText='font-size:20px;font-weight:800;font-family:JetBrains Mono,monospace;color:'+(c.score>=75?'var(--pip2)':c.score>=50?'var(--amb)':'var(--tx3)');cscore.textContent=c.score||0;
+        crow.appendChild(cn);crow.appendChild(cscore);
+        body.appendChild(crow);
+      });
+    }
+    var expanded = false;
+    header.onclick = function(){
+      expanded = !expanded;
+      body.style.display = expanded ? 'block' : 'none';
+      toggle.style.transform = expanded ? 'rotate(90deg)' : '';
+    };
+    card.appendChild(header);card.appendChild(body);
+    cont.appendChild(card);
+  });
+  var wrap = document.getElementById('ph-history-wrap');
+  if(wrap) wrap.style.display = PH_HISTORY.length ? 'block' : 'none';
+}
+
+function goBack(){
+  if(PAGE_HISTORY.length>0){ var prev=PAGE_HISTORY.pop(); setPage(prev,false); }
+  else{ setPage('dashboard',false); }
+}
+
+function renderSidebarTier(){
+  var wrap=document.getElementById('sb-tier-features');
+  var items=document.getElementById('sb-tier-items');
+  var label=document.getElementById('sb-tier-label');
+  if(!wrap||!items)return;
+  var t=tierLoad();
+  var plan=t.plan||'free';
+  var features={
+    free:    [],
+    starter: [],
+    pro:     ['CSV Export','Priority Support'],
+    agency:  ['Inbox & Review','White-label Pitches','Dedicated Support']
+  };
+  var planLabel={free:'Free',starter:'Starter',pro:'Pro Plan',agency:'Agency Plan'};
+  var list=features[plan]||[];
+  if(!list.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  if(label) label.textContent=planLabel[plan]||'';
+  items.innerHTML=list.map(function(f){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor);color:var(--tx2);font-size:12px">'+
+      '<span style="color:var(--pip2);font-size:10px;flex-shrink:0">&#10003;</span>'+f+
+    '</div>';
+  }).join('');
+}
+document.addEventListener('DOMContentLoaded',function(){
+  console.log('SCOUT v6 loaded');
+
+  // Handle Supabase email confirmation redirect (hash fragment)
+  var hash = window.location.hash;
+  if(hash && hash.indexOf('access_token=') >= 0){
+    var params = {};
+    hash.replace(/^#/,'').split('&').forEach(function(p){
+      var kv = p.split('='); params[kv[0]] = decodeURIComponent(kv[1]||'');
+    });
+    if(params.access_token){
+      // Store the token and fetch user
+      localStorage.setItem('sb_token', params.access_token);
+      if(params.refresh_token) localStorage.setItem('sb_refresh', params.refresh_token);
+      // Clean the URL
+      window.history.replaceState(null,'',window.location.pathname);
+      // Fetch user info
+      var h = {'apikey': SUPA_KEY, 'Authorization': 'Bearer '+params.access_token, 'Content-Type':'application/json'};
+      fetch(SUPA_URL+'/auth/v1/user',{headers:h}).then(function(r){return r.json();}).then(function(u){
+        if(u && u.id){
+          localStorage.setItem('sb_user', JSON.stringify(u));
+          SUPA_USER = u;
+          if(u.user_metadata && u.user_metadata.name) PROFILE.name = u.user_metadata.name;
+          if(u.email) PROFILE.email = u.email;
+          try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+        }
+        initApp();
+      }).catch(function(){ initApp(); });
+      return;
+    }
+  }
+
+  var token=localStorage.getItem('sb_token'),user=authGetUser();
+  if(token&&user){SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
+  else{showAuthScreen('signup');}
+});
 """
 
 HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
