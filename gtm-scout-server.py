@@ -849,7 +849,7 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
+var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100 integer; only score above 30 - a score below 30 means the company is not a good lead), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load(onDone) {
@@ -1016,6 +1016,9 @@ function run(company,callback){
     tierUseResearch();
     // Update existing or add new
     var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
+    // Skip cold leads (score < 30) on auto-research
+    var score=res.gtm_readiness_score||0;
+    if(score<30 && existing<0){ if(callback)callback(); return; }
     if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
     save();renderAll();
   }).catch(function(e){var el=document.getElementById('err');el.textContent='Error: '+e.message;el.style.display='block';})
@@ -1075,6 +1078,10 @@ function fetchLeads() {
       return !badWords.some(function(w){return lower.indexOf(w)>=0;});
     });
     if(!cos.length)throw new Error('No valid companies found in results');
+    // Dedup against existing DB + INBOX
+    var existingNames=DB.concat(INBOX).map(function(x){return (x.company||'').toLowerCase();});
+    cos=cos.filter(function(co){return existingNames.indexOf(co.company.toLowerCase())<0;});
+    if(!cos.length)throw new Error('All companies already in your pipeline - try a different source');
     var list=document.getElementById('fetch-list');list.innerHTML='';
     cos.forEach(function(co){
       var item=document.createElement('div');item.className='fetch-item sel';
@@ -1136,6 +1143,13 @@ function runToInbox(company, callback){
     res._id='id'+Date.now()+Math.floor(Math.random()*9999);
     res._inbox=true;
     res._open=false;
+    // Skip cold leads for inbox (score < 40)
+    var rti_score=res.gtm_readiness_score||0;
+    if(rti_score<40){ if(callback){setTimeout(callback,1500);}  return; }
+    // Dedup: skip if already in DB or INBOX
+    var alreadyInDb=DB.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
+    var alreadyInInbox=INBOX.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
+    if(alreadyInDb||alreadyInInbox){ if(callback){setTimeout(callback,1500);} return; }
     INBOX.unshift(res);
     save();updateBadges();
     if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
@@ -1823,7 +1837,7 @@ function phSaveJob(id){
   if(!PH_SAVED.some(function(j){return j._id===id;}))PH_SAVED.unshift(job);
   PH_JOBS=PH_JOBS.filter(function(j){return j._id!==id;});
   phSave();phRenderJobs();
-  showUpsellToast('Saved to Saved Jobs');
+  if(!tierLoad()._master && tierLoad().plan!=='agency') showUpsellToast('Saved to Saved Jobs');
 }
 
 
@@ -2961,7 +2975,7 @@ function renderCandidateCards(candidates){
           phSave();
           _card.style.opacity='0';_card.style.transition='opacity .2s';
           setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);renderCandidateBottomSections();},200);
-          showUpsellToast('Saved \u2713');
+          if(!tierLoad()._master && tierLoad().plan!=='agency') showUpsellToast('Candidate saved \u2713');
         };})(c,card);
         btns.appendChild(saveBtn);
       }
@@ -3018,7 +3032,7 @@ function renderCandidateBottomSections(){
       var la=document.createElement('a');la.href=liUrl;la.target='_blank';la.rel='noopener';la.style.cssText='font-size:11px;font-weight:700;color:#0a66c2;border:1px solid #0a66c2;padding:4px 10px;border-radius:5px;text-decoration:none;font-family:Outfit,sans-serif;background:none';la.textContent=c.linkedin_url?'View':'Find';
       btns.appendChild(la);
       var unBtn=document.createElement('button');unBtn.style.cssText='font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--bor);background:none;color:var(--tx3)';unBtn.textContent='Remove';
-      (function(_c){unBtn.onclick=function(){PH_SAVED_CANDIDATES=PH_SAVED_CANDIDATES.filter(function(x){return !(x.name===_c.name&&x.current_company===_c.current_company);});phSave();renderCandidateBottomSections();showUpsellToast('Removed from saved');};})(c);
+      (function(_c){unBtn.onclick=function(){PH_SAVED_CANDIDATES=PH_SAVED_CANDIDATES.filter(function(x){return !(x.name===_c.name&&x.current_company===_c.current_company);});phSave();renderCandidateBottomSections();};})(c);
       btns.appendChild(unBtn);mini.appendChild(btns);savedWrap.appendChild(mini);
     });
     bottom.appendChild(savedWrap);
