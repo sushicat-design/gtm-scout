@@ -3129,12 +3129,12 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
       <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="STRIPE_TOPUP_20" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;cursor:pointer">
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;cursor:pointer">
         <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
         <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
       </a>
-      <a href="STRIPE_TOPUP_50" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;position:relative">
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;position:relative">
         <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
         <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
@@ -3278,12 +3278,12 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.act
       <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="STRIPE_TOPUP_20" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
         <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
         <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
       </a>
-      <a href="STRIPE_TOPUP_50" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
         <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
         <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
@@ -3589,12 +3589,12 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.act
       <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="STRIPE_TOPUP_20" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
+      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
         <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
         <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
       </a>
-      <a href="STRIPE_TOPUP_50" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
+      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
         <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
         <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
         <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
