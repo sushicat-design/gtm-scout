@@ -2164,23 +2164,16 @@ function showPricing(msg){
 function closePricing(){
   document.getElementById('pricing-overlay').classList.remove('open');
 }
-
 function selectTier(plan){
   if(plan==='free'){
-    var t=tierLoad(); t.plan='free'; tierSave(t);
-    closePricing(); updateCreditsBar(); renderTopbar();
+    var t=tierLoad();t.plan='free';tierSave(t);
+    closePricing();updateCreditsBar();renderTopbar();
     return;
   }
-  var urls = {
-    starter:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
-    pro:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
-    agency:'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'
-  };
-  if(urls[plan]) window.open(urls[plan],'_blank');
+  var urls={starter:'STRIPE_STARTER',pro:'STRIPE_PRO',agency:'STRIPE_AGENCY'};
+  if(urls[plan])window.open(urls[plan],'_blank');
   closePricing();
 }
-
-// Earn free credits by tagging a company hiring
 function earnCredit(){
   var t = tierReset(tierLoad());
   if(t.plan !== 'free') return;
@@ -2946,6 +2939,659 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 </head>
 <body>
 <div class="orb o1"></div><div class="orb o2"></div>
+<div class="grid"></div>
+<nav>
+  <a href="/" class="nlogo"><div class="ndot"></div>Scout</a>
+  <div class="nlinks">
+    <a href="#features" class="nlink">Features</a>
+    <a href="#pricing" class="nlink">Pricing</a>
+    <a href="#waitlist" class="nlink">Early access</a>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
+    <a href="/app" id="nav-signin" class="nlink" style="font-weight:700">Sign in</a>
+    <a href="/app" id="nav-startfree" class="ncta" style="display:none">Start free</a>
+  </div>
+  <script>
+    (function(){
+      try{
+        var t=localStorage.getItem('sb_token');
+        var si=document.getElementById('nav-signin');
+        var sf=document.getElementById('nav-startfree');
+        if(!t){
+          if(si) si.textContent='Start free';
+          if(sf){ sf.style.display='none'; }
+        } else {
+          if(si){ si.textContent='Sign in'; si.style.display='block'; }
+        }
+      }catch(e){}
+    })();
+  </script>
+</nav>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div>AI-powered client acquisition</div>
+    <h1>Your next<br><em>best lead</em></h1>
+    <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds — so you spend time closing, not researching.</p>
+    <div class="actions">
+      <a href="/app" class="btnp">Discover Scout</a>
+      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng">Book a call</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stn">8<span>s</span></div><div class="stl">To full GTM profile</div></div>
+      <div class="stat"><div class="stn">0<span>–100</span></div><div class="stl">GTM Score</div></div>
+      <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl">From free</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="dw">
+      <div class="dw-bar">
+        <div class="dw-dot" style="background:#ff5f57"></div>
+        <div class="dw-dot" style="background:#febc2e"></div>
+        <div class="dw-dot" style="background:#28c840"></div>
+        <span class="dw-lbl">scout — research</span>
+      </div>
+      <div class="dw-search">
+        <div class="dw-icon"></div>
+        <div class="dw-input"><span id="tp"></span><span class="dw-cur" id="cr"></span></div>
+      </div>
+      <div id="sc-wrap" style="display:none">
+        <div class="dw-scanning">
+          <div class="dw-scan-row"><div class="dw-scan-dot"></div><span class="dw-scan-txt" id="sc-txt">Scanning funding data...</span></div>
+          <div class="dw-prog"><div class="dw-prog-fill" id="pf2"></div></div>
+        </div>
+      </div>
+      <div class="dw-res" id="res" style="display:none">
+        <div class="dw-res-top">
+          <div><div class="dw-name" id="rn"></div><div class="dw-meta" id="rm"></div></div>
+          <div><div class="dw-score" id="rs">0</div><div class="dw-tag" id="rt">Hot Lead</div></div>
+        </div>
+        <div class="dw-scorebar"><div class="dw-scorebar-fill" id="rb2"></div></div>
+        <div class="dw-sigs">
+          <div class="dw-sig" id="sig0"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig1"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig2"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig3"><div class="dw-sigdot a"></div><span></span></div>
+        </div>
+        <div class="dw-pitch" id="pt">
+          <div class="dw-pitch-lbl">AI pitch opener</div>
+          <div class="dw-pitch-txt" id="ptx"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="mq">
+  <div class="mqt">
+    <span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span><span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span>
+  </div>
+</div>
+
+<section style="position:relative;z-index:1;padding:80px 48px 0;max-width:1240px;margin:0 auto;text-align:center">
+  <p style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);margin-bottom:24px">Built for</p>
+  <div class="for-pills">
+    <div class="for-pill">Fractional CMOs</div>
+    <div class="for-pill">Marketing Agencies</div>
+    <div class="for-pill">Growth Consultants</div>
+    <div class="for-pill">B2B Sales Teams</div>
+    <div class="for-pill">Freelance Marketers</div>
+  </div>
+</section>
+
+<section class="sec" id="features">
+  <div class="slbl">What Scout does</div>
+  <h2>Stop researching.<br>Start closing.</h2>
+  <p class="ssub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
+  <div class="fg">
+    <div class="fc"><div class="fn">01</div><div class="ft">Know before you pitch</div><p class="fd">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
+    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room — funding news, team gaps, recent hires — and writes a pitch opener that references something real.</p></div>
+    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans funding databases daily. Hot companies land in your Inbox automatically — just approve or dismiss.</p></div>
+    <div class="fc"><div class="fn">04</div><div class="ft">Never lose track</div><p class="fd">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
+    <div class="fc"><div class="fn">05</div><div class="ft">Two businesses, one tool</div><p class="fd">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
+    <div class="fc"><div class="fn">06</div><div class="ft">Your digital pitch deck</div><p class="fd">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
+  </div>
+</section>
+
+
+<div class="ps" id="pricing">
+  <div style="text-align:center;margin-bottom:56px">
+    <div class="slbl" style="text-align:center">Pricing</div>
+    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
+    <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
+  </div>
+  <div class="pg">
+    <div class="prc">
+      <div class="pn">Free</div>
+      <div class="pp">$0<span class="pper">/mo</span></div>
+      <div class="pd">Try Scout and see if it fits.</div>
+      <button class="pb2 out" onclick="location.href='/app'">Get started</button>
+      <ul class="pfl">
+        <li>5 researches/month</li>
+        <li>2 lead fetches</li>
+        <li>Dashboard &amp; Pipeline</li>
+        <li>5 Pip Hunt searches</li>
+      </ul>
+    </div>
+    <div class="prc">
+      <div class="pn">Starter</div>
+      <div class="pp">$19<span class="pper">/mo</span></div>
+      <div class="pd">For consultants testing the waters.</div>
+      <button class="pb2 out" onclick="location.href='/app'">Get Starter</button>
+      <ul class="pfl">
+        <li>50 researches/month</li>
+        <li>5 lead fetches</li>
+        <li>Dashboard &amp; Pipeline</li>
+        <li>20 Pip Hunt searches</li>
+      </ul>
+    </div>
+    <div class="prc hot">
+      <div class="pbdg">Most popular</div>
+      <div class="pn">Pro</div>
+      <div class="pp">$49<span class="pper">/mo</span></div>
+      <div class="pd">For active prospectors closing deals.</div>
+      <button class="pb2" onclick="location.href='STRIPE_PRO'">Get Pro</button>
+      <ul class="pfl">
+        <li>300 researches/month</li>
+        <li>30 lead fetches/month</li>
+        <li>Pip Hunt — find jobs &amp; source candidates</li>
+        <li>CSV export</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="prc">
+      <div class="pn">Agency</div>
+      <div class="pp">$149<span class="pper">/mo</span></div>
+      <div class="pd">For teams running multiple client pipelines.</div>
+      <button class="pb2" onclick="location.href='STRIPE_AGENCY'">Get Agency</button>
+      <ul class="pfl">
+        <li>1,000 researches/month</li>
+        <li>5 team members</li>
+        <li>100 lead fetches</li>
+        <li>White-label pitches</li>
+        <li>Dedicated support</li>
+      </ul>
+    </div>
+  </div>
+  <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
+      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="STRIPE_TOPUP_20" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;cursor:pointer">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
+      </a>
+      <a href="STRIPE_TOPUP_50" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;position:relative">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+
+<div style="height:80px"></div>
+<div class="wl" id="waitlist">
+  <div class="wl-card">
+    <div>
+      <div class="slbl">Early access</div>
+      <h2 style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
+      <p style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam — just Scout updates and GTM tips from Pip.</p>
+    </div>
+    <div>
+      <div class="wl-row">
+        <input type="email" id="wl-email" class="wl-input" placeholder="you@agency.com">
+        <button class="wl-btn" onclick="joinWaitlist()">Join waitlist</button>
+      </div>
+      <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:'Outfit',sans-serif"></div>
+      <p style="font-size:11px;color:var(--tx3);margin-top:10px">Already 140+ fractional CMOs and agencies signed up.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="flo">Scout · scout-ai.io</div>
+  <div class="fls">
+    <a href="/legal#terms" class="fl">Terms</a>
+    <a href="/legal#privacy" class="fl">Privacy</a>
+    <a href="mailto:hello@scout-ai.io" class="fl">hello@scout-ai.io</a>
+    <a href="/app" class="fl">Go to app</a>
+  </div>
+</footer>
+
+<script>
+var cos=[
+  {n:'Ambience Healthcare',m:'Series B · Healthcare AI · SF',s:87,
+   sigs:['Recently funded — $70M Series B','No CMO listed on LinkedIn','3 open marketing roles','Has PR agency, no growth lead'],
+   dots:['g','g','g','a'],
+   p:"Saw the Series B — congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap..."},
+  {n:'Fathom Video',m:'Series A · AI Productivity · New York',s:79,
+   sigs:['Raised $46M 8 weeks ago','Marketing team of 2','Actively hiring demand gen','No head of growth'],
+   dots:['g','g','g','a'],
+   p:"Noticed Fathom just closed the Series A — impressive traction. With a 2-person marketing team and demand gen role open, the timing for fractional support is usually right about now..."},
+  {n:'Cohere',m:'Series C · Enterprise AI · Toronto',s:61,
+   sigs:['$270M raised, 18 months ago','CMO hired 6 months back','Growing marketing team','Strong content presence'],
+   dots:['a','a','g','g'],
+   p:"Cohere’s been building out the marketing org since the Series C — strong moves. If there’s a gap in the enterprise GTM motion, happy to share what’s worked for similar API-first companies..."}
+];
+var ci=0;
+
+function run(c){
+  var tp=document.getElementById('tp');
+  var cr=document.getElementById('cr');
+  var scw=document.getElementById('sc-wrap');
+  var res=document.getElementById('res');
+  var pf2=document.getElementById('pf2');
+  var rs=document.getElementById('rs');
+  var rb2=document.getElementById('rb2');
+  var ptx=document.getElementById('ptx');
+  var pt=document.getElementById('pt');
+  var sct=document.getElementById('sc-txt');
+  if(!tp)return;
+  // reset
+  tp.textContent='';cr.style.display='inline-block';
+  scw.style.display='none';res.style.display='none';
+  pf2.style.transition='none';pf2.style.width='0';
+  setTimeout(function(){pf2.style.transition='width .35s ease';},50);
+  rs.textContent='0';
+  rb2.style.transition='none';rb2.style.width='0';
+  setTimeout(function(){rb2.style.transition='width 1.2s cubic-bezier(.4,0,.2,1)';},50);
+  ptx.textContent='';pt.classList.remove('on');
+  [0,1,2,3].forEach(function(i){
+    var el=document.getElementById('sig'+i);
+    el.classList.remove('on');
+    el.querySelector('.dw-sigdot').className='dw-sigdot '+c.dots[i];
+    el.querySelector('span').textContent=c.sigs[i];
+  });
+  document.getElementById('rn').textContent=c.n;
+  document.getElementById('rm').textContent=c.m;
+  document.getElementById('rt').textContent=c.s>=75?'Hot Lead':c.s>=55?'Warm Lead':'Cold Lead';
+  // type
+  var i=0;
+  var tt=setInterval(function(){
+    tp.textContent=c.n.substring(0,i+1);i++;
+    if(i>=c.n.length){
+      clearInterval(tt);cr.style.display='none';
+      setTimeout(function(){
+        scw.style.display='block';
+        var labs=['Scanning funding data...','Checking LinkedIn team...','Analysing hiring signals...','Writing pitch opener...'];
+        var li=0;sct.textContent=labs[0];
+        var prog=0;
+        var pt2=setInterval(function(){
+          prog+=2.2;pf2.style.width=Math.min(prog,96)+'%';
+          if(prog>22&&li===0){li=1;sct.textContent=labs[1];}
+          if(prog>50&&li===1){li=2;sct.textContent=labs[2];}
+          if(prog>78&&li===2){li=3;sct.textContent=labs[3];}
+          if(prog>=100){
+            clearInterval(pt2);pf2.style.width='100%';
+            setTimeout(function(){
+              scw.style.display='none';res.style.display='block';
+              var cnt=0;
+              var st=setInterval(function(){cnt+=3;if(cnt>=c.s){cnt=c.s;clearInterval(st);}rs.textContent=cnt;},22);
+              setTimeout(function(){rb2.style.width=c.s+'%';},80);
+              [0,1,2,3].forEach(function(i){setTimeout(function(){document.getElementById('sig'+i).classList.add('on');},300+i*200);});
+              setTimeout(function(){
+                pt.classList.add('on');
+                var txt=c.p;var j=0;
+                var wt=setInterval(function(){j+=3;ptx.textContent=txt.substring(0,j);if(j>=txt.length){clearInterval(wt);setTimeout(function(){ci=(ci+1)%cos.length;run(cos[ci]);},3500);}},20);
+              },1300);
+            },280);
+          }
+        },38);
+      },500);
+    }
+  },52);
+}
+
+run(cos[0]);
+
+function joinWaitlist(){
+  var e=document.getElementById('wl-email').value.trim();
+  var m=document.getElementById('wl-msg');
+  if(!e||!e.includes('@')){m.style.color='#ef4444';m.textContent='Please enter a valid email.';return;}
+  m.style.color='#5bc4f5';m.textContent="You’re on the list! We’ll be in touch.";
+  document.getElementById('wl-email').value='';
+  fetch('/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})}).catch(function(){});
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement===document.getElementById('wl-email'))joinWaitlist();});
+</script>
+</body>
+</html<div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
+      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="STRIPE_TOPUP_20" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
+      </a>
+      <a href="STRIPE_TOPUP_50" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+      </a>
+    </div>
+  </div><div class="orb o2"></div>
+<div class="grid"></div>
+<nav>
+  <a href="/" class="nlogo"><div class="ndot"></div>Scout</a>
+  <div class="nlinks">
+    <a href="#features" class="nlink">Features</a>
+    <a href="#pricing" class="nlink">Pricing</a>
+    <a href="#waitlist" class="nlink">Early access</a>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
+    <a href="/app" id="nav-signin" class="nlink" style="font-weight:700">Sign in</a>
+    <a href="/app" id="nav-startfree" class="ncta" style="display:none">Start free</a>
+  </div>
+  <script>
+    (function(){
+      try{
+        var t=localStorage.getItem('sb_token');
+        var si=document.getElementById('nav-signin');
+        var sf=document.getElementById('nav-startfree');
+        if(!t){
+          if(si) si.textContent='Start free';
+          if(sf){ sf.style.display='none'; }
+        } else {
+          if(si){ si.textContent='Sign in'; si.style.display='block'; }
+        }
+      }catch(e){}
+    })();
+  </script>
+</nav>
+
+<section class="hero">
+  <div>
+    <div class="eyebrow"><div class="ndot" style="width:6px;height:6px;flex-shrink:0"></div>AI-powered client acquisition</div>
+    <h1>Your next<br><em>best lead</em></h1>
+    <p class="sub">Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds — so you spend time closing, not researching.</p>
+    <div class="actions">
+      <a href="/app" class="btnp">Discover Scout</a>
+      <a href="https://calendar.app.google/xFhe41V2HMXNBzw29" target="_blank" class="btng">Book a call</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stn">8<span>s</span></div><div class="stl">To full GTM profile</div></div>
+      <div class="stat"><div class="stn">0<span>–100</span></div><div class="stl">GTM Score</div></div>
+      <div class="stat"><div class="stn">3<span> tiers</span></div><div class="stl">From free</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="dw">
+      <div class="dw-bar">
+        <div class="dw-dot" style="background:#ff5f57"></div>
+        <div class="dw-dot" style="background:#febc2e"></div>
+        <div class="dw-dot" style="background:#28c840"></div>
+        <span class="dw-lbl">scout — research</span>
+      </div>
+      <div class="dw-search">
+        <div class="dw-icon"></div>
+        <div class="dw-input"><span id="tp"></span><span class="dw-cur" id="cr"></span></div>
+      </div>
+      <div id="sc-wrap" style="display:none">
+        <div class="dw-scanning">
+          <div class="dw-scan-row"><div class="dw-scan-dot"></div><span class="dw-scan-txt" id="sc-txt">Scanning funding data...</span></div>
+          <div class="dw-prog"><div class="dw-prog-fill" id="pf2"></div></div>
+        </div>
+      </div>
+      <div class="dw-res" id="res" style="display:none">
+        <div class="dw-res-top">
+          <div><div class="dw-name" id="rn"></div><div class="dw-meta" id="rm"></div></div>
+          <div><div class="dw-score" id="rs">0</div><div class="dw-tag" id="rt">Hot Lead</div></div>
+        </div>
+        <div class="dw-scorebar"><div class="dw-scorebar-fill" id="rb2"></div></div>
+        <div class="dw-sigs">
+          <div class="dw-sig" id="sig0"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig1"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig2"><div class="dw-sigdot g"></div><span></span></div>
+          <div class="dw-sig" id="sig3"><div class="dw-sigdot a"></div><span></span></div>
+        </div>
+        <div class="dw-pitch" id="pt">
+          <div class="dw-pitch-lbl">AI pitch opener</div>
+          <div class="dw-pitch-txt" id="ptx"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="mq">
+  <div class="mqt">
+    <span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span><span class="mqi"><span class="mqd"></span>GTM Readiness Score</span><span class="mqi"><span class="mqd"></span>AI Pitch Openers</span><span class="mqi"><span class="mqd"></span>Founder Intelligence</span><span class="mqi"><span class="mqd"></span>Pipeline Kanban</span><span class="mqi"><span class="mqd"></span>Lead Fetch</span><span class="mqi"><span class="mqd"></span>Pip Hunt Jobs</span><span class="mqi"><span class="mqd"></span>Inbox Review</span><span class="mqi"><span class="mqd"></span>CSV Export</span>
+  </div>
+</div>
+
+<section style="position:relative;z-index:1;padding:80px 48px 0;max-width:1240px;margin:0 auto;text-align:center">
+  <p style="font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);margin-bottom:24px">Built for</p>
+  <div class="for-pills">
+    <div class="for-pill">Fractional CMOs</div>
+    <div class="for-pill">Marketing Agencies</div>
+    <div class="for-pill">Growth Consultants</div>
+    <div class="for-pill">B2B Sales Teams</div>
+    <div class="for-pill">Freelance Marketers</div>
+  </div>
+</section>
+
+<section class="sec" id="features">
+  <div class="slbl">What Scout does</div>
+  <h2>Stop researching.<br>Start closing.</h2>
+  <p class="ssub">Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.</p>
+  <div class="fg">
+    <div class="fc"><div class="fn">01</div><div class="ft">Know before you pitch</div><p class="fd">0–100 score based on funding stage, team gaps, hiring signals, and growth velocity. Filter time-wasters before you write a word.</p></div>
+    <div class="fc"><div class="fn">02</div><div class="ft">Write itself</div><p class="fd">Scout reads the room — funding news, team gaps, recent hires — and writes a pitch opener that references something real.</p></div>
+    <div class="fc"><div class="fn">03</div><div class="ft">Pipeline on autopilot</div><p class="fd">Scout scans funding databases daily. Hot companies land in your Inbox automatically — just approve or dismiss.</p></div>
+    <div class="fc"><div class="fn">04</div><div class="ft">Never lose track</div><p class="fd">Kanban from Not Contacted to Closed. Every prospect in one place, every deal visible at a glance.</p></div>
+    <div class="fc"><div class="fn">05</div><div class="ft">Two businesses, one tool</div><p class="fd">Pip Hunt finds companies hiring fractional CMOs and marketing leaders right now. Built right into Scout.</p></div>
+    <div class="fc"><div class="fn">06</div><div class="ft">Your digital pitch deck</div><p class="fd">Build a profile with your services and case studies. Share a link with prospects before you get on a call.</p></div>
+  </div>
+</section>
+
+
+<div class="ps" id="pricing">
+  <div style="text-align:center;margin-bottom:56px">
+    <div class="slbl" style="text-align:center">Pricing</div>
+    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Simple, transparent pricing</h2>
+    <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
+  </div>
+  <div class="pg">
+    <div class="prc">
+      <div class="pn">Free</div>
+      <div class="pp">$0<span class="pper">/mo</span></div>
+      <div class="pd">Explore Scout before you commit.</div>
+      <button class="pb2 out" onclick="location.href='/app'">Get started</button>
+      <ul class="pfl">
+        <li>3 researches/month</li>
+        <li>GTM score + pitch opener</li>
+        <li>Dashboard &amp; pipeline</li>
+        <li>No credit card needed</li>
+      </ul>
+    </div>
+    <div class="prc hot">
+      <div class="pbdg">Most popular</div>
+      <div class="pn">Pro</div>
+      <div class="pp">$39<span class="pper">/mo</span></div>
+      <div class="pd">For freelancers actively closing.</div>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button>
+      <ul class="pfl">
+        <li>Unlimited research</li>
+        <li>10 lead fetches/month</li>
+        <li>Pip Hunt (find &amp; source roles)</li>
+        <li>CSV export</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="prc">
+      <div class="pn">Agency</div>
+      <div class="pp">$99<span class="pper">/mo</span></div>
+      <div class="pd">For agencies with multiple clients.</div>
+      <button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button>
+      <ul class="pfl">
+        <li>Everything in Pro</li>
+        <li>5 team seats</li>
+        <li>50 lead fetches/month</li>
+        <li>White-label pitch openers</li>
+        <li>Dedicated support</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<div style="height:80px"></div>
+<div class="wl" id="waitlist">
+  <div class="wl-card">
+    <div>
+      <div class="slbl">Early access</div>
+      <h2 style="font-size:40px;max-width:100%;margin-bottom:12px">Join the waitlist</h2>
+      <p style="font-size:15px;color:var(--tx2);line-height:1.7">Be first to know when new features drop. No spam — just Scout updates and GTM tips from Pip.</p>
+    </div>
+    <div>
+      <div class="wl-row">
+        <input type="email" id="wl-email" class="wl-input" placeholder="you@agency.com">
+        <button class="wl-btn" onclick="joinWaitlist()">Join waitlist</button>
+      </div>
+      <div id="wl-msg" style="font-size:12px;color:var(--pip2);min-height:18px;font-family:'Outfit',sans-serif"></div>
+      <p style="font-size:11px;color:var(--tx3);margin-top:10px">Already 140+ fractional CMOs and agencies signed up.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer>
+  <div class="flo">Scout · scout-ai.io</div>
+  <div class="fls">
+    <a href="/legal#terms" class="fl">Terms</a>
+    <a href="/legal#privacy" class="fl">Privacy</a>
+    <a href="mailto:hello@scout-ai.io" class="fl">hello@scout-ai.io</a>
+    <a href="/app" class="fl">Go to app</a>
+  </div>
+</footer>
+
+<script>
+var cos=[
+  {n:'Ambience Healthcare',m:'Series B · Healthcare AI · SF',s:87,
+   sigs:['Recently funded — $70M Series B','No CMO listed on LinkedIn','3 open marketing roles','Has PR agency, no growth lead'],
+   dots:['g','g','g','a'],
+   p:"Saw the Series B — congrats. Most companies at your stage skip the CMO hire until C, but the pipeline pressure is real now. I’ve helped 3 similar healthcare SaaS teams bridge that gap..."},
+  {n:'Fathom Video',m:'Series A · AI Productivity · New York',s:79,
+   sigs:['Raised $46M 8 weeks ago','Marketing team of 2','Actively hiring demand gen','No head of growth'],
+   dots:['g','g','g','a'],
+   p:"Noticed Fathom just closed the Series A — impressive traction. With a 2-person marketing team and demand gen role open, the timing for fractional support is usually right about now..."},
+  {n:'Cohere',m:'Series C · Enterprise AI · Toronto',s:61,
+   sigs:['$270M raised, 18 months ago','CMO hired 6 months back','Growing marketing team','Strong content presence'],
+   dots:['a','a','g','g'],
+   p:"Cohere’s been building out the marketing org since the Series C — strong moves. If there’s a gap in the enterprise GTM motion, happy to share what’s worked for similar API-first companies..."}
+];
+var ci=0;
+
+function run(c){
+  var tp=document.getElementById('tp');
+  var cr=document.getElementById('cr');
+  var scw=document.getElementById('sc-wrap');
+  var res=document.getElementById('res');
+  var pf2=document.getElementById('pf2');
+  var rs=document.getElementById('rs');
+  var rb2=document.getElementById('rb2');
+  var ptx=document.getElementById('ptx');
+  var pt=document.getElementById('pt');
+  var sct=document.getElementById('sc-txt');
+  if(!tp)return;
+  // reset
+  tp.textContent='';cr.style.display='inline-block';
+  scw.style.display='none';res.style.display='none';
+  pf2.style.transition='none';pf2.style.width='0';
+  setTimeout(function(){pf2.style.transition='width .35s ease';},50);
+  rs.textContent='0';
+  rb2.style.transition='none';rb2.style.width='0';
+  setTimeout(function(){rb2.style.transition='width 1.2s cubic-bezier(.4,0,.2,1)';},50);
+  ptx.textContent='';pt.classList.remove('on');
+  [0,1,2,3].forEach(function(i){
+    var el=document.getElementById('sig'+i);
+    el.classList.remove('on');
+    el.querySelector('.dw-sigdot').className='dw-sigdot '+c.dots[i];
+    el.querySelector('span').textContent=c.sigs[i];
+  });
+  document.getElementById('rn').textContent=c.n;
+  document.getElementById('rm').textContent=c.m;
+  document.getElementById('rt').textContent=c.s>=75?'Hot Lead':c.s>=55?'Warm Lead':'Cold Lead';
+  // type
+  var i=0;
+  var tt=setInterval(function(){
+    tp.textContent=c.n.substring(0,i+1);i++;
+    if(i>=c.n.length){
+      clearInterval(tt);cr.style.display='none';
+      setTimeout(function(){
+        scw.style.display='block';
+        var labs=['Scanning funding data...','Checking LinkedIn team...','Analysing hiring signals...','Writing pitch opener...'];
+        var li=0;sct.textContent=labs[0];
+        var prog=0;
+        var pt2=setInterval(function(){
+          prog+=2.2;pf2.style.width=Math.min(prog,96)+'%';
+          if(prog>22&&li===0){li=1;sct.textContent=labs[1];}
+          if(prog>50&&li===1){li=2;sct.textContent=labs[2];}
+          if(prog>78&&li===2){li=3;sct.textContent=labs[3];}
+          if(prog>=100){
+            clearInterval(pt2);pf2.style.width='100%';
+            setTimeout(function(){
+              scw.style.display='none';res.style.display='block';
+              var cnt=0;
+              var st=setInterval(function(){cnt+=3;if(cnt>=c.s){cnt=c.s;clearInterval(st);}rs.textContent=cnt;},22);
+              setTimeout(function(){rb2.style.width=c.s+'%';},80);
+              [0,1,2,3].forEach(function(i){setTimeout(function(){document.getElementById('sig'+i).classList.add('on');},300+i*200);});
+              setTimeout(function(){
+                pt.classList.add('on');
+                var txt=c.p;var j=0;
+                var wt=setInterval(function(){j+=3;ptx.textContent=txt.substring(0,j);if(j>=txt.length){clearInterval(wt);setTimeout(function(){ci=(ci+1)%cos.length;run(cos[ci]);},3500);}},20);
+              },1300);
+            },280);
+          }
+        },38);
+      },500);
+    }
+  },52);
+}
+
+run(cos[0]);
+
+function joinWaitlist(){
+  var e=document.getElementById('wl-email').value.trim();
+  var m=document.getElementById('wl-msg');
+  if(!e||!e.includes('@')){m.style.color='#ef4444';m.textContent='Please enter a valid email.';return;}
+  m.style.color='#5bc4f5';m.textContent="You’re on the list! We’ll be in touch.";
+  document.getElementById('wl-email').value='';
+  fetch('/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e})}).catch(function(){});
+}
+document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.activeElement===document.getElementById('wl-email'))joinWaitlist();});
+</script>
+</body>
+</html>div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
+      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <a href="STRIPE_TOPUP_20" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;cursor:pointer" onmouseover="this.style.borderColor='rgba(45,157,232,0.4)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.2)'">
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$9</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">20 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.45 each</span>
+      </a>
+      <a href="STRIPE_TOPUP_50" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;transition:border-color .2s;position:relative" onmouseover="this.style.borderColor='rgba(45,157,232,0.5)'" onmouseout="this.style.borderColor='rgba(45,157,232,0.22)'">
+        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
+        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$19</span>
+        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
+        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.38 each</span>
+      </a>
+    </div>
+  </div><div class="orb o2"></div>
 <div class="grid"></div>
 <nav>
   <a href="/" class="nlogo"><div class="ndot"></div>Scout</a>
