@@ -1837,7 +1837,7 @@ function phSaveJob(id){
   if(!PH_SAVED.some(function(j){return j._id===id;}))PH_SAVED.unshift(job);
   PH_JOBS=PH_JOBS.filter(function(j){return j._id!==id;});
   phSave();phRenderJobs();
-  if(!tierLoad()._master && tierLoad().plan!=='agency') showUpsellToast('Saved to Saved Jobs');
+  showUpsellToast('Saved to Saved Jobs');
 }
 
 
@@ -2753,7 +2753,7 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'White-label Pitches',action:function(){showUpsellToast('Open any lead and click ⚡ White-label to generate a pitch link');}},
+      {label:'White-label Pitches',action:function(){setPage('profile'); setTimeout(function(){ var w=document.getElementById('wl-config-wrap'); if(w) w.scrollIntoView({behavior:'smooth'}); }, 200);;}},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -2975,7 +2975,7 @@ function renderCandidateCards(candidates){
           phSave();
           _card.style.opacity='0';_card.style.transition='opacity .2s';
           setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);renderCandidateBottomSections();},200);
-          if(!tierLoad()._master && tierLoad().plan!=='agency') showUpsellToast('Candidate saved \u2713');
+          showUpsellToast('Candidate saved \u2713');
         };})(c,card);
         btns.appendChild(saveBtn);
       }
@@ -3115,6 +3115,39 @@ function pruneTrash(){
   var now=Date.now();
   PH_TRASH_CANDIDATES=PH_TRASH_CANDIDATES.filter(function(c){return c._trashed_at&&(now-c._trashed_at)<week;});
 }
+
+// ── SECURITY ──────────────────────────────────────────────
+(function(){
+  // Disable right-click context menu
+  document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});
+  // Disable common keyboard shortcuts for viewing source/dev tools
+  document.addEventListener('keydown',function(e){
+    // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U, Ctrl+S
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','J','C','i','j','c'].indexOf(e.key)>=0)||
+       (e.ctrlKey&&['U','u','S','s'].indexOf(e.key)>=0)){
+      e.preventDefault();e.stopPropagation();return false;
+    }
+  });
+  // Disable text selection on UI (but allow inputs)
+  document.addEventListener('selectstart',function(e){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    e.preventDefault();
+  });
+  // DevTools size detection
+  var _devCheck=function(){
+    var threshold=160;
+    if(window.outerWidth-window.innerWidth>threshold||window.outerHeight-window.innerHeight>threshold){
+      document.body.style.display='none';
+      setTimeout(function(){document.body.style.display='';},1000);
+    }
+  };
+  setInterval(_devCheck,1500);
+  // Disable drag
+  document.addEventListener('dragstart',function(e){
+    if(e.target.tagName!=='INPUT')e.preventDefault();
+  });
+})();
+// ── END SECURITY ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -3576,6 +3609,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
     <a href="/app" id="nav-cta" class="ncta">Start free</a>
+<button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(45,157,232,0.3);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;margin-left:8px">ES</button>
 <script>try{var _t=localStorage.getItem('sb_token');var _u=localStorage.getItem('sb_user');var _nc=document.getElementById('nav-cta');if(_t&&_u&&_nc){_nc.textContent='Dashboard';_nc.style.background='var(--pip,#2d9de8)';}}catch(e){}</script>
   </div>
   <script>
@@ -3898,6 +3932,130 @@ document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.act
 </script>
 </body>
 </html
+
+<script>
+var LANG = 'en';
+var TRANSLATIONS = {
+  en: {
+    hero_eyebrow: 'AI client acquisition',
+    hero_h1: 'Your next<br><em>best lead</em>',
+    hero_sub: 'Turn any company name into a qualified lead. Scout researches, scores, and writes your pitch opener in 8 seconds - so you spend time closing, not researching.',
+    cta_primary: 'Discover Scout',
+    cta_secondary: 'Book a call',
+    stat1_label: 'To full GTM profile',
+    stat2_label: 'GTM Score',
+    stat3_label: 'From free',
+    features_eyebrow: 'What Scout does',
+    features_h2: 'Stop researching.<br>Start closing.',
+    features_sub: "Scout does the research, scores the opportunity, and writes the opener. You just decide whether to send it.",
+    f1_t: 'Know before you pitch', f1_d: '0–100 score based on funding stage, team gaps, hiring signals, and growth velocity.',
+    f2_t: 'Write itself', f2_d: 'Scout reads the room - funding news, team gaps, recent hires - and writes a pitch opener that references something real.',
+    f3_t: 'Pipeline on autopilot', f3_d: 'Scout scans funding databases daily. Hot companies land in your Inbox automatically.',
+    f4_t: 'Never lose track', f4_d: 'Kanban from Not Contacted to Closed. Every prospect in one place.',
+    f5_t: 'Two businesses, one tool', f5_d: 'Pip Hunt finds companies hiring fractional CMOs right now.',
+    f6_t: 'Your digital pitch deck', f6_d: 'Build a profile with your services and case studies.',
+    pricing_eyebrow: 'Pricing',
+    pricing_h2: 'Pay for what you use',
+    pricing_sub: 'Start free. Upgrade when Scout starts paying for itself.',
+    waitlist_eyebrow: 'Early access',
+    waitlist_h2: 'Join the waitlist',
+    waitlist_sub: "Be first to know when new features drop. No spam.",
+    waitlist_btn: 'Join waitlist',
+    waitlist_note: 'Already 140+ fractional CMOs and agencies signed up.',
+    nav_features: 'Features', nav_pricing: 'Pricing', nav_early: 'Early access',
+    lang_btn: 'ES', built_for: 'Built for'
+  },
+  es: {
+    hero_eyebrow: 'Captación de clientes con IA',
+    hero_h1: 'Tu próximo<br><em>mejor cliente</em>',
+    hero_sub: 'Convierte cualquier nombre de empresa en un lead cualificado. Scout investiga, puntúa y escribe tu opener en 8 segundos - para que dediques tu tiempo a cerrar, no a investigar.',
+    cta_primary: 'Descubrir Scout',
+    cta_secondary: 'Reservar llamada',
+    stat1_label: 'Para perfil GTM completo',
+    stat2_label: 'Puntuación GTM',
+    stat3_label: 'Desde gratis',
+    features_eyebrow: 'Qué hace Scout',
+    features_h2: 'Deja de investigar.<br>Empieza a cerrar.',
+    features_sub: 'Scout hace la investigación, puntúa la oportunidad y escribe el opener. Tú solo decides si enviarlo.',
+    f1_t: 'Sabe antes de presentarte', f1_d: 'Puntuación 0–100 basada en fase de financiación, gaps del equipo y señales de crecimiento.',
+    f2_t: 'Se escribe solo', f2_d: 'Scout lee el contexto - noticias de financiación, gaps del equipo, contrataciones recientes - y escribe un opener que referencia algo real.',
+    f3_t: 'Pipeline en piloto automático', f3_d: 'Scout escanea bases de datos de financiación diariamente. Las empresas calientes llegan a tu bandeja automáticamente.',
+    f4_t: 'Nunca pierdas el hilo', f4_d: 'Kanban de No Contactado a Cerrado. Cada prospecto en un solo lugar.',
+    f5_t: 'Dos negocios, una herramienta', f5_d: 'Pip Hunt encuentra empresas buscando CMOs fraccionales ahora mismo.',
+    f6_t: 'Tu dossier digital', f6_d: 'Crea un perfil con tus servicios y casos de éxito.',
+    pricing_eyebrow: 'Precios',
+    pricing_h2: 'Paga por lo que usas',
+    pricing_sub: 'Empieza gratis. Mejora tu plan cuando Scout empiece a pagarse solo.',
+    waitlist_eyebrow: 'Acceso anticipado',
+    waitlist_h2: 'Únete a la lista de espera',
+    waitlist_sub: 'Sé el primero en conocer las nuevas funciones. Sin spam.',
+    waitlist_btn: 'Unirse a la lista',
+    waitlist_note: 'Ya más de 140 CMOs fraccionales y agencias apuntados.',
+    nav_features: 'Funciones', nav_pricing: 'Precios', nav_early: 'Acceso anticipado',
+    lang_btn: 'EN', built_for: 'Para'
+  }
+};
+
+function toggleLang(){
+  LANG = LANG==='en'?'es':'en';
+  applyLang();
+}
+
+function applyLang(){
+  var t = TRANSLATIONS[LANG];
+  var set = function(id, html){ var el=document.getElementById(id); if(el) el.innerHTML=html; };
+  var setText = function(id, text){ var el=document.getElementById(id); if(el) el.textContent=text; };
+  var setAll = function(cls, text){ document.querySelectorAll('.'+cls).forEach(function(el){el.textContent=text;}); };
+
+  // Nav
+  document.querySelectorAll('a.nlink').forEach(function(a,i){
+    var keys=['nav_features','nav_pricing','nav_early'];
+    if(keys[i]) a.textContent=t[keys[i]];
+  });
+  var lt=document.getElementById('lang-toggle');if(lt)lt.textContent=t.lang_btn;
+
+  // Hero
+  var eyebrow=document.querySelector('.eyebrow span:last-child,.eyebrow');
+  if(eyebrow){var spans=document.querySelectorAll('.eyebrow');spans.forEach(function(e){var last=e.lastChild;if(last&&last.nodeType===3)last.textContent=t.hero_eyebrow;else if(e.children.length>1)e.children[e.children.length-1].textContent=t.hero_eyebrow;});}
+  var h1=document.querySelector('h1');if(h1)h1.innerHTML=t.hero_h1;
+  var sub=document.querySelector('.sub');if(sub)sub.textContent=t.hero_sub;
+  var btnp=document.querySelector('a.btnp');if(btnp)btnp.textContent=t.cta_primary;
+  var btng=document.querySelector('a.btng');if(btng)btng.textContent=t.cta_secondary;
+  var stls=document.querySelectorAll('.stl');
+  var statKeys=['stat1_label','stat2_label','stat3_label'];
+  stls.forEach(function(el,i){if(statKeys[i])el.textContent=t[statKeys[i]];});
+
+  // Features section
+  var slbls=document.querySelectorAll('.slbl');if(slbls[0])slbls[0].textContent=t.features_eyebrow;
+  var h2s=document.querySelectorAll('h2');if(h2s[0])h2s[0].innerHTML=t.features_h2;
+  var ssubs=document.querySelectorAll('.ssub');if(ssubs[0])ssubs[0].textContent=t.features_sub;
+  var fts=document.querySelectorAll('.ft');var fds=document.querySelectorAll('.fd');
+  var ftKeys=['f1_t','f2_t','f3_t','f4_t','f5_t','f6_t'];
+  var fdKeys=['f1_d','f2_d','f3_d','f4_d','f5_d','f6_d'];
+  fts.forEach(function(el,i){if(ftKeys[i])el.textContent=t[ftKeys[i]];});
+  fds.forEach(function(el,i){if(fdKeys[i])el.textContent=t[fdKeys[i]];});
+
+  // Pricing
+  if(slbls[1])slbls[1].textContent=t.pricing_eyebrow;
+  if(h2s[1])h2s[1].textContent=t.pricing_h2;
+  var pricingSub=document.querySelector('.ps p');if(pricingSub)pricingSub.textContent=t.pricing_sub;
+
+  // Waitlist
+  if(slbls[2])slbls[2].textContent=t.waitlist_eyebrow;
+  if(h2s[2])h2s[2].textContent=t.waitlist_h2;
+  var wlCard=document.querySelector('.wl-card p');if(wlCard)wlCard.textContent=t.waitlist_sub;
+  var wlBtn=document.querySelector('.wl-btn');if(wlBtn)wlBtn.textContent=t.waitlist_btn;
+  var wlNote=document.querySelector('.wl-card>div:last-child p:last-child');if(wlNote)wlNote.textContent=t.waitlist_note;
+
+  // Built for
+  var bf=document.querySelector('section:not(#features):not(#pricing) p');
+  if(bf&&bf.textContent.indexOf('Built for')>=0||bf&&bf.textContent.indexOf('Para')>=0)bf.textContent=t.built_for;
+
+  document.title = LANG==='es'?'Scout - Encuentra tu próximo cliente':'Scout - Find your next client';
+  document.documentElement.lang = LANG;
+}
+</script>
+
 </body>
 </html>'''
 
