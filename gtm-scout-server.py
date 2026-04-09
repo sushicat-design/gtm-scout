@@ -954,6 +954,9 @@ function setPage(page, addToHistory) {
   if(page==='leads') renderLeads();
   if(page==='pipeline') renderPipelinePage();
   if(page==='piphunt'){phLoad();setTimeout(function(){phRenderHistory();},50);}
+  if(page==='inbox') renderInbox();
+  if(page==='dashboard') renderDashboard();
+  if(page==='leads') renderLeads();
   if(page==='piphunt'){ phLoad(); phRenderJobs(); setTimeout(function(){phRenderHistory();},100); }
   if(page==='inbox') renderInbox();
   if(page==='profile'){profileLoad();renderProfile();}
@@ -1111,9 +1114,8 @@ function researchSelected(){
   var i=0;
   function next(){
     if(i>=names.length){
-      renderInbox();
-      setPage('inbox');
       updateBadges();
+      setPage('inbox');
       showUpsellToast('Done! '+INBOX.length+' lead'+(INBOX.length!==1?'s':'')+' in Inbox');
       return;
     }
@@ -1144,6 +1146,7 @@ function runToInbox(company, callback){
     res._open=false;
     INBOX.unshift(res);
     save();updateBadges();
+    if(typeof currentPage!=='undefined'&&currentPage==='inbox')renderInbox();
     if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
     setTimeout(function(){if(ind)ind.textContent='';},2000);
   }).catch(function(e){
