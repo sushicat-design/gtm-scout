@@ -929,6 +929,7 @@ function setPage(page, addToHistory) {
   }
   currentPage = page;
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  renderSidebarTier();
   var pg = document.getElementById('page-'+page);
   if(pg) pg.classList.add('active');
   // Hide inbox sidebar item for non-agency
@@ -1080,19 +1081,19 @@ function researchSelected(){
   if(!names.length)return;
   document.getElementById('fetch-results').style.display='none';
   closeFetchModal();
-  // Research each and add to INBOX for review
   var i=0;
   function next(){
     if(i>=names.length){
-      // All done - navigate to inbox
-      navTo('inbox');
+      renderInbox();
+      setPage('inbox');
+      updateBadges();
+      showUpsellToast('Done! ' + INBOX.length + ' lead' + (INBOX.length!==1?'s':'') + ' added to Inbox');
       return;
     }
     var name=names[i++];
-    runToInbox(name, next);
+    runToInbox(name,next);
   }
   next();
-  setTimeout(function(){navTo('inbox');},300);
 }
 
 function runToInbox(company, callback){
@@ -2777,6 +2778,30 @@ function goBack(){
   if(PAGE_HISTORY.length>0){ var prev=PAGE_HISTORY.pop(); setPage(prev,false); }
   else{ setPage('dashboard',false); }
 }
+
+function renderSidebarTier(){
+  var label=document.getElementById('sb-tier-label');
+  var items=document.getElementById('sb-tier-items');
+  if(!label||!items)return;
+  var t=tierLoad();
+  var plan=t.plan||'free';
+  var features={
+    free:    [],
+    starter: [],
+    pro:     ['300 researches/mo','30 lead fetches/mo','Pip Hunt (jobs & sourcing)','CSV export','Priority support'],
+    agency:  ['750 researches/mo','5 team members','100 lead fetches/mo','Inbox & review queue','White-label pitches','Dedicated support']
+  };
+  var planLabel={free:'Free Plan',starter:'Starter Plan',pro:'Pro Plan',agency:'Agency Plan'};
+  var list=features[plan]||[];
+  if(!list.length){
+    label.textContent='';items.innerHTML='';
+    document.getElementById('sb-tier-features').style.display='none';
+    return;
+  }
+  document.getElementById('sb-tier-features').style.display='block';
+  label.textContent=planLabel[plan]||'';
+  items.innerHTML=list.map(function(f){return '<div style="display:flex;align-items:center;gap:6px"><span style="color:var(--pip2);font-size:10px">&#10003;</span>'+f+'</div>';}).join('');
+}
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -4196,3 +4221,7 @@ if __name__ == '__main__':
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge' style='display:none'>0</span></button>"
+    "<div id='sb-tier-features' style='padding:12px 16px;border-top:1px solid var(--bor);margin-top:8px'>"
+    "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'></div>"
+    "<div id='sb-tier-items' style='font-size:12px;color:var(--tx2);line-height:1.8'></div>"
+    "</div>"
