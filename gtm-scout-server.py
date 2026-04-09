@@ -2602,7 +2602,10 @@ function renderTopbar(){
         '<button data-nav="profile" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">&#9881; Profile</button>'+
         '<button onclick="closeProfileMenu();authSignOut()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">Sign out</button>'+
       '</div>'+
-    '</div>';
+    '</div>'+
+    '<button class="hamburger" onclick="openSidebar()" title="Menu" style="margin-left:8px">'+
+      '<span></span><span></span><span></span>'+
+    '</button>';
   updateCreditsBar();
   // Wire avatar button to toggle dropdown
   setTimeout(function(){
@@ -4144,4 +4147,4 @@ if __name__ == '__main__':
         server.serve_forever()
     except KeyboardInterrupt:
         print('\n  Stopped.')
-        sys.exit(0)
+    "<button id='page-back-btn' onclick='goBack()' style='display:none;align-items:center;gap:6px;background:none;border:none;color:var(--tx3);font-size:12px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:6px;font-family:Outfit,sans-serif'>&#8592; Back</button>"
