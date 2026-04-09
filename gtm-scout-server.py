@@ -1139,19 +1139,13 @@ function runToInbox(company, callback){
       try{res=JSON.parse(_f);}catch(e2){throw new Error('Parse error: '+e2.message);}
     }
     if(!res.company)throw new Error('Missing company');
-    var score=res.gtm_readiness_score||0;
-    if(score<40){
-      if(ind){ind.textContent='Skipped '+res.company+' (score '+score+')';ind.style.color='var(--tx3)';}
-      setTimeout(function(){if(ind)ind.textContent='';},2000);
-    } else {
-      res._id='id'+Date.now()+Math.floor(Math.random()*9999);
-      res._inbox=true;
-      res._open=false;
-      INBOX.unshift(res);
-      save();updateBadges();
-      if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
-      setTimeout(function(){if(ind)ind.textContent='';},2000);
-    }
+    res._id='id'+Date.now()+Math.floor(Math.random()*9999);
+    res._inbox=true;
+    res._open=false;
+    INBOX.unshift(res);
+    save();updateBadges();
+    if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
+    setTimeout(function(){if(ind)ind.textContent='';},2000);
   }).catch(function(e){
     if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}
     setTimeout(function(){if(ind)ind.textContent='';},3000);
