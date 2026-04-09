@@ -970,27 +970,9 @@ function su(v){if(!v||v==='null'||v==='undefined')return '';return String(v).ind
 // ── SEARCH PAGE ──────────────────────────────────────────────────────────────
 function go(){var v=document.getElementById('ci').value.trim();if(!v||busy)return;if(!tierCanResearch())return;document.getElementById('ci').value='';run(v);}
 
-function bulk(){
-  if(busy)return;
-  var names=document.getElementById('bi').value.trim().split('\\n').map(function(s){return s.trim();}).filter(Boolean);
-  if(!names.length)return;
-  document.getElementById('bi').value='';
-  var i=0;function next(){if(i>=names.length)return;run(names[i++],next);}next();
-}
 
-function importJSON(){
-  var raw=document.getElementById('ii').value.trim();
-  var errEl=document.getElementById('ierr');errEl.style.display='none';
-  try{
-    var clean=raw.replace(/```json/g,'').replace(/```/g,'').trim();
-    var parsed=clean.charAt(0)==='['?JSON.parse(clean):[JSON.parse(clean.slice(clean.indexOf('{'),clean.lastIndexOf('}')+1))];
-    var added=0;
-    for(var i=0;i<parsed.length;i++){var r=parsed[i];if(r&&r.company){r._id='id'+Date.now()+Math.floor(Math.random()*9999);r._open=true;DB.unshift(r);added++;}}
-    if(!added)throw new Error('No valid company objects found');
-    save();updateBadges();document.getElementById('ii').value='';
-    document.getElementById('ipanel').style.display='none';
-  }catch(e){errEl.textContent='Error: '+e.message;errEl.style.display='block';}
-}
+
+
 
 function showPanel(id){
   ['bpanel','ipanel'].forEach(function(pid){
@@ -1469,25 +1451,7 @@ function updateLeadStatus(id, status){
 }
 
 
-function renderRecentLeads(){
-  var grid = document.getElementById('recent-grid');
-  var sec = document.getElementById('recent-leads-section');
-  if(!grid) return;
-  if(!DB.length){ if(sec) sec.style.display='none'; return; }
-  if(sec) sec.style.display='block';
-  grid.innerHTML = DB.slice(0,6).map(function(r){
-    var n = r.gtm_readiness_score||0;
-    var c = sc(n);
-    var lbl = (r.gtm_label||'').replace(' Lead','');
-    return '<div class="recent-card" data-action="open-lead" data-id="'+r._id+'">' +
-      '<div class="recent-card-name">'+(r.company||'')+'</div>'+
-      '<div class="recent-card-meta">'+(r.sector||'')+(r.stage?' · '+r.stage:'')+'</div>'+
-      '<div class="recent-card-score" style="color:'+c+'">'+n+
-        '<span style="font-size:11px;color:'+c+';margin-left:4px">'+lbl+'</span>'+
-      '</div>'+
-    '</div>';
-  }).join('');
-}
+
 
 function renderLeads(){
   var shown=fil==='all'?DB:DB.filter(function(r){
@@ -1748,6 +1712,7 @@ var PH_HISTORY = []; // Array of {type, query, results, ts}
 var PH_JOBS = [];
 var PH_SAVED = [];
 var PH_APPLIED = [];
+var PH_SAVED_CANDIDATES = [];
 var phBottomTab = 'saved';
 var phCategory = 'cmo';
 var phFilters = {remote: false, startup: false, week: false};
@@ -1829,6 +1794,7 @@ function phSave(){
   try{localStorage.setItem('ph_jobs',JSON.stringify(PH_JOBS));}catch(e){}
   try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
   try{localStorage.setItem('ph_applied',JSON.stringify(PH_APPLIED));}catch(e){}
+  try{localStorage.setItem('ph_saved_candidates',JSON.stringify(PH_SAVED_CANDIDATES));}catch(e){}
   try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
 }
 
@@ -1836,6 +1802,7 @@ function phLoad(){
   try{var j=localStorage.getItem('ph_jobs');if(j)PH_JOBS=JSON.parse(j);}catch(e){}
   try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
   try{var ap=localStorage.getItem('ph_applied');if(ap)PH_APPLIED=JSON.parse(ap);}catch(e){}
+  try{var sc2=localStorage.getItem('ph_saved_candidates');if(sc2)PH_SAVED_CANDIDATES=JSON.parse(sc2);}catch(e){}
   try{var ph=localStorage.getItem('ph_history');if(ph){PH_HISTORY=JSON.parse(ph);}}catch(e){}
 }
 
@@ -2915,15 +2882,20 @@ function renderCandidateCards(candidates){
   if(!wrap)return;
   wrap.style.display='block';
   wrap.innerHTML='';
+  if(!candidates||!candidates.length){
+    wrap.innerHTML='<div style="padding:20px 0;text-align:center;color:var(--tx3);font-size:12px">No candidates found - try a more specific JD</div>';
+    return;
+  }
   var title=document.createElement('div');
   title.style.cssText='font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px';
   title.textContent='Candidates ('+candidates.length+')';
   wrap.appendChild(title);
-  candidates.forEach(function(c){
+  candidates.forEach(function(c,idx){
     var score=c.fit_score||0;
     var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
-    var card=document.createElement('div');
-    card.style.cssText='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:16px;margin-bottom:10px';
+    var isSaved=PH_SAVED_CANDIDATES.some(function(x){return x.name===c.name&&x.current_company===c.current_company;});
+    var card=document.createElement('div');card.className='ph-card';card.style.marginBottom='10px';
+    // Header
     var hdr=document.createElement('div');hdr.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px';
     var nb=document.createElement('div');
     var ne=document.createElement('div');ne.style.cssText='font-size:14px;font-weight:700;color:var(--tx)';ne.textContent=c.name||'Unknown';
@@ -2932,29 +2904,64 @@ function renderCandidateCards(candidates){
     nb.appendChild(ne);nb.appendChild(re2);
     if(c.location){var lo=document.createElement('div');lo.style.cssText='font-size:11px;color:var(--tx3);margin-top:1px';lo.textContent=c.location;nb.appendChild(lo);}
     var se=document.createElement('div');se.style.cssText='text-align:right;flex-shrink:0;margin-left:12px';
-    var sn=document.createElement('div');sn.style.cssText='font-size:24px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;letter-spacing:-.04em;line-height:1';sn.textContent=score;
+    var sn=document.createElement('div');sn.style.cssText='font-size:24px;font-weight:800;color:'+scol+';font-family:JetBrains Mono,monospace;line-height:1';sn.textContent=score;
     var sl=document.createElement('div');sl.style.cssText='font-size:9px;color:'+scol+';font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-top:2px';
     sl.textContent=score>=75?'Strong fit':score>=50?'Good fit':'Weak fit';
     se.appendChild(sn);se.appendChild(sl);hdr.appendChild(nb);hdr.appendChild(se);card.appendChild(hdr);
+    // Why fit
     if(c.why_fit){var wf=document.createElement('div');wf.style.cssText='font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5;padding:8px 10px;background:var(--sur);border-radius:6px;border-left:3px solid '+scol;wf.textContent=c.why_fit;card.appendChild(wf);}
+    // InMail
     if(c.inmail){
       var iw=document.createElement('div');iw.style.cssText='margin-bottom:10px';
       var it=document.createElement('button');it.style.cssText='font-size:11px;font-weight:700;color:var(--pip);background:none;border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:0;margin-bottom:6px';it.textContent='Show InMail draft';
       var ib=document.createElement('div');ib.style.cssText='display:none;font-size:12px;color:var(--tx2);line-height:1.6;padding:10px 12px;background:var(--pip-dim);border:1px solid var(--pip-bor);border-radius:6px;font-style:italic';ib.textContent=c.inmail;
       var exp=false;var _im=c.inmail;
-      var cp2=document.createElement('button');cp2.style.cssText='font-size:10px;font-weight:700;color:#fff;background:var(--pip);border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:3px 10px;border-radius:4px;margin-left:8px';cp2.textContent='Copy';
+      var cp2=document.createElement('button');cp2.style.cssText='font-size:10px;color:#fff;background:var(--pip);border:none;cursor:pointer;font-family:Outfit,sans-serif;padding:3px 10px;border-radius:4px;margin-left:8px';cp2.textContent='Copy';
       cp2.onclick=function(){navigator.clipboard.writeText(_im);cp2.textContent='Copied!';setTimeout(function(){cp2.textContent='Copy';},1500);};
       it.onclick=function(){exp=!exp;ib.style.display=exp?'block':'none';it.textContent=exp?'Hide InMail draft':'Show InMail draft';};
       it.appendChild(cp2);iw.appendChild(it);iw.appendChild(ib);card.appendChild(iw);
     }
+    // Buttons
     var btns=document.createElement('div');btns.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    // LinkedIn
     var liUrl=c.linkedin_url||('https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent((c.name||'')+' '+(c.current_title||'')));
     var la=document.createElement('a');la.href=liUrl;la.target='_blank';la.rel='noopener';
     la.style.cssText='display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid #0a66c2;color:#0a66c2;font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;text-decoration:none;font-family:Outfit,sans-serif';
     la.innerHTML='<svg width="12" height="12" viewBox="0 0 24 24" fill="#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'+(c.linkedin_url?'View Profile':'Find on LinkedIn');
-    btns.appendChild(la);card.appendChild(btns);wrap.appendChild(card);
+    btns.appendChild(la);
+    // Save/Unsave
+    var saveBtn=document.createElement('button');
+    saveBtn.style.cssText='font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid '+(isSaved?'var(--pip)':'var(--bor2)')+';background:'+(isSaved?'var(--pip)':'none')+';color:'+(isSaved?'#fff':'var(--tx2)');
+    saveBtn.textContent=isSaved?'Saved \u2713':'Save';
+    (function(_c,_btn){
+      _btn.onclick=function(){
+        var already=PH_SAVED_CANDIDATES.some(function(x){return x.name===_c.name&&x.current_company===_c.current_company;});
+        if(already){
+          PH_SAVED_CANDIDATES=PH_SAVED_CANDIDATES.filter(function(x){return !(x.name===_c.name&&x.current_company===_c.current_company);});
+          _btn.textContent='Save';_btn.style.background='none';_btn.style.color='var(--tx2)';_btn.style.borderColor='var(--bor2)';
+          showUpsellToast('Removed from saved');
+        } else {
+          PH_SAVED_CANDIDATES.unshift(_c);
+          _btn.textContent='Saved \u2713';_btn.style.background='var(--pip)';_btn.style.color='#fff';_btn.style.borderColor='var(--pip)';
+          showUpsellToast('Candidate saved \u2713');
+        }
+        phSave();
+      };
+    })(c,saveBtn);
+    btns.appendChild(saveBtn);
+    // Remove
+    var rmBtn=document.createElement('button');
+    rmBtn.style.cssText='font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;border:1px solid var(--bor);background:none;color:var(--tx3)';
+    rmBtn.textContent='Remove';
+    (function(_card){
+      rmBtn.onclick=function(){_card.style.opacity='0';_card.style.transition='opacity .2s';setTimeout(function(){if(_card.parentNode)_card.parentNode.removeChild(_card);},200);};
+    })(card);
+    btns.appendChild(rmBtn);
+    card.appendChild(btns);
+    wrap.appendChild(card);
   });
 }
+
 
 function phApplyJob(id){
   var job=PH_JOBS.find(function(j){return j._id===id;})||PH_SAVED.find(function(j){return j._id===id;});
@@ -3236,10 +3243,6 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<div id='sourcer-searches'></div>"
   "</div>"
   "<div id='sourcer-candidates-section' style='display:none;margin-top:14px'></div>"
-  "<div style='font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px'>Score candidates</div>"
-  "<div style='font-size:12px;color:var(--tx3);margin-bottom:12px'>Paste names and roles. Scout scores fit 0-100 and writes a personalised LinkedIn InMail for each.</div>"
-  "<textarea id='sourcer-paste' placeholder='One per line: Jane Smith - Head of Product at Monzo' style='width:100%;min-height:90px;background:var(--sur2);border:1px solid var(--bor2);color:var(--tx);font-family:Outfit,sans-serif;font-size:13px;padding:12px;border-radius:8px;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px'></textarea>"
-  "<button onclick='sourcerScore()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;margin-bottom:14px'>Score and write InMails</button>"
   "<div id='sourcer-results'></div>"
   "</div>"
   "</div>"
