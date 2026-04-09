@@ -30,12 +30,23 @@ def load_db(user_key=None):
                 gist_data = json.loads(resp.read())
                 _gf = gist_data['files'].get(('scout_db_'+user_key.replace('@','_').replace('.','_')+'.json') if user_key else 'scout_db.json'); content = _gf['content'] if _gf else '[]'
                 data = json.loads(content)
-                if isinstance(data, list) and len(data) > 0:
-                    # Only skip if it's literally just the init placeholder
+                if isinstance(data, list):
                     if len(data) == 1 and data[0].get('init') == True:
-                        print('[DB] Gist has placeholder data, returning empty')
-                    else:
-                        print('[DB] Loaded', len(data), 'records from GitHub Gist')
+                        data = []
+                    if user_key:
+                        _def = gist_data['files'].get('scout_db.json')
+                        if _def:
+                            try:
+                                _def_data = json.loads(_def['content'])
+                                if isinstance(_def_data, list):
+                                    existing_ids = {r.get('_id') for r in data}
+                                    merged = [r for r in _def_data if r.get('_id') not in existing_ids and not r.get('init')]
+                                    if merged:
+                                        data = data + merged
+                                        print('[DB] Merged', len(merged), 'default records')
+                            except Exception as me: print('[DB] Merge error:', me)
+                    if len(data) > 0:
+                        print('[DB] Loaded', len(data), 'records from Gist')
                         return data
                 else:
                     print('[DB] Gist empty or invalid')
@@ -904,7 +915,13 @@ function closeSidebar(){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
-function navTo(page){closeSidebar();setPage(page);}
+function navTo(page){
+  closeSidebar();
+  var t=tierLoad();
+  if(page==='inbox'&&t.plan!=='agency'&&!t._master){showUpsellToast('Inbox is an Agency feature');return;}
+  if(page==='piphunt'&&!tierCanPipHunt()){showUpsellToast('Upgrade to use Pip Hunt');return;}
+  setPage(page);
+}
 function setPage(page, addToHistory) {
   if(addToHistory!==false && currentPage && currentPage!==page){
     PAGE_HISTORY.push(currentPage);
@@ -922,6 +939,11 @@ function setPage(page, addToHistory) {
   })();
   var bb=document.getElementById('page-back-btn');
   if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
+  // Show inbox sidebar item only for agency
+  var _inboxSi=document.getElementById('si-inbox');
+  if(_inboxSi){ var _t=tierLoad(); _inboxSi.style.display=(_t.plan==='agency'||_t._master)?'':'none'; }
+  var _inboxBadgeSi=document.getElementById('inbox-badge-si');
+  if(_inboxBadgeSi&&INBOX.length){ _inboxBadgeSi.textContent=INBOX.length; _inboxBadgeSi.style.display=''; }
   ['dashboard','search','piphunt','profile','leads','inbox','pipeline'].forEach(function(p){
     var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
@@ -930,8 +952,9 @@ function setPage(page, addToHistory) {
   if(page==='search') renderRecentLeads();
   if(page==='leads') renderLeads();
   if(page==='pipeline') renderPipelinePage();
+  if(page==='piphunt'){phLoad();setTimeout(function(){phRenderHistory();},50);}
+  if(page==='piphunt'){ phLoad(); phRenderJobs(); setTimeout(function(){phRenderHistory();},100); }
   if(page==='inbox') renderInbox();
-  if(page==='piphunt'){phLoad();phRenderJobs();}
   if(page==='profile'){profileLoad();renderProfile();}
 }
 
@@ -1040,9 +1063,10 @@ function fetchLeads() {
     });
     updateCount();ldg.style.display='none';res.style.display='block';btn.disabled=false;
   }).catch(function(e){ldg.style.display='none';errEl.textContent='Error: '+e.message;errEl.style.display='block';btn.disabled=false;});
+
+
+
 }
-
-
 function updateCount(){var n=document.querySelectorAll('#fetch-list input:checked').length;document.getElementById('fetch-count').textContent=n+' selected';}
 
 
@@ -1059,11 +1083,16 @@ function researchSelected(){
   // Research each and add to INBOX for review
   var i=0;
   function next(){
-    if(i>=names.length)return;
+    if(i>=names.length){
+      // All done - navigate to inbox
+      navTo('inbox');
+      return;
+    }
     var name=names[i++];
     runToInbox(name, next);
   }
   next();
+  setTimeout(function(){navTo('inbox');},300);
 }
 
 function runToInbox(company, callback){
@@ -1097,7 +1126,8 @@ function runToInbox(company, callback){
     res._open=false;
     INBOX.unshift(res);
     save();updateBadges();
-    if(currentPage==='inbox') renderInbox();
+    navTo('inbox');
+    renderInbox();
     if(ind){ind.textContent='added to inbox';ind.style.color='var(--pip)';}
     setTimeout(function(){if(ind)ind.textContent='';},2000);
   }).catch(function(e){
@@ -1783,15 +1813,15 @@ function phFetch(){
 }
 
 function phSave(){
-  var all = DB.concat(INBOX).concat([{_ph_jobs:PH_JOBS,_ph_saved:PH_SAVED}]);
-  // Save PH data separately in gist as second file - for now just use localStorage fallback
   try{localStorage.setItem('ph_jobs',JSON.stringify(PH_JOBS));}catch(e){}
   try{localStorage.setItem('ph_saved',JSON.stringify(PH_SAVED));}catch(e){}
+  try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
 }
 
 function phLoad(){
   try{var j=localStorage.getItem('ph_jobs');if(j)PH_JOBS=JSON.parse(j);}catch(e){}
   try{var s=localStorage.getItem('ph_saved');if(s)PH_SAVED=JSON.parse(s);}catch(e){}
+  try{var ph=localStorage.getItem('ph_history');if(ph){PH_HISTORY=JSON.parse(ph);}}catch(e){}
 }
 
 function phSaveJob(id){
@@ -2422,6 +2452,8 @@ function sourcerRun(){
     // Save directly to history
     PH_HISTORY.unshift({type:'source',query:jd,searches:searches,candidates:[],ts:Date.now()});
     if(PH_HISTORY.length>20)PH_HISTORY.pop();
+    try{localStorage.setItem('ph_history',JSON.stringify(PH_HISTORY));}catch(e){}
+    phSave();
     phRenderHistory();
     var hw=document.getElementById('ph-history-wrap');
     if(hw)hw.style.display='block';
@@ -2816,6 +2848,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div class='sidebar-nav'>"
   "<button class='sidebar-item' id='si-dashboard' onclick='navTo(\"dashboard\")'>Dashboard<span style='margin-left:auto;font-size:10px;color:var(--tx3);font-family:JetBrains Mono,monospace' id='leads-badge'>0</span></button>"
   "<button class='sidebar-item' id='si-search' onclick='navTo(\"search\")'>Research</button>"
+    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
 
   "<button class='sidebar-item' id='si-profile' onclick='navTo(\"profile\")'>Profile</button>"
 "</div>"
@@ -4160,3 +4193,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('\n  Stopped.')
 
+    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
+    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
+    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge' style='display:none'>0</span></button>"
