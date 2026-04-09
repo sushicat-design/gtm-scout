@@ -2644,6 +2644,10 @@ function initApp(){
     if(a==='copy-pitch'){var el=document.getElementById('ld-pitch-text');if(el){navigator.clipboard.writeText(el.textContent);t.textContent='Copied!';setTimeout(function(){t.textContent='Copy pitch';},1800);}return;}
     if(a==='edit-profile'){openProfileModal();return;}
     if(a==='open-profile'){navTo('profile');return;}
+    if(a==='data-nav' || e.target.hasAttribute && e.target.hasAttribute('data-nav')){
+      var nav=t.getAttribute('data-nav')||e.target.getAttribute('data-nav');
+      if(nav) navTo(nav); return;
+    }
     if(a==='copy-search'){var c=t.closest('[data-search]');if(c){navigator.clipboard.writeText(decodeURIComponent(c.getAttribute('data-search')));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy';},1500);}return;}
     if(a==='copy-inmail'){var enc=t.getAttribute('data-inmail');if(enc){navigator.clipboard.writeText(decodeURIComponent(enc));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy InMail';},1500);}return;}
     var nav=e.target.getAttribute('data-nav');if(nav){var dd=document.getElementById('profile-dropdown');if(dd)dd.style.display='none';navTo(nav);return;}
@@ -2763,7 +2767,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   var token=localStorage.getItem('sb_token'),user=authGetUser();
-  if(token&&user){SUPA_USER=user;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
+  if(token&&user){SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
   else{showAuthScreen('signup');}
 });
 
@@ -2785,7 +2789,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div class='ndot'></div>"
       "<span class='logo-text'>Scout</span>"
     "</button>"
-    "<button id='page-back-btn' onclick='goBack()' style='display:none;align-items:center;gap:6px;background:none;border:none;color:var(--tx3);font-size:12px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:6px;font-family:Outfit,sans-serif;transition:color .15s' onmouseover=\"this.style.color='var(--tx)'\" onmouseout=\"this.style.color='var(--tx3)''>&#8592; Back</button>"
+    "<button id='page-back-btn' onclick='goBack()' style='display:none;align-items:center;gap:6px;background:none;border:none;color:var(--tx3);font-size:12px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:6px;font-family:Outfit,sans-serif'>&#8592; Back</button>"
     "<div id='topbar-right' class='topbar-right'>"
       "<button onclick='showPricing()' id='upgrade-btn' style='background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Nunito,sans-serif'> Upgrade</button>"
     "<span class='save-ind' id='save-ind'></span>"
