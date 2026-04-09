@@ -2071,8 +2071,8 @@ function profileCopyShare(){
 
 
 // ── TIER / CREDITS SYSTEM ─────────────────────────────────────────────────────
-var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:0}, pro:{research:999,fetch:20,piphunt:999}, agency:{research:9999,fetch:100,piphunt:9999}};
-var TIER_LABELS = {free:'Free',pro:'Pro',agency:'Agency'};
+var TIER_LIMITS = {free:{research:5,fetch:2,piphunt:5}, starter:{research:50,fetch:5,piphunt:20}, pro:{research:300,fetch:30,piphunt:999}, agency:{research:1000,fetch:100,piphunt:9999}};
+var TIER_LABELS = {free:'Free',starter:'Starter',pro:'Pro',agency:'Agency'};
 
 function tierLoad(){
   try{
@@ -2166,20 +2166,17 @@ function closePricing(){
 }
 
 function selectTier(plan){
-  if(plan === 'free'){
-    var t = tierLoad();
-    t.plan = 'free';
-    tierSave(t);
-    closePricing();
-    updateCreditsBar();
+  if(plan==='free'){
+    var t=tierLoad(); t.plan='free'; tierSave(t);
+    closePricing(); updateCreditsBar(); renderTopbar();
     return;
   }
-  // Redirect to Stripe checkout
   var urls = {
-    pro: 'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
-    agency: 'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'
+    starter:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
+    pro:'https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01',
+    agency:'https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'
   };
-  window.open(urls[plan], '_blank');
+  if(urls[plan]) window.open(urls[plan],'_blank');
   closePricing();
 }
 
@@ -2490,6 +2487,8 @@ function initApp(){
     if(a==='open-profile'){navTo('profile');return;}
     if(a==='copy-search'){var c=t.closest('[data-search]');if(c){navigator.clipboard.writeText(decodeURIComponent(c.getAttribute('data-search')));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy';},1500);}return;}
     if(a==='copy-inmail'){var enc=t.getAttribute('data-inmail');if(enc){navigator.clipboard.writeText(decodeURIComponent(enc));t.textContent='Copied!';setTimeout(function(){t.textContent='Copy InMail';},1500);}return;}
+    var nav=e.target.getAttribute('data-nav');if(nav){var dd=document.getElementById('profile-dropdown');if(dd)dd.style.display='none';navTo(nav);return;}
+    if(!e.target.closest('#profile-menu-wrap')){var dd2=document.getElementById('profile-dropdown');if(dd2)dd2.style.display='none';}
   });
   var rb=document.getElementById('rb');if(rb)rb.onclick=go;
   var ci=document.getElementById('ci');if(ci)ci.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
@@ -2735,6 +2734,9 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "</div>"
   "</div>"
   "</div>"
+  "<div class='modal-overlay' id='profile-modal'><div class='modal' style='max-width:600px'><div class='modal-title'>Edit Profile</div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:4px'>Identity</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='e.g. Jane Smith' type='text'></div><div class='modal-field'><label class='modal-label'>Email</label><input class='modal-input' id='pm-email' placeholder='you@yoursite.com' type='text'></div><div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Scout' type='text'></div><div class='modal-field'><label class='modal-label'>Your Role</label><input class='modal-input' id='pm-role' placeholder='Fractional CMO' type='text'></div><div class='modal-field'><label class='modal-label'>Location</label><input class='modal-input' id='pm-location' placeholder='New York, USA' type='text'></div><div class='modal-field'><label class='modal-label'>Years Experience</label><input class='modal-input' id='pm-experience' placeholder='10+' type='text'></div></div><div class='modal-field' style='margin-top:4px'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div><div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are...'></textarea></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Ideal Client</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>Target Industries</label><input class='modal-input' id='pm-industries' placeholder='AI, SaaS, Fintech' type='text'></div><div class='modal-field'><label class='modal-label'>Ideal Funding Stage</label><input class='modal-input' id='pm-funding_stage' placeholder='Seed – Series B' type='text'></div><div class='modal-field'><label class='modal-label'>Ideal Company Size</label><input class='modal-input' id='pm-company_size' placeholder='10–100 employees' type='text'></div><div class='modal-field'><label class='modal-label'>Deal Size / Rate</label><input class='modal-input' id='pm-deal_size' placeholder='$5k–$15k/mo' type='text'></div><div class='modal-field'><label class='modal-label'>Typical Engagement</label><input class='modal-input' id='pm-client_size' placeholder='3–6 month retainers' type='text'></div><div class='modal-field'><label class='modal-label'>Availability</label><input class='modal-input' id='pm-availability' placeholder='2 spots open Q2 2026' type='text'></div></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Links</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>LinkedIn</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/you' type='text'></div><div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://x.com/yourhandle' type='text'></div><div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com' type='text'></div><div class='modal-field'><label class='modal-label'>Book a Call</label><input class='modal-input' id='pm-calendly' placeholder='https://calendly.com/you' type='text'></div></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Settings</div><div class='modal-field'><label class='modal-label'>Min GTM Score to show (0 = show all)</label><input class='modal-input' id='pm-min_score' placeholder='0' type='number' min='0' max='100'></div><div class='modal-actions'><button class='modal-cancel' onclick='closeProfileModal()'>Cancel</button><button class='modal-save' onclick='profileSaveInfo()'>Save changes</button></div></div></div>"
+  "<div class='modal-overlay' id='pricing-overlay'><div class='pricing-modal'><div class='modal-title'>Upgrade Scout</div><div id='pricing-msg' style='font-size:13px;color:var(--tx3);margin-bottom:20px;text-align:center'></div><div class='pricing-grid' style='display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px'><div style='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:20px;text-align:center'><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Starter</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$19<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>50 researches/mo</div><button onclick='selectTier(\"starter\")' style='width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Starter</button></div><div style='background:var(--sur2);border:2px solid var(--pip);border-radius:var(--r);padding:20px;text-align:center;position:relative'><div style='position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:9px;font-weight:700;padding:2px 12px;border-radius:4px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em'>Popular</div><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Pro</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$49<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>300 researches/mo</div><button onclick='selectTier(\"pro\")' style='width:100%;background:var(--pip);color:#fff;border:none;font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Pro</button></div><div style='background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:20px;text-align:center'><div style='font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);margin-bottom:8px'>Agency</div><div style='font-size:28px;font-weight:800;color:var(--tx);font-family:JetBrains Mono,monospace;line-height:1'>$149<span style='font-size:13px;color:var(--tx3);font-family:Outfit,sans-serif'>/mo</span></div><div style='font-size:12px;color:var(--tx3);margin:8px 0 16px'>1,000 researches/mo</div><button onclick='selectTier(\"agency\")' style='width:100%;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:700;padding:9px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif'>Choose Agency</button></div></div><div style='text-align:center'><button onclick='selectTier(\"free\")' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Stay on free plan (5 researches/mo)</button></div><div style='text-align:center;margin-top:12px'><button onclick='closePricing()' style='background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif'>Maybe later</button></div></div></div>"
+  "<div class='modal-overlay' id='case-modal'><div class='modal' style='max-width:500px'><div class='modal-title'>Case Study</div><input type='hidden' id='cm-idx'><div class='modal-field'><label class='modal-label'>Client</label><input class='modal-input' id='cm-client' placeholder='Acme Corp'></div><div class='modal-field'><label class='modal-label'>Title</label><input class='modal-input' id='cm-title' placeholder='GTM strategy for Series A launch'></div><div class='modal-field'><label class='modal-label'>Result</label><input class='modal-input' id='cm-result' placeholder='3x pipeline in 90 days'></div><div class='modal-field'><label class='modal-label'>Metrics (comma separated)</label><input class='modal-input' id='cm-metrics' placeholder='3x pipeline, $2M ARR, 6 months'></div><div class='modal-actions'><button class='modal-cancel' onclick='closeCaseModal()'>Cancel</button><button class='modal-cancel' onclick='profileDeleteCase()' style='color:var(--red);border-color:rgba(239,68,68,0.2)'>Delete</button><button class='modal-save' onclick='profileSaveCase()'>Save</button></div></div></div>"
 "<script>" + JS + "</script>\n"
   "</body>\n</html>\n")
 
@@ -2952,7 +2954,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="#pricing" class="nlink">Pricing</a>
     <a href="#waitlist" class="nlink">Early access</a>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
+  <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
     <a href="/app" id="nav-signin" class="nlink" style="font-weight:700">Sign in</a>
     <a href="/app" id="nav-startfree" class="ncta" style="display:none">Start free</a>
   </div>
@@ -3062,67 +3064,48 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 <div class="ps" id="pricing">
   <div style="text-align:center;margin-bottom:56px">
     <div class="slbl" style="text-align:center">Pricing</div>
-    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
-    <p style="font-size:16px;color:var(--tx2)">Every plan includes a real AI research call per credit. No fluff.</p>
+    <h2 style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Simple, transparent pricing</h2>
+    <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
   </div>
   <div class="pg">
     <div class="prc">
-      <div class="pn">Starter</div>
-      <div class="pp">$19<span class="pper">/mo</span></div>
-      <div class="pd">For consultants testing the waters.</div>
+      <div class="pn">Free</div>
+      <div class="pp">$0<span class="pper">/mo</span></div>
+      <div class="pd">Explore Scout before you commit.</div>
       <button class="pb2 out" onclick="location.href='/app'">Get started</button>
       <ul class="pfl">
-        <li>50 researches/month</li>
-        <li>5 lead fetches</li>
-        <li>Dashboard &amp; Pipeline</li>
-        <li>Email support</li>
+        <li>3 researches/month</li>
+        <li>GTM score + pitch opener</li>
+        <li>Dashboard &amp; pipeline</li>
+        <li>No credit card needed</li>
       </ul>
     </div>
     <div class="prc hot">
       <div class="pbdg">Most popular</div>
       <div class="pn">Pro</div>
-      <div class="pp">$49<span class="pper">/mo</span></div>
-      <div class="pd">For active prospectors closing deals.</div>
+      <div class="pp">$39<span class="pper">/mo</span></div>
+      <div class="pd">For freelancers actively closing.</div>
       <button class="pb2" onclick="location.href='https://buy.stripe.com/00wdR90wGc4Cd52gyCbjW01'">Get Pro</button>
       <ul class="pfl">
-        <li>300 researches/month</li>
-        <li>30 lead fetches/month</li>
-        <li>Pip Hunt job &amp; candidate sourcing</li>
+        <li>Unlimited research</li>
+        <li>10 lead fetches/month</li>
+        <li>Pip Hunt (find &amp; source roles)</li>
         <li>CSV export</li>
         <li>Priority support</li>
       </ul>
     </div>
     <div class="prc">
       <div class="pn">Agency</div>
-      <div class="pp">$149<span class="pper">/mo</span></div>
-      <div class="pd">For teams running multiple client pipelines.</div>
+      <div class="pp">$99<span class="pper">/mo</span></div>
+      <div class="pd">For agencies with multiple clients.</div>
       <button class="pb2" onclick="location.href='https://buy.stripe.com/8x2dR993c3y6aWU0zEbjW00'">Get Agency</button>
       <ul class="pfl">
-        <li>1,000 researches/month</li>
-        <li>5 team members</li>
-        <li>100 lead fetches</li>
+        <li>Everything in Pro</li>
+        <li>5 team seats</li>
+        <li>50 lead fetches/month</li>
         <li>White-label pitch openers</li>
         <li>Dedicated support</li>
       </ul>
-    </div>
-  </div>
-  <div style="margin-top:24px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
-    <div>
-      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:4px">Need more credits?</div>
-      <div style="font-size:12px;color:var(--tx3)">Top up without a subscription. Credits never expire.</div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <a href="https://buy.stripe.com/3cI5kDfrA9WufdabeibjW02" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:14px 24px;text-decoration:none;cursor:pointer">
-        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$12</span>
-        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">50 credits</span>
-        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.24 each</span>
-      </a>
-      <a href="https://buy.stripe.com/5kQ3cvbbk0lUc0Y4PUbjW03" target="_blank" style="display:inline-flex;flex-direction:column;align-items:center;background:var(--sur);border:1px solid var(--pip-bor,rgba(45,157,232,0.22));border-radius:var(--r);padding:14px 24px;text-decoration:none;position:relative">
-        <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pip);color:#fff;font-size:8px;font-weight:700;padding:2px 10px;border-radius:4px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap">Best value</span>
-        <span style="font-size:18px;font-weight:700;color:var(--tx);font-family:'JetBrains Mono',monospace">$25</span>
-        <span style="font-size:11px;color:var(--tx2);margin-top:2px;font-weight:600">120 credits</span>
-        <span style="font-size:10px;color:var(--tx3);margin-top:1px">$0.21 each</span>
-      </a>
     </div>
   </div>
 </div>
