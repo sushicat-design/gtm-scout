@@ -2419,14 +2419,15 @@ function sourcerRun(){
     var searches=[];
     if(a>=0&&b>a){try{searches=JSON.parse(t.slice(a,b+1));}catch(e){}}
     if(!searches.length){if(status)status.textContent='Try again';return;}
-    // Save to history
+    // Save directly to history
     PH_HISTORY.unshift({type:'source',query:jd,searches:searches,candidates:[],ts:Date.now()});
     if(PH_HISTORY.length>20)PH_HISTORY.pop();
     phRenderHistory();
-    var sec=document.getElementById('sourcer-search-section');
-    var cont=document.getElementById('sourcer-searches');
-    if(sec)sec.style.display='block';
-    if(cont){
+    var hw=document.getElementById('ph-history-wrap');
+    if(hw)hw.style.display='block';
+    var cs2=document.getElementById('sourcer-candidates-section');
+    if(cs2)cs2.style.display='block';
+    if(false){
       cont.innerHTML=searches.map(function(s){
         var enc=encodeURIComponent(s);
         return '<div class="sourcer-search-card" data-search="'+enc+'">'+
@@ -2593,40 +2594,15 @@ function renderTopbar(){
       '<button id="profile-avatar-btn" style="width:32px;height:32px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;display:flex;align-items:center;justify-content:center" title="Account">'+initials+'</button>'+
       '<div id="profile-dropdown" style="display:none;position:absolute;top:38px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);min-width:180px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden">'+
         '<div style="padding:12px 16px;border-bottom:1px solid var(--bor)">'+
-          '<div style="font-size:13px;font-weight:700;color:var(--tx)">'+( PROFILE.name||'My account')+'</div>'+
+          '<div style="font-size:13px;font-weight:700;color:var(--tx)">'+(PROFILE.name||'My account')+'</div>'+
           '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+(PROFILE.email||'')+'</div>'+
         '</div>'+
         '<button data-nav="dashboard" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9783; Dashboard</button>'+
-        '<button data-nav="search" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9906; Research</button>'+
-        '<button data-nav="piphunt" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#128269; Pip Hunt</button>'+
         '<button data-nav="profile" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">&#9881; Profile</button>'+
         '<button onclick="closeProfileMenu();authSignOut()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">Sign out</button>'+
-      '</div>'+
-    '</div>'+
-    '<button class="hamburger" onclick="openSidebar()" title="Menu" style="margin-left:8px">'+
-      '<span></span><span></span><span></span>'+
-    '</button>';
-  updateCreditsBar();
-  // Wire avatar button to toggle dropdown
-  setTimeout(function(){
-    // Wire data-nav items
-    var wrap = document.getElementById('profile-menu-wrap');
-    if(wrap) wrap.addEventListener('click', function(e){
-      var nav = e.target.closest('[data-nav]');
-      if(nav){ closeProfileMenu(); navTo(nav.getAttribute('data-nav')); }
-    });
-    var btn=document.getElementById('profile-avatar-btn');
-    if(btn) btn.onclick=function(e){
-      e.stopPropagation();
-      var dd=document.getElementById('profile-dropdown');
-      if(dd) dd.style.display=dd.style.display==='none'?'block':'none';
-    };
-    // Close on outside click
-    document.addEventListener('click',function(){
-      var dd=document.getElementById('profile-dropdown');
-      if(dd) dd.style.display='none';
-    },{once:false});
-  },50);
+      '</div></div>';
+
+
 }
 
 function closeProfileMenu(){
@@ -2770,9 +2746,6 @@ document.addEventListener('DOMContentLoaded',function(){
   if(token&&user){SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
   else{showAuthScreen('signup');}
 });
-
-      inboxBtn.innerHTML='<button data-nav="inbox" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Inbox'+(INBOX.length?' <span style="color:var(--pip2)">'+INBOX.length+'</span>':'')+'</button>';
-
 """
 
 HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
@@ -2808,7 +2781,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div class='sidebar-nav'>"
   "<button class='sidebar-item' id='si-dashboard' onclick='navTo(\"dashboard\")'>Dashboard<span style='margin-left:auto;font-size:10px;color:var(--tx3);font-family:JetBrains Mono,monospace' id='leads-badge'>0</span></button>"
   "<button class='sidebar-item' id='si-search' onclick='navTo(\"search\")'>Research</button>"
-  "<button class='sidebar-item' id='si-piphunt' onclick='navTo(\"piphunt\")'>Pip Hunt<span class='si-badge' id='inbox-badge' style='display:none'>0</span></button>"
+
   "<button class='sidebar-item' id='si-profile' onclick='navTo(\"profile\")'>Profile</button>"
 "</div>"
     "<div class='sidebar-pip'>"
@@ -4151,4 +4124,4 @@ if __name__ == '__main__':
         server.serve_forever()
     except KeyboardInterrupt:
         print('\n  Stopped.')
-    "<button id='page-back-btn' onclick='goBack()' style='display:none;align-items:center;gap:6px;background:none;border:none;color:var(--tx3);font-size:12px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:6px;font-family:Outfit,sans-serif'>&#8592; Back</button>"
+
