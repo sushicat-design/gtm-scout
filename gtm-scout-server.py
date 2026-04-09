@@ -1215,45 +1215,33 @@ function renderDashboard(){
     }
   }
 
-  // Recent fetched leads
+  // Saved leads link
   var recentDiv = document.getElementById('dash-recent-leads');
   if(recentDiv){
-    var recent = DB.slice().sort(function(a,b){return (b._ts||0)-(a._ts||0);}).slice(0,5);
-    if(recent.length){
-      recentDiv.innerHTML='';
-      recent.forEach(function(r){
-        var score=r.gtm_readiness_score||0;
-        var scol=score>=75?'var(--pip2)':score>=50?'var(--amb)':'var(--tx3)';
-        var row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--sur2);border:1px solid var(--bor);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:border-color .15s';
-        row.setAttribute('data-action','open-lead');
-        row.setAttribute('data-id',r._id);
-        row.onmouseover=function(){this.style.borderColor='rgba(45,157,232,0.3)';};
-        row.onmouseout=function(){this.style.borderColor='var(--bor)';};
-        var left=document.createElement('div');left.style.minWidth='0';
-        var nm=document.createElement('div');nm.style.cssText='font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';nm.textContent=r.company||'Unknown';
-        var mt=document.createElement('div');mt.style.cssText='font-size:11px;color:var(--tx3);margin-top:1px';mt.textContent=r.sector||r.stage||'';
-        left.appendChild(nm);left.appendChild(mt);
-        var sc=document.createElement('div');sc.style.cssText='font-size:22px;font-weight:800;font-family:JetBrains Mono,monospace;letter-spacing:-.04em;flex-shrink:0;margin-left:12px;color:'+scol;sc.textContent=score;
-        row.appendChild(left);row.appendChild(sc);
-        recentDiv.appendChild(row);
-      });
-    } else {
-      var emp=document.createElement('div');
-      emp.style.cssText='font-size:13px;color:var(--tx3);text-align:center;padding:24px 0';
-      emp.textContent='No leads yet — ';
-      var btn=document.createElement('button');
-      btn.style.cssText='background:none;border:none;color:var(--pip);cursor:pointer;font-family:Outfit,sans-serif;font-size:13px;font-weight:700';
-      btn.textContent='research a company';
-      btn.onclick=function(){navTo('search');};
-      emp.appendChild(btn);
-      var end=document.createTextNode(' to get started.');
-      emp.appendChild(end);
-      recentDiv.appendChild(emp);
-    }
+    var saved = DB.filter(function(x){return x.outreach_status && x.outreach_status !== 'not_contacted';});
+    var total = DB.length;
+    recentDiv.innerHTML = '';
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);cursor:pointer;transition:border-color .15s';
+    wrap.onmouseover = function(){ this.style.borderColor='var(--pip-bor)'; };
+    wrap.onmouseout  = function(){ this.style.borderColor='var(--bor)'; };
+    wrap.onclick     = function(){ navTo('leads'); };
+    var left = document.createElement('div');
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx)';
+    title.textContent = 'Saved Leads';
+    var sub = document.createElement('div');
+    sub.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:2px';
+    sub.textContent = total + ' total · ' + saved.length + ' in progress';
+    left.appendChild(title); left.appendChild(sub);
+    var arrow = document.createElement('div');
+    arrow.style.cssText = 'font-size:18px;color:var(--tx3)';
+    arrow.textContent = '›';
+    wrap.appendChild(left); wrap.appendChild(arrow);
+    recentDiv.appendChild(wrap);
   }
 
-  renderKanbanBoard();
+    renderKanbanBoard();
   // Wire stat card clicks
   setTimeout(function(){
     var sc=document.getElementById('dash-stats');
@@ -1432,6 +1420,23 @@ function renderLeadDetail(r){
       '<div class="ld-section">'+
         '<div class="ld-section-title">Founders</div>'+foundersHtml+
       '</div>'+
+    '</div>'+
+    '<div class="ld-section" style="margin:12px 0;display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button onclick="findOnLinkedIn()" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid #0a66c2;color:#0a66c2;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="#0a66c2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'+
+        'LinkedIn'+
+      '</button>'+
+      '<button onclick="exportToHubspot(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid #ff7a59;color:#ff7a59;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="#ff7a59"><path d="M18.164 7.93V5.084a2.198 2.198 0 001.267-1.978V3.04A2.198 2.198 0 0017.236.845h-.066a2.198 2.198 0 00-2.195 2.195v.066a2.198 2.198 0 001.267 1.978V7.93a6.232 6.232 0 00-2.967 1.297L7.21 5.038a2.438 2.438 0 10-1.168 1.439l5.95 4.116a6.232 6.232 0 000 2.814l-5.95 4.116a2.437 2.437 0 101.168 1.439l6.066-4.192a6.232 6.232 0 009.53-5.207 6.232 6.232 0 00-4.642-5.633z"/></svg>'+
+        'HubSpot'+
+      '</button>'+
+      '<button onclick="exportToNotion(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--tx3);color:var(--tx2);font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">'+
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.934zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/></svg>'+
+        'Notion'+
+      '</button>'+
+      '<button onclick="generateWhitelabelLink(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:var(--pip);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">'+
+        '&#9889; White-label'+
+      '</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0">'+
       '<div class="ld-section-title">Notes</div>'+
@@ -2043,7 +2048,8 @@ var PROFILE = {
   linkedin: '', twitter: '', website: '',
   avatar: null,
   services: [],
-  cases: []
+  cases: [],
+  wl_name: '', wl_tagline: '', wl_color: '#2d9de8', wl_logo: null, wl_cta: ''
 };
 
 function profileLoad(){
@@ -2471,7 +2477,7 @@ function sourcerRun(){
   if(jdEl) jdEl.value='';
   var status=document.getElementById('sourcer-status');
   if(status)status.textContent='Generating search strings...';
-  var sys='You are a Boolean search expert for LinkedIn recruiting. Generate 5 X-Ray Google search strings to find candidates on LinkedIn for this role. Return ONLY a JSON array of strings. Each uses site:linkedin.com/in plus relevant keywords. Vary: job title, skills, companies to poach from, seniority+location, broad. No markdown, just the JSON array.';
+  var sys='You are a Boolean search expert for talent sourcing. Generate 5 X-Ray Google search strings to find candidates on LinkedIn for this role or requirement. Return ONLY a JSON array of strings. Each uses site:linkedin.com/in plus relevant keywords. Vary: job title, skills, companies to poach from, seniority+location, broad. No markdown, just the JSON array.';
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({key:'',company:jd,system:sys,mode:'fetch'})})
   .then(function(r){return r.json();})
@@ -2844,6 +2850,139 @@ function renderSidebarTier(){
   });
 }
 
+
+function exportToHubspot(r){
+  if(!r){showUpsellToast('No lead selected');return;}
+  var rows = [
+    ['First Name','Last Name','Email','Company','Phone','Website','Industry','Description'],
+    [r.best_contact_name||'','',' ',r.company||'','',r.website||'',r.sector||'',
+     (r.why_fit||'')+(r.pitch_opener?' | '+r.pitch_opener:'')]
+  ];
+  var csv = rows.map(function(row){
+    return row.map(function(v){
+      var s = String(v==null?'':v).replace(/"/g,'""');
+      return s.indexOf(',')>=0||s.indexOf('"')>=0?'"'+s+'"':s;
+    }).join(',');
+  }).join(String.fromCharCode(10));
+  var blob = new Blob([csv],{type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (r.company||'lead').replace(/[^a-z0-9]/gi,'-')+'-hubspot.csv';
+  a.click();
+  showUpsellToast('HubSpot CSV downloaded ✓');
+}
+
+function exportToNotion(r){
+  if(!r){showUpsellToast('No lead selected');return;}
+  var text = [
+    '# '+( r.company||'Lead'),
+    '',
+    '**Sector:** '+(r.sector||'—'),
+    '**Stage:** '+(r.stage||'—'),
+    '**HQ:** '+(r.hq||'—'),
+    '**Funding:** '+(r.funding_amount||'—'),
+    '**GTM Score:** '+(r.gtm_readiness_score||'—')+' ('+( r.gtm_label||'—')+')',
+    '',
+    '## Why They Need You',
+    r.why_fit||'—',
+    '',
+    '## Pitch Opener',
+    r.pitch_opener||'—',
+    '',
+    '## Contact',
+    (r.best_contact_name?r.best_contact_name+' — ':'')+( r.best_contact_title||r.decision_maker||'—'),
+    '',
+    '## Status',
+    r.outreach_status||'not_contacted'
+  ].join(String.fromCharCode(10));
+  navigator.clipboard.writeText(text).then(function(){
+    showUpsellToast('Copied for Notion ✓ Paste with Ctrl/Cmd+V');
+  }).catch(function(){
+    showUpsellToast('Could not copy — try again');
+  });
+}
+
+function generateWhitelabelLink(r){
+  if(!r){showUpsellToast('No lead selected');return;}
+  var t=tierLoad();
+  if(t.plan!=='agency'&&t.plan!=='pro'&&!t._master){
+    showLimitToast('White-label pitches are a Pro & Agency feature. <a onclick="showPricing()" style="color:var(--pip);font-weight:700;cursor:pointer">Upgrade →</a>');
+    return;
+  }
+  profileLoad();
+  var data = {
+    lead: {
+      company: r.company||'',
+      sector: r.sector||'',
+      stage: r.stage||'',
+      hq: r.hq||'',
+      funding_amount: r.funding_amount||'',
+      gtm_readiness_score: r.gtm_readiness_score||0,
+      gtm_label: r.gtm_label||'',
+      why_fit: r.why_fit||'',
+      pitch_opener: r.pitch_opener||'',
+      best_contact_title: r.best_contact_title||r.decision_maker||'',
+      best_contact_name: r.best_contact_name||''
+    },
+    brand: {
+      name: PROFILE.wl_name||PROFILE.name||'Scout',
+      tagline: PROFILE.wl_tagline||PROFILE.tagline||'',
+      color: PROFILE.wl_color||'#2d9de8',
+      logo: PROFILE.wl_logo||null,
+      cta: PROFILE.wl_cta||PROFILE.website||''
+    }
+  };
+  var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  var url = window.location.origin + '/p/' + encoded;
+  navigator.clipboard.writeText(url).then(function(){
+    showUpsellToast('Public pitch link copied ✓');
+  }).catch(function(){
+    // fallback - show in prompt
+    window.prompt('Copy this public link:', url);
+  });
+}
+
+function renderWlConfig(){
+  var wrap = document.getElementById('wl-config-wrap');
+  if(!wrap) return;
+  wrap.innerHTML =
+    '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:16px">White-label Settings</div>'+
+    '<div style="display:flex;flex-direction:column;gap:10px">'+
+      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Agency / Your Name</label>'+
+      '<input id="wl-name" class="modal-input" placeholder="e.g. Sushicat Ventures" value="'+(PROFILE.wl_name||PROFILE.name||'')+'" style="font-size:14px;padding:10px 14px">'+
+      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Tagline</label>'+
+      '<input id="wl-tagline" class="modal-input" placeholder="Fractional CMO for funded startups" value="'+(PROFILE.wl_tagline||PROFILE.tagline||'')+'" style="font-size:14px;padding:10px 14px">'+
+      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Brand Colour</label>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<input type="color" id="wl-color" value="'+(PROFILE.wl_color||'#2d9de8')+'" style="width:44px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px">'+
+        '<span id="wl-color-hex" style="font-size:13px;color:var(--tx3)">'+(PROFILE.wl_color||'#2d9de8')+'</span>'+
+      '</div>'+
+      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Call-to-action URL</label>'+
+      '<input id="wl-cta" class="modal-input" placeholder="https://youragency.com/contact" value="'+(PROFILE.wl_cta||PROFILE.website||'')+'" style="font-size:14px;padding:10px 14px">'+
+      '<button onclick="saveWlConfig()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;margin-top:4px">Save White-label Settings</button>'+
+    '</div>';
+  setTimeout(function(){
+    var col = document.getElementById('wl-color');
+    var hex = document.getElementById('wl-color-hex');
+    if(col&&hex) col.oninput=function(){ hex.textContent=col.value; };
+  },50);
+}
+
+function saveWlConfig(){
+  PROFILE.wl_name    = (document.getElementById('wl-name')||{value:''}).value.trim();
+  PROFILE.wl_tagline = (document.getElementById('wl-tagline')||{value:''}).value.trim();
+  PROFILE.wl_color   = (document.getElementById('wl-color')||{value:'#2d9de8'}).value;
+  PROFILE.wl_cta     = (document.getElementById('wl-cta')||{value:''}).value.trim();
+  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  showUpsellToast('White-label settings saved ✓');
+}
+
+function findOnLinkedIn(){
+  var r = window._currentLead;
+  if(!r) return;
+  var url = 'https://www.linkedin.com/search/results/companies/?keywords=' + encodeURIComponent(r.company||'');
+  window.open(url, '_blank');
+}
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -4027,6 +4166,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(out)
             return
+        if self.path.startswith('/p/'):
+            encoded = self.path[3:]
+            wl_html = self.build_pitch_page(encoded)
+            self.send_response(200)
+            self.send_header('Content-Type','text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(wl_html.encode('utf-8'))
+            return
         if self.path == '/dbtest':
             result = {'gist_id': bool(GIST_ID), 'gist_token': bool(GIST_TOKEN), 'records': 0, 'error': None}
             try:
@@ -4078,6 +4225,107 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(content)
             return
         self.send_response(404); self.end_headers(); return
+
+    def build_pitch_page(self, encoded):
+        import base64, json as _json, html as _html
+        try:
+            data = _json.loads(base64.b64decode(encoded + '==').decode('utf-8'))
+            lead = data.get('lead', {})
+            brand = data.get('brand', {})
+        except:
+            return '<html><body>Invalid link</body></html>'
+
+        color = _html.escape(brand.get('color','#2d9de8'))
+        bname = _html.escape(brand.get('name','Scout'))
+        btagline = _html.escape(brand.get('tagline',''))
+        bcta = _html.escape(brand.get('cta',''))
+        logo = brand.get('logo','')
+
+        company = _html.escape(lead.get('company',''))
+        sector = _html.escape(lead.get('sector',''))
+        stage = _html.escape(lead.get('stage',''))
+        hq = _html.escape(lead.get('hq',''))
+        funding = _html.escape(lead.get('funding_amount',''))
+        score = str(lead.get('gtm_readiness_score',0))
+        label = _html.escape(lead.get('gtm_label',''))
+        why_fit = _html.escape(lead.get('why_fit',''))
+        pitch = _html.escape(lead.get('pitch_opener',''))
+        contact_title = _html.escape(lead.get('best_contact_title',''))
+        contact_name = _html.escape(lead.get('best_contact_name',''))
+
+        label_color = '#f59e0b' if 'Warm' in label else ('#10b981' if 'Hot' in label else '#6b7280')
+
+        logo_html = f'<img src="{logo}" style="height:40px;object-fit:contain;margin-bottom:8px" />' if logo else ''
+
+        meta_parts = [x for x in [sector, stage, hq, funding] if x]
+        meta_str = ' &middot; '.join(meta_parts)
+
+        cta_html = f'<a href="{bcta}" style="display:inline-block;background:{color};color:#fff;font-family:sans-serif;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;margin-top:8px" target="_blank">Get in touch &rarr;</a>' if bcta else ''
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{company} &mdash; GTM Pitch by {bname}</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a2332;padding:0}}
+.header{{background:{color};padding:20px 32px;display:flex;align-items:center;gap:16px}}
+.header-name{{color:#fff;font-size:20px;font-weight:800;letter-spacing:-.02em}}
+.header-tag{{color:rgba(255,255,255,0.8);font-size:13px;margin-top:2px}}
+.wrap{{max-width:680px;margin:0 auto;padding:32px 20px}}
+.card{{background:#fff;border-radius:12px;padding:28px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}}
+.company-name{{font-size:28px;font-weight:800;letter-spacing:-.03em;color:#0f1923;margin-bottom:6px}}
+.meta{{font-size:13px;color:#64748b;margin-bottom:14px}}
+.score-row{{display:flex;align-items:center;gap:12px;margin-bottom:0}}
+.score-num{{font-size:36px;font-weight:900;color:{color};font-variant-numeric:tabular-nums}}
+.score-label{{display:inline-block;background:{label_color}22;color:{label_color};font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid {label_color}44;text-transform:uppercase;letter-spacing:.06em}}
+.section-title{{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:10px}}
+.why-fit{{font-size:15px;color:#334155;line-height:1.65}}
+.pitch-box{{background:#f1f5f9;border-left:3px solid {color};border-radius:0 8px 8px 0;padding:16px 18px;font-size:14px;color:#334155;line-height:1.7;font-style:italic}}
+.contact-row{{display:flex;align-items:center;gap:10px;font-size:14px;color:#475569}}
+.contact-dot{{width:8px;height:8px;border-radius:50%;background:{color}}}
+.footer{{text-align:center;padding:24px 20px;font-size:12px;color:#94a3b8}}
+</style>
+</head>
+<body>
+<div class="header">
+  {logo_html}
+  <div>
+    <div class="header-name">{bname}</div>
+    {f'<div class="header-tag">{btagline}</div>' if btagline else ''}
+  </div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <div class="company-name">{company}</div>
+    <div class="meta">{meta_str}</div>
+    <div class="score-row">
+      <div class="score-num">{score}</div>
+      <div class="score-label">{label}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Why they need you now</div>
+    <div class="why-fit">{why_fit}</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Your opening pitch</div>
+    <div class="pitch-box">{pitch}</div>
+  </div>
+
+  {'<div class="card"><div class="section-title">Best contact</div><div class="contact-row"><div class="contact-dot"></div><div>' + (contact_name + (' &mdash; ' if contact_name else '') + contact_title) + '</div></div></div>' if contact_title or contact_name else ''}
+
+  <div style="text-align:center;margin-top:8px">
+    {cta_html}
+  </div>
+</div>
+<div class="footer">Generated by {bname} &middot; Powered by Scout</div>
+</body>
+</html>"""
 
     def do_POST(self):
         if self.path == '/stripe-webhook':
@@ -4275,3 +4523,4 @@ if __name__ == '__main__':
     "</div>"
     "<div id='sb-tier-items' style='font-size:12px;color:var(--tx2);line-height:1.8'></div>"
 
+    "<div id='wl-config-wrap' style='max-width:480px;margin:24px auto 0;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:24px'></div>"
