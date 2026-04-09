@@ -28,7 +28,7 @@ def load_db(user_key=None):
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
                 gist_data = json.loads(resp.read())
-                content = (lambda gf: gf['content'] if gf else '[]')(gist_data['files'].get(('scout_db_'+user_key.replace('@','_').replace('.','_')+'.json') if user_key else 'scout_db.json'))
+                _gf = gist_data['files'].get(('scout_db_'+user_key.replace('@','_').replace('.','_')+'.json') if user_key else 'scout_db.json'); content = _gf['content'] if _gf else '[]'
                 data = json.loads(content)
                 if isinstance(data, list) and len(data) > 0:
                     # Only skip if it's literally just the init placeholder
@@ -810,6 +810,8 @@ body:not(.app-ready) #app-loading {
 """
 
 JS = """
+function goHome(){window.location.href='/';}
+
 function openProfileModal(){
   profileLoad();
   var m = document.getElementById('profile-modal');
@@ -903,7 +905,11 @@ function closeSidebar(){
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
 function navTo(page){closeSidebar();setPage(page);}
-function setPage(page) {
+function setPage(page, addToHistory) {
+  if(addToHistory!==false && currentPage && currentPage!==page){
+    PAGE_HISTORY.push(currentPage);
+    if(PAGE_HISTORY.length>10) PAGE_HISTORY.shift();
+  }
   currentPage = page;
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   var pg = document.getElementById('page-'+page);
@@ -914,6 +920,8 @@ function setPage(page) {
     var inboxSi=document.getElementById('si-inbox');
     if(inboxSi) inboxSi.style.display=(t.plan==='agency'||t._master)?'':'none';
   })();
+  var bb=document.getElementById('page-back-btn');
+  if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
   ['dashboard','search','piphunt','profile','leads','inbox','pipeline'].forEach(function(p){
     var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
@@ -1651,6 +1659,7 @@ function renderInbox(){
 }
 
 // ── PIP HUNT ─────────────────────────────────────────────────────────────────
+var PH_HISTORY = []; // Array of {type, query, results, ts}
 var PH_JOBS = [];
 var PH_SAVED = [];
 var phCategory = 'cmo';
@@ -2371,6 +2380,7 @@ function maybeShowUpsell(){
 
 
 
+var PAGE_HISTORY = [];
 var SOURCER_MODE = 'hunt';
 var SOURCER_JD = '';
 var SOURCER_CANDIDATES = [];
@@ -2394,6 +2404,9 @@ function sourcerRun(){
   var jd=(document.getElementById('sourcer-jd')||{value:''}).value.trim();
   if(!jd){alert('Please enter a job description or requirements.');return;}
   SOURCER_JD=jd;
+  // Clear input so user can start a new search
+  var jdEl=document.getElementById('sourcer-jd');
+  if(jdEl) jdEl.value='';
   var status=document.getElementById('sourcer-status');
   if(status)status.textContent='Generating search strings...';
   var sys='You are a Boolean search expert for LinkedIn recruiting. Generate 5 X-Ray Google search strings to find candidates on LinkedIn for this role. Return ONLY a JSON array of strings. Each uses site:linkedin.com/in plus relevant keywords. Vary: job title, skills, companies to poach from, seniority+location, broad. No markdown, just the JSON array.';
@@ -2406,6 +2419,10 @@ function sourcerRun(){
     var searches=[];
     if(a>=0&&b>a){try{searches=JSON.parse(t.slice(a,b+1));}catch(e){}}
     if(!searches.length){if(status)status.textContent='Try again';return;}
+    // Save to history
+    PH_HISTORY.unshift({type:'source',query:jd,searches:searches,candidates:[],ts:Date.now()});
+    if(PH_HISTORY.length>20)PH_HISTORY.pop();
+    phRenderHistory();
     var sec=document.getElementById('sourcer-search-section');
     var cont=document.getElementById('sourcer-searches');
     if(sec)sec.style.display='block';
@@ -2552,7 +2569,7 @@ function authSubmit(mode){
       if(d.error){if(errEl)errEl.textContent=d.error.message||'Invalid credentials';if(btn){btn.disabled=false;btn.textContent='Sign in';}return;}
       localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
       SUPA_USER=d.user;
-      if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;PROFILE.email=d.user.email||email;try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}}
+      PROFILE.email=d.user.email||email;if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
       authSuccess();
     }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Sign in';}});
   }
@@ -2636,6 +2653,80 @@ function initApp(){
   var rsb=document.getElementById('res-sel-btn');if(rsb)rsb.onclick=researchSelected;
   var btog=document.getElementById('btog');if(btog)btog.onclick=function(){showPanel('bpanel');};
 }
+
+function phRenderHistory(){
+  var cont = document.getElementById('ph-history-list');
+  if(!cont || !PH_HISTORY.length) return;
+  cont.innerHTML = '';
+  PH_HISTORY.forEach(function(item, idx){
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--sur2);border:1px solid var(--bor);border-radius:var(--r);margin-bottom:8px;overflow:hidden';
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px;cursor:pointer';
+    var left = document.createElement('div');
+    var title = document.createElement('div');
+    title.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px';
+    title.textContent = item.query.slice(0,80) + (item.query.length>80?'...':'');
+    var meta = document.createElement('div');
+    meta.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:2px';
+    meta.textContent = (item.type==='source'?'Candidate sourcing':'Job search') + ' · ' + (item.searches?item.searches.length:0) + ' searches' + (item.candidates&&item.candidates.length?' · '+item.candidates.length+' scored':'');
+    left.appendChild(title);left.appendChild(meta);
+    var toggle = document.createElement('span');
+    toggle.style.cssText = 'font-size:18px;color:var(--tx3);transition:transform .2s;flex-shrink:0';
+    toggle.textContent = '›';
+    header.appendChild(left);header.appendChild(toggle);
+    var body = document.createElement('div');
+    body.style.cssText = 'display:none;padding:0 14px 12px;border-top:1px solid var(--bor)';
+    if(item.searches && item.searches.length){
+      item.searches.forEach(function(s){
+        var row = document.createElement('div');
+        row.style.cssText = 'background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-top:8px;display:flex;align-items:center;gap:10px';
+        var str = document.createElement('div');
+        str.style.cssText = 'font-size:11px;color:var(--tx2);font-family:JetBrains Mono,monospace;flex:1;word-break:break-all';
+        str.textContent = s;
+        var cp = document.createElement('button');
+        cp.style.cssText = 'background:var(--pip);color:#fff;border:none;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;flex-shrink:0';
+        cp.textContent = 'Copy';
+        var _s = s;
+        cp.onclick = function(){ navigator.clipboard.writeText(_s); cp.textContent='Copied!'; setTimeout(function(){cp.textContent='Copy';},1500); };
+        row.appendChild(str);row.appendChild(cp);
+        body.appendChild(row);
+      });
+    }
+    if(item.candidates && item.candidates.length){
+      var candTitle = document.createElement('div');
+      candTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-top:12px;margin-bottom:8px';
+      candTitle.textContent = 'Scored Candidates';
+      body.appendChild(candTitle);
+      item.candidates.forEach(function(c){
+        var crow = document.createElement('div');
+        crow.style.cssText = 'background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px';
+        var cn = document.createElement('div');cn.style.flex='1';
+        var cname = document.createElement('div');cname.style.cssText='font-size:12px;font-weight:700;color:var(--tx)';cname.textContent=c.name||'';
+        var crole = document.createElement('div');crole.style.cssText='font-size:11px;color:var(--tx3)';crole.textContent=(c.role||'')+(c.company?' at '+c.company:'');
+        cn.appendChild(cname);cn.appendChild(crole);
+        var cscore = document.createElement('div');cscore.style.cssText='font-size:20px;font-weight:800;font-family:JetBrains Mono,monospace;color:'+(c.score>=75?'var(--pip2)':c.score>=50?'var(--amb)':'var(--tx3)');cscore.textContent=c.score||0;
+        crow.appendChild(cn);crow.appendChild(cscore);
+        body.appendChild(crow);
+      });
+    }
+    var expanded = false;
+    header.onclick = function(){
+      expanded = !expanded;
+      body.style.display = expanded ? 'block' : 'none';
+      toggle.style.transform = expanded ? 'rotate(90deg)' : '';
+    };
+    card.appendChild(header);card.appendChild(body);
+    cont.appendChild(card);
+  });
+  var wrap = document.getElementById('ph-history-wrap');
+  if(wrap) wrap.style.display = PH_HISTORY.length ? 'block' : 'none';
+}
+
+function goBack(){
+  if(PAGE_HISTORY.length>0){ var prev=PAGE_HISTORY.pop(); setPage(prev,false); }
+  else{ setPage('dashboard',false); }
+}
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -2691,6 +2782,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
       "<div class='ndot'></div>"
       "<span class='logo-text'>Scout</span>"
     "</button>"
+    "<button id='page-back-btn' onclick='goBack()' style='display:none;align-items:center;gap:6px;background:none;border:none;color:var(--tx3);font-size:12px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:6px;font-family:Outfit,sans-serif;transition:color .15s' onmouseover=\"this.style.color='var(--tx)'\" onmouseout=\"this.style.color='var(--tx3)''>&#8592; Back</button>"
     "<div id='topbar-right' class='topbar-right'>"
       "<button onclick='showPricing()' id='upgrade-btn' style='background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Nunito,sans-serif'> Upgrade</button>"
     "<span class='save-ind' id='save-ind'></span>"
@@ -2863,6 +2955,10 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<button onclick='sourcerScore()' style='background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;margin-bottom:14px'>Score and write InMails</button>"
   "<div id='sourcer-results'></div>"
   "</div>"
+  "</div>"
+  "<div id='ph-history-wrap' style='display:none;margin-top:8px'>"
+  "<div style='font-size:13px;font-weight:700;color:var(--tx);margin-bottom:10px'>Search History</div>"
+  "<div id='ph-history-list'></div>"
   "</div>"
   "</div>"
   "<div class='modal-overlay' id='profile-modal'><div class='modal' style='max-width:600px'><div class='modal-title'>Edit Profile</div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:4px'>Identity</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>Full Name</label><input class='modal-input' id='pm-name' placeholder='e.g. Jane Smith' type='text'></div><div class='modal-field'><label class='modal-label'>Email</label><input class='modal-input' id='pm-email' placeholder='you@yoursite.com' type='text'></div><div class='modal-field'><label class='modal-label'>Agency / Company</label><input class='modal-input' id='pm-agency' placeholder='Scout' type='text'></div><div class='modal-field'><label class='modal-label'>Your Role</label><input class='modal-input' id='pm-role' placeholder='Fractional CMO' type='text'></div><div class='modal-field'><label class='modal-label'>Location</label><input class='modal-input' id='pm-location' placeholder='New York, USA' type='text'></div><div class='modal-field'><label class='modal-label'>Years Experience</label><input class='modal-input' id='pm-experience' placeholder='10+' type='text'></div></div><div class='modal-field' style='margin-top:4px'><label class='modal-label'>Tagline</label><input class='modal-input' id='pm-tagline' placeholder='Fractional CMO for AI-first startups'></div><div class='modal-field'><label class='modal-label'>Bio</label><textarea class='modal-input modal-textarea' id='pm-bio' placeholder='Tell prospects who you are...'></textarea></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Ideal Client</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>Target Industries</label><input class='modal-input' id='pm-industries' placeholder='AI, SaaS, Fintech' type='text'></div><div class='modal-field'><label class='modal-label'>Ideal Funding Stage</label><input class='modal-input' id='pm-funding_stage' placeholder='Seed – Series B' type='text'></div><div class='modal-field'><label class='modal-label'>Ideal Company Size</label><input class='modal-input' id='pm-company_size' placeholder='10–100 employees' type='text'></div><div class='modal-field'><label class='modal-label'>Deal Size / Rate</label><input class='modal-input' id='pm-deal_size' placeholder='$5k–$15k/mo' type='text'></div><div class='modal-field'><label class='modal-label'>Typical Engagement</label><input class='modal-input' id='pm-client_size' placeholder='3–6 month retainers' type='text'></div><div class='modal-field'><label class='modal-label'>Availability</label><input class='modal-input' id='pm-availability' placeholder='2 spots open Q2 2026' type='text'></div></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Links</div><div style='display:grid;grid-template-columns:1fr 1fr;gap:10px'><div class='modal-field'><label class='modal-label'>LinkedIn</label><input class='modal-input' id='pm-linkedin' placeholder='https://linkedin.com/in/you' type='text'></div><div class='modal-field'><label class='modal-label'>Twitter / X</label><input class='modal-input' id='pm-twitter' placeholder='https://x.com/yourhandle' type='text'></div><div class='modal-field'><label class='modal-label'>Website</label><input class='modal-input' id='pm-website' placeholder='https://yoursite.com' type='text'></div><div class='modal-field'><label class='modal-label'>Book a Call</label><input class='modal-input' id='pm-calendly' placeholder='https://calendly.com/you' type='text'></div></div><div style='font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;margin-top:16px'>Settings</div><div class='modal-field'><label class='modal-label'>Min GTM Score to show (0 = show all)</label><input class='modal-input' id='pm-min_score' placeholder='0' type='number' min='0' max='100'></div><div class='modal-actions'><button class='modal-cancel' onclick='closeProfileModal()'>Cancel</button><button class='modal-save' onclick='profileSaveInfo()'>Save changes</button></div></div></div>"
