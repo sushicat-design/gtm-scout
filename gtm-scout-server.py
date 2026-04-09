@@ -967,7 +967,6 @@ function bulk(){
   if(busy)return;
   var names=document.getElementById('bi').value.trim().split('\\n').map(function(s){return s.trim();}).filter(Boolean);
   if(!names.length)return;
-  if(names.length>5){if(!confirm('Researching '+names.length+' companies uses many API tokens and may hit rate limits. Research up to 3 at a time for best results. Continue?'))return;}
   document.getElementById('bi').value='';
   var i=0;function next(){if(i>=names.length)return;run(names[i++],next);}next();
 }
@@ -1111,7 +1110,7 @@ function researchSelected(){
       updateBadges();
       renderInbox();
       setPage('inbox');
-      showUpsellToast('Done! '+INBOX.length+' lead'+(INBOX.length!==1?'s':'')+' in Inbox');
+      showUpsellToast('Research complete! Check Inbox ✓');
       return;
     }
     var name=names[i++];
@@ -4139,7 +4138,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 else: break
             self.respond({'text': final_text})
         else:
-            payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1200, 'system': system,
+            payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1000, 'system': system,
                 'messages': [{'role': 'user', 'content': 'Research this company and return the JSON profile: "' + company + '"'}]}).encode('utf-8')
             req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
                 headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
