@@ -2581,28 +2581,63 @@ function authSuccess(){
   else{initApp();}
 }
 function renderTopbar(){
-  var right=document.getElementById('topbar-right');if(!right)return;profileLoad();
-  var _tier=tierLoad(); var plan=_tier.plan||'free';
+  var right=document.getElementById('topbar-right');
+  if(!right)return;
+  profileLoad();
+  var _tier=tierLoad();
+  var plan=_tier.plan||'free';
   var initials=PROFILE.name?PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase():'ME';
   right.innerHTML=
     '<div id="credits-bar" style="display:none;align-items:center;gap:8px">'+
-      '<div style="width:70px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden"><div id="credits-fill" style="height:100%;background:var(--pip);width:0%;border-radius:2px;transition:width .3s"></div></div>'+
+      '<div style="width:70px;height:4px;background:var(--sur3);border-radius:2px;overflow:hidden">'+
+        '<div id="credits-fill" style="height:100%;background:var(--pip);width:0%;border-radius:2px;transition:width .3s"></div>'+
+      '</div>'+
       '<span id="credits-count" style="font-size:10px;color:var(--tx3)"></span>'+
     '</div>'+
     (!_tier._master&&plan==='free'?'<button onclick="showPricing()" id="upgrade-btn" style="background:none;border:1px solid var(--pip-bor);color:var(--pip);font-size:11px;font-weight:700;padding:5px 14px;border-radius:999px;cursor:pointer;font-family:Outfit,sans-serif">Upgrade</button>':'')+
     '<div style="position:relative" id="profile-menu-wrap">'+
       '<button id="profile-avatar-btn" style="width:32px;height:32px;border-radius:50%;background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;display:flex;align-items:center;justify-content:center" title="Account">'+initials+'</button>'+
-      '<div id="profile-dropdown" style="display:none;position:absolute;top:38px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);min-width:180px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden">'+
+      '<div id="profile-dropdown" style="display:none;position:absolute;top:42px;right:0;background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);min-width:180px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.5);overflow:hidden">'+
         '<div style="padding:12px 16px;border-bottom:1px solid var(--bor)">'+
           '<div style="font-size:13px;font-weight:700;color:var(--tx)">'+(PROFILE.name||'My account')+'</div>'+
           '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+(PROFILE.email||'')+'</div>'+
         '</div>'+
-        '<button data-nav="dashboard" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9783; Dashboard</button>'+
-        '<button data-nav="profile" onclick="closeProfileMenu()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">&#9881; Profile</button>'+
-        '<button onclick="closeProfileMenu();authSignOut()" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">Sign out</button>'+
-      '</div></div>';
+        '<button data-nav="dashboard" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;display:block">&#9783; Dashboard</button>'+
+        '<button data-nav="profile" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx2);font-size:13px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">&#9881; Profile</button>'+
+        '<button id="signout-btn" style="width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;border-top:1px solid var(--bor);display:block">Sign out</button>'+
+      '</div>'+
+    '</div>'+
+    '<button class="hamburger" id="hamburger-btn" title="Menu" style="margin-left:8px">'+
+      '<span></span><span></span><span></span>'+
+    '</button>';
 
+  updateCreditsBar();
 
+  setTimeout(function(){
+    // Avatar button toggles dropdown
+    var avatarBtn=document.getElementById('profile-avatar-btn');
+    if(avatarBtn) avatarBtn.onclick=function(e){
+      e.stopPropagation();
+      var dd=document.getElementById('profile-dropdown');
+      if(dd) dd.style.display=dd.style.display==='none'?'block':'none';
+    };
+    // Hamburger opens sidebar
+    var hb=document.getElementById('hamburger-btn');
+    if(hb) hb.onclick=function(e){ e.stopPropagation(); openSidebar(); };
+    // Dropdown nav items
+    var wrap=document.getElementById('profile-menu-wrap');
+    if(wrap) wrap.addEventListener('click',function(e){
+      var btn=e.target.closest('[data-nav]');
+      if(btn){ closeProfileMenu(); navTo(btn.getAttribute('data-nav')); return; }
+      var so=e.target.closest('#signout-btn');
+      if(so){ closeProfileMenu(); authSignOut(); }
+    });
+    // Close dropdown on outside click
+    document.addEventListener('click',function(){
+      var dd=document.getElementById('profile-dropdown');
+      if(dd) dd.style.display='none';
+    });
+  },50);
 }
 
 function closeProfileMenu(){
