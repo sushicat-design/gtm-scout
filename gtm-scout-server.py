@@ -2013,7 +2013,7 @@ function renderProfile(){
         '</div>'+
         '<button class="prof-edit-btn" data-action="edit-profile">Edit Profile</button>'+
         '<button class="prof-edit-btn" onclick="profileCopyShare()" style="margin-top:8px;background:none;border:1px solid var(--bor2);color:var(--tx2)">Copy Share Link</button>'+
-        (plan==='free'?'<button class="prof-upgrade-btn" onclick="showPricing()">Upgrade to Pro</button>':'')+
+        (plan==='free'||plan==='starter'||plan==='pro'?'<button class="prof-upgrade-btn" onclick="showPricing()">'+(plan==='pro'?'Upgrade to Agency':plan==='starter'?'Upgrade to Pro':'Upgrade')+'</button>':'')+
       '</div>'+
       '<div class="prof-card">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
@@ -2327,7 +2327,7 @@ function showUpsellToast(msg){
   toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--sur);border:1px solid var(--pip-bor);border-radius:var(--r);padding:14px 18px;max-width:300px;z-index:500;font-size:12px;color:var(--tx2);display:flex;flex-direction:column;gap:8px";
   var span = document.createElement("span"); span.textContent = msg;
   var btn = document.createElement("button");
-  btn.textContent = "Upgrade to Pro";
+  var _t2=tierLoad();btn.textContent=_t2.plan==="pro"?"Upgrade to Agency":_t2.plan==="starter"?"Upgrade to Pro":"Upgrade";
   btn.style.cssText = "background:var(--pip);color:#fff;border:none;font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif";
   btn.onclick = function(){ showPricing(); toast.remove(); };
   toast.appendChild(span); toast.appendChild(btn);
