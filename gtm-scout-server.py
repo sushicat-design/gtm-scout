@@ -5133,7 +5133,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
                         import time; time.sleep(30); continue
-                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
+self.respond({'error': 'API error ' + str(e.code) + ' - servers busy, try again in 2 min'}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
                 content = data.get('content', [])
