@@ -3504,7 +3504,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "<div id='sb-tier-items'></div>"
     "</div>"  "</div>\n"
 
-  "<div class='page active' id='page-search'>"
+  "<div class='page' id='page-search'>"
     "<div class='search-hero'>"
       "<h1>Find your next client</h1>"
       "<p>Research any company to get a full GTM profile, score and pitch opener.</p>"
