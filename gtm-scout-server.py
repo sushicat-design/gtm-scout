@@ -1,3 +1,4 @@
+# Scout v2.4 | 2026-04-10 09:44
 # Scout v2.3 | 2026-04-10 09:34
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
@@ -850,7 +851,7 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100 integer; only score above 30 - a score below 30 means the company is not a good lead), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
+var SYS = "You are a B2B lead research assistant for fractional CMO services. Use web search to find REAL, VERIFIED information about the company. NEVER invent data - use null if not found. SCORING RULES: Score 75-100 ONLY if recently funded (last 6 months) AND no CMO/VP Marketing on team. Score 50-74 if funded but marketing is thin. Score below 30 if: has a full-time CMO, large public company, Fortune 500, or well-known brand. HARD EXCLUSIONS - return score 0 and gtm_label Not a fit for: 1000+ employee companies, Fortune 500/S&P 500, public companies (NYSE/NASDAQ), companies with a known CMO, and well-known brands like OpenAI/Anthropic/Google/Meta/Apple/Microsoft/Amazon/Stripe/Ramp/Notion/Figma. Return ONLY valid JSON: company, tagline, sector, hq, stage, funding_amount, founded, employee_count, has_cmo (bool), is_public (bool), is_fortune500 (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead/Not a fit), why_fit, pitch_opener, decision_maker, best_contact_title, best_contact_name, outreach_status (not_contacted), gtm_signals: {recently_funded, no_cmo, marketing_gap_visible}."
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load(onDone) {
@@ -998,12 +999,18 @@ function showPanel(id){
 
 
 function run(company,callback){
+  var _nc=function(n){return(n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
+  if(DB.concat(INBOX).some(function(r){return _nc(r.company)===_nc(company);})){
+    var ed=document.getElementById('err');
+    if(ed){ed.style.display='block';ed.textContent=company+' is already in your pipeline.';}
+    return;
+  }
   busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
   document.getElementById('err').style.display='none';document.getElementById('lname').textContent=company;
   document.getElementById('ldg').style.display='flex';
   var secs=0;document.getElementById('ltimer').textContent='0s';
   ti=setInterval(function(){document.getElementById('ltimer').textContent=(++secs)+'s';},1000);
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -1021,7 +1028,12 @@ function run(company,callback){
     var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     // Skip cold leads (score < 30) on auto-research
     var score=res.gtm_readiness_score||0;
-    if(score<30 && existing<0){ if(callback)callback(); return; }
+    if(res.is_public||res.is_fortune500||res.gtm_label==='Not a fit'||(res.has_cmo===true&&score<60)){
+      var ed2=document.getElementById('err');
+      if(ed2){ed2.style.display='block';ed2.textContent=(res.has_cmo?res.company+' has a CMO — not a fit':res.is_public||res.is_fortune500?res.company+' is too large or public':res.company+' is not a good fit (score: '+score+')');}
+      if(callback)callback(); return;
+    }
+    if(score<20 && existing<0){ if(callback)callback(); return; }
     if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
     save();renderAll();
   }).catch(function(e){var el=document.getElementById('err');el.textContent='Error: '+e.message;el.style.display='block';})
@@ -1044,7 +1056,9 @@ function fetchLeads() {
   var extraInstructions = '';
   if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
-  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
+  var _niche=(document.getElementById('fetch-niche')||{value:''}).value.trim();
+  var _nicheStr=_niche?' Focus exclusively on '+_niche+' companies.':' Focus on AI, SaaS, fintech, web3, climate tech.';
+  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days.'+_nicheStr+' Return only real verifiable companies.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -1082,8 +1096,9 @@ function fetchLeads() {
     });
     if(!cos.length)throw new Error('No valid companies found in results');
     // Dedup against existing DB + INBOX
-    var existingNames=DB.concat(INBOX).map(function(x){return (x.company||'').toLowerCase();});
-    cos=cos.filter(function(co){return existingNames.indexOf(co.company.toLowerCase())<0;});
+    var _n=function(s){return(s||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
+    var existingNames=DB.concat(INBOX).map(function(x){return _n(x.company);}).filter(Boolean);
+    cos=cos.filter(function(co){var n=_n(co.company);return n&&existingNames.indexOf(n)<0;;});
     if(!cos.length)throw new Error('All companies already in your pipeline - try a different source');
     var list=document.getElementById('fetch-list');list.innerHTML='';
     cos.forEach(function(co){
@@ -1130,7 +1145,7 @@ function researchSelected(){
 function runToInbox(company, callback){
   var ind=document.getElementById('save-ind');
   if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -2628,6 +2643,7 @@ function showAuthScreen(mode){
     if(authBtn) authBtn.onclick=function(){authSubmit(mode);};
   },50);
 }
+function authShowErr(msg){var e=document.getElementById('auth-error');if(e)e.textContent=msg;else alert(msg);}
 function authSubmit(mode){
   var email=(document.getElementById('auth-email')||{value:''}).value.trim();
   var pass=(document.getElementById('auth-pass')||{value:''}).value;
@@ -3524,6 +3540,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
+      "<input id='fetch-niche' class='modal-input' placeholder='Industry focus (e.g. B2B SaaS, climate tech, fintech) — leave blank for broad search' style='margin:10px 0;font-size:13px;padding:10px 14px;display:block;width:100%'>"
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
@@ -5130,6 +5147,31 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
                 try:
                     with urllib.request.urlopen(req, timeout=120) as resp:
+                        data = json.loads(resp.read())
+                except urllib.error.HTTPError as e:
+                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
+                except Exception as e:
+                    self.respond({'error': str(e)}); return
+                content = data.get('content', [])
+                stop_reason = data.get('stop_reason', '')
+                for block in content:
+                    if block.get('type') == 'text': final_text = block.get('text', '')
+                if stop_reason == 'end_turn': break
+                elif stop_reason == 'tool_use':
+                    messages.append({'role': 'assistant', 'content': content})
+                    messages.append({'role': 'user', 'content': [{'type': 'tool_result', 'tool_use_id': b['id'], 'content': [{'type': 'text', 'text': 'ok'}]} for b in content if b.get('type') == 'tool_use']})
+                else: break
+            self.respond({'text': final_text})
+        elif mode == 'research':
+            messages = [{'role': 'user', 'content': 'Research this company using web search. Verify all data before returning. Company: "' + company + '"'}]
+            final_text = ''
+            for _ in range(12):
+                payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1500, 'system': system,
+                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
+                req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
+                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
+                try:
+                    with urllib.request.urlopen(req, timeout=90) as resp:
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
