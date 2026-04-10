@@ -2634,7 +2634,6 @@ function authSubmit(mode){
   }
 }
 function authSuccess(){
-  document.body.style.visibility='hidden';
   var sc=document.getElementById('auth-screen');
   if(sc)sc.remove();
   initApp();
@@ -2754,10 +2753,14 @@ function obFinish(){
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   document.body.classList.add('app-ready');
-  document.body.style.visibility='hidden';
+  var _shell=document.getElementById('app-shell')||document.querySelector('.topbar');
+  if(_shell)_shell.style.opacity='0';
+  // Safety: never hide longer than 5s
+  var _safetyTimer=setTimeout(function(){if(_shell)_shell.style.opacity='';},5000);
   load(function(){
+    clearTimeout(_safetyTimer);
     setPage('dashboard');
-    document.body.style.visibility='';
+    if(_shell)_shell.style.opacity='';
     updateCreditsBar();
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
@@ -3388,7 +3391,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   var token=localStorage.getItem('sb_token'),user=authGetUser();
-  if(token&&user){document.body.style.visibility='hidden';SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
+  if(token&&user){SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
   else{showAuthScreen('signup');}
 });
 """
