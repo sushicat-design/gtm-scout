@@ -387,6 +387,9 @@ body::after{
 }
 .fetch-hero-btn:hover::after{opacity:1}
 .fetch-hero-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+.niche-btn{background:var(--sur2);border:1px solid var(--bor2);color:var(--tx2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;cursor:pointer;transition:all .18s}
+.niche-btn:hover{border-color:var(--pip);color:var(--pip2)}
+.niche-btn.active{background:var(--pip);border-color:var(--pip);color:#fff}
 #fetch-ldg{display:none;align-items:center;gap:8px;font-size:12px;color:var(--tx3);margin-top:16px;justify-content:center}
 #fetch-err{display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);color:var(--red);font-size:12px;border-radius:var(--r-sm)}
 #fetch-results{display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--bor);text-align:left}
@@ -1035,6 +1038,14 @@ function run(company,callback){
 
 // ── FETCH / INBOX FLOW ───────────────────────────────────────────────────────
 
+var activeNiche = 'All';
+function setNiche(el, niche) {
+  activeNiche = niche;
+  var btns = document.querySelectorAll('.niche-btn');
+  btns.forEach(function(b){ b.classList.remove('active'); });
+  el.classList.add('active');
+}
+
 function fetchLeads() {
   var btn=document.getElementById('fetch-btn');
   var ldg=document.getElementById('fetch-ldg');
@@ -1048,7 +1059,8 @@ function fetchLeads() {
   var extraInstructions = '';
   if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
-  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days. Focus on AI, SaaS, fintech, web3. Return AT LEAST 8 genuine startups that recently raised funding. EXCLUDE well-known mega-brands like OpenAI, Anthropic, Google, Stripe, Ramp, Notion - only real emerging startups.'+extraInstructions;
+  var nicheFilter = activeNiche === 'All' ? 'AI, SaaS, fintech, web3' : activeNiche;
+  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days. Focus on '+nicheFilter+'. Return AT LEAST 8 genuine startups that recently raised funding. EXCLUDE well-known mega-brands like OpenAI, Anthropic, Google, Stripe, Ramp, Notion - only real emerging startups.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -2261,6 +2273,17 @@ function profileDeleteCase(){
   }
 }
 
+function logoFileUpload(input, targetId) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var el = document.getElementById(targetId);
+    if (el) el.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function profileCopyShare(){
   var url=safeOrigin()+'?profile='+encodeURIComponent(PROFILE.name||'me');
   navigator.clipboard.writeText(url).then(function(){
@@ -3030,7 +3053,13 @@ function openProposalModal(r){
       // SECTION: Branding
       '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Branding</div>'+
       '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px">'+
-        '<input id="pm-logo" class="modal-input" placeholder="Your logo URL" value="'+(PROFILE.wl_logo||'')+'" style="font-size:13px;padding:10px 13px">'+
+        '<div style="position:relative">'+
+          '<input id="pm-logo" class="modal-input" placeholder="Logo URL or upload a file" value="'+(PROFILE.wl_logo||'')+'" style="font-size:13px;padding:10px 13px;padding-right:90px">'+
+          '<label style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--sur2);border:1px solid var(--bor2);color:var(--tx2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;white-space:nowrap">'+
+            'Upload'+
+            '<input type="file" accept="image/*" onchange="logoFileUpload(this,\'pm-logo\')" style="display:none">'+
+          '</label>'+
+        '</div>'+
         '<div style="display:flex;align-items:center;gap:8px">'+
           '<input type="color" id="pm-color" value="'+co+'" style="width:36px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px;flex-shrink:0">'+
           '<span id="pm-color-hex" style="font-size:12px;color:var(--tx3);white-space:nowrap">'+co+'</span>'+
@@ -3519,6 +3548,14 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
+      "<div id='niche-btns' style='display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px'>"+
+      "  <button class='niche-btn active' onclick='setNiche(this,\"All\")'>All</button>"+
+      "  <button class='niche-btn' onclick='setNiche(this,\"B2B SaaS\")'>B2B SaaS</button>"+
+      "  <button class='niche-btn' onclick='setNiche(this,\"AI\")'>AI</button>"+
+      "  <button class='niche-btn' onclick='setNiche(this,\"Fintech\")'>Fintech</button>"+
+      "  <button class='niche-btn' onclick='setNiche(this,\"Web3\")'>Web3</button>"+
+      "  <button class='niche-btn' onclick='setNiche(this,\"Health\")'>Health</button>"+
+      "</div>"+
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
