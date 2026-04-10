@@ -2010,16 +2010,14 @@ function renderTeams(){
   else{html+='<div style="padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700">Buy extra seat</a></div>';}
   root.innerHTML=html;
 }
-function teamsInvite(){
-  var email=(document.getElementById('teams-invite-email')||{value:''}).value.trim().toLowerCase();
+function teamsInvite(emailArg){
+  var email=(emailArg||'').trim().toLowerCase()||(document.getElementById('teams-invite-email')||{value:''}).value.trim().toLowerCase();
   if(!email||email.indexOf('@')<0){showInfoToast('Enter a valid email');return;}
   var team=teamsLoad();var members=team.members||[];var user=authGetUser();
   if(user&&email===user.email){showInfoToast('That is your own email');return;}
   if(members.some(function(m){return m.email===email;})){showInfoToast('Already in team');return;}
-  var cost=members.length>=4?'This will cost $20/mo extra.':'Included in your plan.';
-  if(!confirm('Invite '+email+'? '+cost))return;
   members.push({email:email,status:'pending',invited:new Date().toISOString()});
-  team.members=members;teamsSave(team);showInfoToast('Invite sent to '+email+' checked');renderTeams();
+  team.members=members;teamsSave(team);showInfoToast('Invite sent to '+email+' ✓');renderTeams();
 }
 function teamsRemoveMember(idx){
   var team=teamsLoad();var members=team.members||[];var removed=members[idx];
