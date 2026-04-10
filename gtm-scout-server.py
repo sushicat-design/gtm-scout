@@ -155,10 +155,8 @@ body{
   min-height:100vh;
   position:relative;
   overflow-x:hidden;
-  opacity:0;
-  transition:opacity .1s ease;
 }
-body.app-ready{opacity:1}
+
 
 /* Animated ambient orbs */
 body::before{
