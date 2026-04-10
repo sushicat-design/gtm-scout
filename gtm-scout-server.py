@@ -1,4 +1,4 @@
-# Scout v3.2 | 2026-04-10 12:37
+# Scout v3.3 | 2026-04-10 12:41
 # Scout v3.0 | 2026-04-10 10:58
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
@@ -2024,7 +2024,6 @@ function teamsRemoveMember(idx){
   members.splice(idx,1);team.members=members;teamsSave(team);showInfoToast(removed.email+' removed');renderTeams();
 }
 function renderProfile(){
-  profileLoad();
   var cont = document.getElementById('profile-root');
   if(!cont) return;
   var initials = PROFILE.name ? PROFILE.name.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() : '?';
@@ -2161,8 +2160,10 @@ function profileSaveInfo(){
     var el=document.getElementById("pm-"+f);
     if(el) PROFILE[f]=el.value.trim();
   });
+  // Save directly to localStorage first, then close, then re-render
+  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
   closeProfileModal();
-  profileSave();
+  renderProfile();
 }
 
 
@@ -3342,15 +3343,6 @@ function pruneTrash(){
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     e.preventDefault();
   });
-  // DevTools size detection
-  var _devCheck=function(){
-    var threshold=160;
-    if(window.outerWidth-window.innerWidth>threshold||window.outerHeight-window.innerHeight>threshold){
-      document.body.style.display='none';
-      setTimeout(function(){document.body.style.display='';},1000);
-    }
-  };
-  setInterval(_devCheck,1500);
   // Disable drag
   document.addEventListener('dragstart',function(e){
     if(e.target.tagName!=='INPUT')e.preventDefault();
