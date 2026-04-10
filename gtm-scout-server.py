@@ -5294,7 +5294,7 @@ def monday_autofetch():
 if __name__ == '__main__':
     server = http.server.HTTPServer(('0.0.0.0', PORT), Handler)
     monday_autofetch()
-    print('\n  Scout running at http://localhost:' + str(PORT))
+    print('\n  Scout v7 running at http://localhost:' + str(PORT))
     print('  Monday auto-fetch: enabled (8am UTC)')
     print('  Press Ctrl+C to stop.\n')
     try:
