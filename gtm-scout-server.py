@@ -2688,6 +2688,7 @@ function authSignOut(){
   showAuthScreen('login');
 }
 function showAuthScreen(mode){
+  document.body.classList.add('app-ready');  // hide spinner regardless of auth state
   mode=mode||'signup';var old=document.getElementById('auth-screen');if(old)old.remove();
   var sc=document.createElement('div');sc.id='auth-screen';
   sc.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#020408;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;overflow-y:auto';
