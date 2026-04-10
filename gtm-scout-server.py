@@ -3906,7 +3906,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="#waitlist" class="nlink" id="t-nav3">Early access</a>
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
-    <a href="/app" id="nav-cta" class="ncta">Sign up</a>
+    <a href="/app" id="nav-cta" class="ncta">Start free</a>
 <button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(45,157,232,0.3);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;margin-left:8px">ES</button>
 <script>try{
   var _t=localStorage.getItem('sb_token');
