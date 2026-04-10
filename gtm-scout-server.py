@@ -2011,7 +2011,7 @@ function renderTeams(){
   root.innerHTML=html;
 }
 function teamsInvite(emailArg){
-  var email=(emailArg||'').trim().toLowerCase()||(document.getElementById('teams-invite-email')||{value:''}).value.trim().toLowerCase();
+  var email=((emailArg||'').trim()||(document.getElementById('teams-invite-email')||{value:''}).value.trim()).toLowerCase();
   if(!email||email.indexOf('@')<0){showInfoToast('Enter a valid email');return;}
   var team=teamsLoad();var members=team.members||[];var user=authGetUser();
   if(user&&email===user.email){showInfoToast('That is your own email');return;}
