@@ -1156,7 +1156,7 @@ function runToInbox(company, callback){
     if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}
     setTimeout(function(){if(ind)ind.textContent='';},3000);
   }).finally(function(){
-    if(callback)setTimeout(callback,1500); // 1.5s between calls avoids rate limit
+    if(callback)setTimeout(callback,4000); // 4s between calls avoids rate limit
   });
 }
 
@@ -2629,6 +2629,7 @@ function authSubmit(mode){
   }
 }
 function authSuccess(){
+  document.body.style.visibility='hidden';
   var sc=document.getElementById('auth-screen');
   if(sc)sc.remove();
   initApp();
@@ -5047,7 +5048,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         if mode == 'fetch':
             messages = [{'role': 'user', 'content': 'Search the web and complete this task: ' + company}]
             final_text = ''
-            for _ in range(10):
+            for _ in range(5):
                 payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
@@ -5056,6 +5057,8 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     with urllib.request.urlopen(req, timeout=90) as resp:
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
+                    if e.code == 429:
+                        import time; time.sleep(15); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
@@ -5092,6 +5095,33 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
+                except Exception as e:
+                    self.respond({'error': str(e)}); return
+                content = data.get('content', [])
+                stop_reason = data.get('stop_reason', '')
+                for block in content:
+                    if block.get('type') == 'text': final_text = block.get('text', '')
+                if stop_reason == 'end_turn': break
+                elif stop_reason == 'tool_use':
+                    messages.append({'role': 'assistant', 'content': content})
+                    messages.append({'role': 'user', 'content': [{'type': 'tool_result', 'tool_use_id': b['id'], 'content': [{'type': 'text', 'text': 'ok'}]} for b in content if b.get('type') == 'tool_use']})
+                else: break
+            self.respond({'text': final_text})
+        elif mode == 'research':
+            messages = [{'role': 'user', 'content': 'Research this company and return ONLY a JSON object with the profile. Company: "' + company + '"'}]
+            final_text = ''
+            for _ in range(8):
+                payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1500, 'system': system,
+                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
+                req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
+                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
+                try:
+                    with urllib.request.urlopen(req, timeout=90) as resp:
+                        data = json.loads(resp.read())
+                except urllib.error.HTTPError as e:
+                    if e.code == 429:
+                        import time; time.sleep(10); continue
+                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:200]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
                 content = data.get('content', [])
