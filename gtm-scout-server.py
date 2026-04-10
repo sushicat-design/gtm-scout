@@ -5058,7 +5058,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     with urllib.request.urlopen(req, timeout=90) as resp:
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
-                    if e.code == 429:
+                    if e.code in (429, 529):
                         import time; time.sleep(15); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
                 except Exception as e:
@@ -5120,7 +5120,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     with urllib.request.urlopen(req, timeout=90) as resp:
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
-                    if e.code == 429:
+                    if e.code in (429, 529):
                         import time; time.sleep(10); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:200]}); return
                 except Exception as e:
