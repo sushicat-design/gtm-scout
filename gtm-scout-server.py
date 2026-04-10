@@ -2753,14 +2753,8 @@ function obFinish(){
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   document.body.classList.add('app-ready');
-  var _shell=document.getElementById('app-shell')||document.querySelector('.topbar');
-  if(_shell)_shell.style.opacity='0';
-  // Safety: never hide longer than 5s
-  var _safetyTimer=setTimeout(function(){if(_shell)_shell.style.opacity='';},5000);
   load(function(){
-    clearTimeout(_safetyTimer);
     setPage('dashboard');
-    if(_shell)_shell.style.opacity='';
     updateCreditsBar();
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
