@@ -2106,7 +2106,7 @@ function renderProfile(){
           '<div class="prof-section-title">Case Studies</div>'+
           ''+
         '</div>'+
-        '<div class="case-studies-grid">'+casesHtml+'</div>'+
+        ((PROFILE.cases&&PROFILE.cases.length)?'<div class="case-studies-grid">'+casesHtml+'</div>':'<div style="display:block;width:100%">'+casesHtml+'</div>')+
       '</div>'+
       '<div class="prof-section">'+
         '<div class="prof-section-title" style="margin-bottom:12px">Business Details</div>'+
