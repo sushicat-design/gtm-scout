@@ -1,3 +1,5 @@
+# Scout v3.3 | 2026-04-10 12:41
+# Scout v3.0 | 2026-04-10 10:58
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
@@ -5278,15 +5280,3 @@ if __name__ == '__main__':
         server.serve_forever()
     except KeyboardInterrupt:
         print('\n  Stopped.')
-
-    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
-    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
-    "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span class='si-badge' id='inbox-badge' style='display:none'>0</span></button>"
-    "<div id='sb-tier-features' style='padding:12px 16px;border-top:1px solid var(--bor);margin-top:8px'>"
-    "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px'></div>"
-    "<div id='sb-tier-features' style='display:none;padding:12px 16px;border-top:1px solid var(--bor)'>"
-    "<div id='sb-tier-label' style='font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px'></div>"
-    "<div id='sb-tier-items'></div>"
-    "</div>"
-    "<div id='sb-tier-items' style='font-size:12px;color:var(--tx2);line-height:1.8'></div>"
-
