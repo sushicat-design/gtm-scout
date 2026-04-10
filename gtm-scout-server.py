@@ -1119,13 +1119,14 @@ function researchSelected(){
     }
     var name=names[i++];
     showInfoToast('Researching '+name+'... ('+i+'/'+names.length+')');
-    runToInbox(name,function(){added++;next();});
+    runToInbox(name,function(wasAdded){if(wasAdded)added++;next();});
   }
   setTimeout(next,0);
 }
 
 function runToInbox(company, callback){
   var ind=document.getElementById('save-ind');
+  var _wasAdded=false;
   if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
   .then(function(r){return r.json();}).then(function(d){
@@ -1145,20 +1146,21 @@ function runToInbox(company, callback){
     res._open=false;
     // Skip only very cold leads
     var rti_score=res.gtm_readiness_score||0;
-    if(rti_score<35){ if(callback){setTimeout(callback,4000);}  return; }
+    if(rti_score<35){ if(callback){setTimeout(function(){callback(false);},4000);}  return; }
     // Dedup: skip if already in DB or INBOX
     var alreadyInDb=DB.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     var alreadyInInbox=INBOX.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
-    if(alreadyInDb||alreadyInInbox){ if(callback){setTimeout(callback,1500);} return; }
+    if(alreadyInDb||alreadyInInbox){ if(callback){setTimeout(function(){callback(false);},1500);} return; }
     INBOX.unshift(res);
-    save();updateBadges();
+    save();updateBadges();renderInbox();
     if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
     setTimeout(function(){if(ind)ind.textContent='';},2000);
+    _wasAdded=true;
   }).catch(function(e){
     if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}
     setTimeout(function(){if(ind)ind.textContent='';},3000);
   }).finally(function(){
-    if(callback)setTimeout(callback,4000); // 4s between calls avoids rate limit
+    if(callback)setTimeout(function(){callback(_wasAdded);},4000); // 4s between calls avoids rate limit
   });
 }
 
