@@ -154,7 +154,10 @@ body{
   min-height:100vh;
   position:relative;
   overflow-x:hidden;
+  opacity:0;
+  transition:opacity .1s ease;
 }
+body.app-ready{opacity:1}
 
 /* Animated ambient orbs */
 body::before{
@@ -2627,8 +2630,8 @@ function authSubmit(mode){
 }
 function authSuccess(){
   var sc=document.getElementById('auth-screen');
-  if(sc){sc.style.opacity='0';sc.style.transition='opacity .3s';setTimeout(function(){sc.remove();initApp();},300);}
-  else{initApp();}
+  if(sc)sc.remove();
+  initApp();
 }
 function renderTopbar(){
   var right=document.getElementById('topbar-right');
