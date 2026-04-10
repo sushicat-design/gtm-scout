@@ -185,7 +185,8 @@ body::after{
 }
 
 /* ── SCANLINE TEXTURE overlay ── */
-.page,.topbar,.sidebar{position:relative;z-index:1}
+.page,.sidebar{position:relative;z-index:1}
+.topbar{position:relative;z-index:9999}
 
 /* ── TOPBAR ── */
 .topbar{
@@ -819,6 +820,13 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 
 JS = """
 function goHome(){window.location.href='/';}
+function safeOrigin(){
+  try{
+    var o=window.location.origin;
+    if(o&&o!=='null'&&o.indexOf('http')===0)return o;
+  }catch(e){}
+  return 'https://scout-ai.io';
+}
 
 function openProfileModal(){
   profileLoad();
@@ -2254,7 +2262,7 @@ function profileDeleteCase(){
 }
 
 function profileCopyShare(){
-  var url=window.location.origin+'?profile='+encodeURIComponent(PROFILE.name||'me');
+  var url=safeOrigin()+'?profile='+encodeURIComponent(PROFILE.name||'me');
   navigator.clipboard.writeText(url);
   var btn=document.querySelector('.profile-share-btn');
   if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Share Profile';},2000);}
@@ -3096,7 +3104,7 @@ function submitProposalModal(){
   };
   var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   closeProposalModal();
-  window.open(window.location.origin+'/proposal/'+encoded,'_blank');
+  window.open(safeOrigin()+'/proposal/'+encoded,'_blank');
   showInfoToast('Proposal opening\u2026');
 }
 
@@ -3371,7 +3379,7 @@ function generateProposal(r){
     cases:PROFILE.case_studies||[]
   };
   var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-  window.open(window.location.origin+'/proposal/'+encoded,'_blank');
+  window.open(safeOrigin()+'/proposal/'+encoded,'_blank');
   showInfoToast('Proposal opening\u2026');
 }
 window.addEventListener('pagehide',function(e){
