@@ -1,4 +1,3 @@
-# Scout v2.1 - build Fri Apr 10 09:17:47 UTC 2026
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
@@ -794,7 +793,6 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .kanban-empty{font-size:12px;color:var(--tx3);text-align:center;padding:24px 0;opacity:.5}
 /* App loading state - hide content until ready */
 
-
 """
 
 JS = """
@@ -826,8 +824,8 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "You are a B2B lead research assistant for fractional CMO services. Use web search to find REAL, VERIFIED information. NEVER invent data — use null if you cannot find it. SCORING RULES: A fractional CMO prospect needs to be a company that DOES NOT yet have a full-time CMO or VP Marketing AND is at a stage where they need GTM help. Score 75-100 ONLY if: recently funded (last 6 months) + no CMO/VP Marketing on team. Score 50-74 if: funded but has some marketing coverage. Score below 50 if: has a full CMO, is a large public company, or is a Fortune 500/well-known brand. EXCLUSIONS — always return score 0 and set gtm_label to 'Not a fit' for: any company with 1000+ employees, any Fortune 500 or S&P 500 company, any company with a known CMO/Chief Marketing Officer, any public company (NYSE/NASDAQ listed), companies like OpenAI/Anthropic/Google/Meta/Apple/Microsoft/Amazon/Stripe/Ramp/Notion/Figma or any other well-known tech brand. Return ONLY a valid JSON object: company (official name), tagline, sector, hq, stage, funding_amount, founded, employee_count (integer or null), has_cmo (bool — true if ANY CMO/VP Marketing/Head of Marketing found), is_public (bool), is_fortune500 (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead/Not a fit), why_fit (1 sentence, only if a real prospect), pitch_opener (2-3 sentences personalized), decision_maker, best_contact_title, best_contact_name, outreach_status ('not_contacted'), gtm_signals: {recently_funded bool, no_cmo bool, marketing_gap_visible bool}.";
-var FETCH_SYS = "You are a B2B lead generation API with web search. Search for REAL startup funding announcements from the last 14 days. Verify each company exists and has actually raised funding. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown. Each element must be a real, verifiable company: {company (exact legal name), sector, funding (amount), stage, hq (city), source (URL of announcement)}. Max 10 items. Only include companies you can verify with a source URL. Start with [ immediately.";
+var SYS = "You are a B2B lead research assistant for fractional CMO services. Use web search to find REAL, VERIFIED information. NEVER invent data - use null if not found. SCORING: Score 75-100 ONLY if recently funded (last 6 months) AND no CMO/VP Marketing on team. Score 50-74 if funded but has some marketing. Score below 30 if: has a full-time CMO, is a large public company, Fortune 500, or well-known brand. HARD EXCLUSIONS - always return score 0 and gtm_label Not a fit for: companies with 1000+ employees, Fortune 500/S&P 500 companies, public companies (NYSE/NASDAQ), companies with a known CMO/Chief Marketing Officer, and well-known brands like OpenAI/Anthropic/Google/Meta/Apple/Microsoft/Amazon/Stripe/Ramp/Notion/Figma/Salesforce. Return ONLY valid JSON: company, tagline, sector, hq, stage, funding_amount, founded, employee_count (int or null), has_cmo (bool), is_public (bool), is_fortune500 (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead/Not a fit), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (not_contacted), gtm_signals: {recently_funded, no_cmo, marketing_gap_visible}."
+var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load(onDone) {
   var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
@@ -974,13 +972,12 @@ function showPanel(id){
 
 
 function run(company,callback){
-  // Dedup: check if already in pipeline before researching
   var normCo=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
   var normInput=normCo(company);
   var alreadyExists=DB.concat(INBOX).some(function(r){return normCo(r.company)===normInput;});
   if(alreadyExists){
-    var errEl=document.getElementById('err');
-    if(errEl){errEl.style.display='block';errEl.textContent=company+' is already in your pipeline.';}
+    var ed=document.getElementById('err');
+    if(ed){ed.style.display='block';ed.textContent=company+' is already in your pipeline.';}
     return;
   }
   busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
@@ -1004,13 +1001,12 @@ function run(company,callback){
     tierUseResearch();
     // Update existing or add new
     var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
-    // Hard exclusions: public companies, Fortune 500, has CMO, too large, or score=0
+    // Skip cold leads (score < 30) on auto-research
     var score=res.gtm_readiness_score||0;
-    var excluded=res.is_public||res.is_fortune500||(res.has_cmo===true&&score<50)||(res.employee_count&&res.employee_count>999)||res.gtm_label==='Not a fit';
+    var excluded=res.is_public||res.is_fortune500||(res.has_cmo===true&&score<60)||res.gtm_label==='Not a fit';
     if(excluded||score<20){
-      if(existing>=0){DB.splice(existing,1);save();}  // remove if already in DB
-      var el=document.getElementById('err');
-      if(el){el.textContent=(res.has_cmo?res.company+' has a CMO — not a fit.':res.is_public||res.is_fortune500?res.company+' is too large/established.':res.company+' scored too low ('+score+').'); el.style.display='block';}
+      var ed=document.getElementById('err');
+      if(ed){ed.style.display='block';ed.textContent=(res.has_cmo?res.company+' has a CMO — not a fit':res.is_public||res.is_fortune500?res.company+' is too large/public':res.company+' scored too low ('+score+')');}
       if(callback)callback(); return;
     }
     if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
@@ -1037,9 +1033,8 @@ function fetchLeads() {
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
   var niche=(document.getElementById('fetch-niche')||{value:''}).value.trim();
   var nicheStr=niche?' Focus exclusively on '+niche+' companies.':' Focus on AI, SaaS, fintech, web3, climate tech.';
-  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days.'+nicheStr+' Return a JSON array of real, verifiable companies with source URLs.'+extraInstructions;
-  // Build full dedup list from DB + INBOX
-  var existingNames=(DB.concat(INBOX)).map(function(r){return (r.company||'').toLowerCase().trim();}).filter(Boolean);
+  var existingNames=DB.concat(INBOX).map(function(r){var n=(r.company||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');return n;}).filter(Boolean);
+  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days.'+nicheStr+' Return only real verifiable companies with source URLs. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -1076,13 +1071,10 @@ function fetchLeads() {
       return !badWords.some(function(w){return lower.indexOf(w)>=0;});
     });
     if(!cos.length)throw new Error('No valid companies found in results');
-    // Dedup against existing DB + INBOX — normalize: lowercase, strip punctuation, strip common suffixes
-    var normCo=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
-    var existingNorms=DB.concat(INBOX).map(function(x){return normCo(x.company);}).filter(Boolean);
-    cos=cos.filter(function(co){
-      var n=normCo(co.company);
-      return n && existingNorms.indexOf(n)<0;
-    });
+    // Dedup against existing DB + INBOX
+    var normN=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
+    var exNorms=DB.concat(INBOX).map(function(x){return normN(x.company);}).filter(Boolean);
+    cos=cos.filter(function(co){var n=normN(co.company);return n&&exNorms.indexOf(n)<0;});
     if(!cos.length)throw new Error('All companies already in your pipeline - try a different source');
     var list=document.getElementById('fetch-list');list.innerHTML='';
     cos.forEach(function(co){
@@ -1980,119 +1972,50 @@ function profileSave(){
 }
 
 // ── TEAMS ────────────────────────────────────────────────────────────────────
-
-function teamsLoad(){
-  try{var t=localStorage.getItem('scout_team');return t?JSON.parse(t):{members:[]};}catch(e){return {members:[]};}
-}
+function teamsLoad(){try{var t=localStorage.getItem('scout_team');return t?JSON.parse(t):{members:[]};}catch(e){return {members:[]};}}
 function teamsSave(t){try{localStorage.setItem('scout_team',JSON.stringify(t));}catch(e){}}
 
 function renderTeams(){
-  var root=document.getElementById('teams-root');
-  if(!root)return;
-  var tier=tierLoad();
-  var isAgency=tier.plan==='agency'||tier._master;
-  var maxSeats=isAgency?5:0;
-  var team=teamsLoad();
-  var members=team.members||[];
-  var user=authGetUser();
-  var ownerEmail=user?user.email:'you';
-
+  var root=document.getElementById('teams-root');if(!root)return;
+  var tier=tierLoad();var isAgency=tier.plan==='agency'||tier._master;
+  var maxSeats=5;var team=teamsLoad();var members=team.members||[];
+  var user=authGetUser();var ownerEmail=user?user.email:'you';
   if(!isAgency){
-    root.innerHTML=
-      '<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:32px;text-align:center;max-width:480px">'+
-        '<div style="font-size:32px;margin-bottom:12px">&#128101;</div>'+
-        '<div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teams is an Agency feature</div>'+
-        '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:20px">Upgrade to Agency to add up to 5 team members who share your credit pool and lead database.</div>'+
-        '<button onclick="showPricing()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px 28px;border-radius:8px;cursor:pointer">Upgrade to Agency</button>'+
-      '</div>';
+    root.innerHTML='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:32px;text-align:center;max-width:480px"><div style="font-size:32px;margin-bottom:12px">&#128101;</div><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teams is an Agency feature</div><div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:20px">Upgrade to Agency to add up to 5 team members who share your credit pool and lead database.</div><button onclick="showPricing()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px 28px;border-radius:8px;cursor:pointer">Upgrade to Agency</button></div>';
     return;
   }
-
   var usedSeats=members.length;
-  var html=
-    '<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px">'+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
-        '<div style="font-size:13px;font-weight:700;color:var(--tx)">Seats used</div>'+
-        '<div style="font-size:12px;font-weight:700;color:var(--pip2);font-family:JetBrains Mono,monospace">'+(usedSeats+1)+' / '+maxSeats+'</div>'+
-      '</div>'+
-      '<div style="height:4px;background:var(--bor2);border-radius:2px;overflow:hidden">'+
-        '<div style="height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:2px;width:'+(((usedSeats+1)/maxSeats)*100)+'%;transition:width .3s"></div>'+
-      '</div>'+
-    '</div>'+
-    // Owner row
-    '<div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3)">Members</div>'+
-    '<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);overflow:hidden;margin-bottom:16px">'+
-      '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)">'+
-        '<div style="width:34px;height:34px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">'+(ownerEmail[0]||'?').toUpperCase()+'</div>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ownerEmail+'</div>'+
-          '<div style="font-size:11px;color:var(--tx3)">Owner</div>'+
-        '</div>'+
-        '<div style="font-size:10px;font-weight:700;background:var(--pip-dim);color:var(--pip2);padding:3px 8px;border-radius:4px;border:1px solid var(--pip-bor)">OWNER</div>'+
-      '</div>'+
-      members.map(function(m,i){
-        return '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)">'+
-          '<div style="width:34px;height:34px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--tx2);flex-shrink:0">'+
-            (m.email?m.email[0].toUpperCase():'?')+
-          '</div>'+
-          '<div style="flex:1;min-width:0">'+
-            '<div style="font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+m.email+'</div>'+
-            '<div style="font-size:11px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div>'+
-          '</div>'+
-          '<div style="display:flex;align-items:center;gap:8px">'+
-            (m.status==='pending'?'<div style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.1);color:var(--amb);padding:3px 8px;border-radius:4px;border:1px solid rgba(245,158,11,0.2)">PENDING</div>':'<div style="font-size:10px;font-weight:700;background:rgba(16,185,129,0.1);color:var(--grn);padding:3px 8px;border-radius:4px;border:1px solid rgba(16,185,129,0.2)">ACTIVE</div>')+
-            '<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button>'+
-          '</div>'+
-        '</div>';
-      }).join('')+
-    '</div>';
-
-  if(usedSeats < maxSeats - 1){
-    html+=
-      '<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:20px">'+
-        '<div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Invite a team member</div>'+
-        '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">They\'ll get an email invite and share your credit pool and lead database.</div>'+
-        '<div style="display:flex;gap:10px">'+
-          '<input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:13px;padding:10px 14px">'+
-          '<button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer;white-space:nowrap">Send invite</button>'+
-        '</div>'+
-      '</div>';
+  var html='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:13px;font-weight:700;color:var(--tx)">Seats used</div><div style="font-size:12px;font-weight:700;color:var(--pip2);font-family:JetBrains Mono,monospace">'+(usedSeats+1)+' / '+maxSeats+'</div></div><div style="height:4px;background:var(--bor2);border-radius:2px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:2px;width:'+(((usedSeats+1)/maxSeats)*100)+'%"></div></div></div>';
+  html+='<div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3)">Members</div><div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);overflow:hidden;margin-bottom:16px">';
+  html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:11px;color:var(--tx3)">Owner</div></div><div style="font-size:10px;font-weight:700;background:var(--pip-dim);color:var(--pip2);padding:3px 8px;border-radius:4px;border:1px solid var(--pip-bor)">OWNER</div></div>';
+  members.forEach(function(m,i){
+    html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--tx2);flex-shrink:0">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:11px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;align-items:center;gap:8px">'+(m.status==='pending'?'<div style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.1);color:var(--amb);padding:3px 8px;border-radius:4px">PENDING</div>':'<div style="font-size:10px;font-weight:700;background:rgba(16,185,129,0.1);color:var(--grn);padding:3px 8px;border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';
+  });
+  html+='</div>';
+  if(usedSeats<maxSeats-1){
+    html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:20px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Invite a team member</div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">They will share your credit pool and lead database.</div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:13px;padding:10px 14px"><button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer">Send invite</button></div></div>';
   } else {
-    html+=
-      '<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:16px;text-align:center;font-size:13px;color:var(--tx3)">'+
-        'All '+maxSeats+' seats are filled. Remove a member to invite someone new.'+
-      '</div>';
+    html+='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled.</div>';
   }
-
   root.innerHTML=html;
 }
-
 function teamsInvite(){
   var email=(document.getElementById('teams-invite-email')||{value:''}).value.trim().toLowerCase();
-  if(!email||!email.includes('@')){showInfoToast('Enter a valid email');return;}
-  var team=teamsLoad();
-  var members=team.members||[];
+  if(!email||email.indexOf('@')<0){showInfoToast('Enter a valid email');return;}
+  var team=teamsLoad();var members=team.members||[];
   var user=authGetUser();
   if(user&&email===user.email){showInfoToast('That\'s your own email');return;}
   if(members.some(function(m){return m.email===email;})){showInfoToast('Already in team');return;}
   members.push({email:email,status:'pending',invited:new Date().toISOString()});
-  team.members=members;
-  teamsSave(team);
-  showInfoToast('Invite sent to '+email+' ✓');
-  renderTeams();
+  team.members=members;teamsSave(team);
+  showInfoToast('Invite sent to '+email+' ✓');renderTeams();
 }
-
 function teamsRemoveMember(idx){
-  var team=teamsLoad();
-  var members=team.members||[];
-  var removed=members[idx];
+  var team=teamsLoad();var members=team.members||[];var removed=members[idx];
   if(!removed)return;
   if(!confirm('Remove '+removed.email+' from your team?'))return;
-  members.splice(idx,1);
-  team.members=members;
-  teamsSave(team);
-  showInfoToast(removed.email+' removed');
-  renderTeams();
+  members.splice(idx,1);team.members=members;teamsSave(team);
+  showInfoToast(removed.email+' removed');renderTeams();
 }
 
 function renderProfile(){
@@ -2704,25 +2627,18 @@ function showAuthScreen(mode){
     if(authBtn) authBtn.onclick=function(){authSubmit(mode);};
   },50);
 }
-function authShowErr(msg){
-  var e=document.getElementById('auth-error');
-  if(e){e.textContent=msg;}else{alert(msg);}
-}
+function authShowErr(msg){var e=document.getElementById('auth-error');if(e)e.textContent=msg;else alert(msg);}
 function authSubmit(mode){
   var email=(document.getElementById('auth-email')||{value:''}).value.trim();
   var pass=(document.getElementById('auth-pass')||{value:''}).value;
   var btn=document.getElementById('auth-btn');
-  if(!email||!pass){authShowErr('Please fill in all fields');return;}
+  if(!email||!pass){if(errEl)errEl.textContent='Please fill in all fields';return;}
   if(btn){btn.disabled=true;btn.textContent=mode==='signup'?'Creating...':'Signing in...';}
-  var errEl=document.getElementById('auth-error');
   if(errEl)errEl.textContent='';
-  console.log('[Scout] authSubmit mode='+mode+' email='+email);
   if(mode==='signup'){
     var name=(document.getElementById('auth-name')||{value:''}).value.trim()||email.split('@')[0];
     supaPost('/auth/v1/signup',{email:email,password:pass,data:{name:name}}).then(function(d){
-      console.log('[Scout] signup response:', JSON.stringify(d).slice(0,200));
-      var b2=document.getElementById('auth-btn');
-      if(d.error){authShowErr(d.error.message||'Sign up failed');if(b2){b2.disabled=false;b2.textContent='Create my account';}return;}
+      if(d.error){if(errEl)errEl.textContent=d.error.message;if(btn){btn.disabled=false;btn.textContent='Create my account';}return;}
       if(d.access_token){
         localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
         SUPA_USER=d.user;PROFILE.name=name;PROFILE.email=email;
@@ -2733,30 +2649,26 @@ function authSubmit(mode){
         if(sc)sc.innerHTML='<div style="text-align:center;color:#eef4ff;font-family:Outfit,sans-serif;padding:40px 24px;max-width:400px"><div style="font-size:48px;margin-bottom:16px">&#9993;</div><div style="font-size:20px;font-weight:700;margin-bottom:10px">Check your email</div><div style="font-size:14px;color:#7da8c8;line-height:1.6">Confirmation sent to <b>'+email+'</b>. Click it then sign in.</div><button data-auth="login" style="margin-top:24px;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;cursor:pointer">Sign in</button></div>';
       }
     }).catch(function(err){
-      console.error('[Scout] signup error:', err);
-      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network and try again';
-      authShowErr(msg);
-      var b2=document.getElementById('auth-btn');if(b2){b2.disabled=false;b2.textContent='Create my account';}
+      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network';
+      var e2=document.getElementById('auth-error');if(e2)e2.textContent=msg;else alert(msg);
+      if(btn){btn.disabled=false;btn.textContent='Create my account';}
     });
   } else {
     supaPost('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(d){
-      console.log('[Scout] signin response:', JSON.stringify(d).slice(0,200));
-      var b2=document.getElementById('auth-btn');
       if(d.error){
-        authShowErr(d.error.message||'Invalid credentials');
-        if(b2){b2.disabled=false;b2.textContent='Sign in';}return;
+        var e2=document.getElementById('auth-error');
+        var msg=d.error.message||'Invalid credentials';
+        if(e2)e2.textContent=msg;else alert(msg);
+        if(btn){btn.disabled=false;btn.textContent='Sign in';}return;
       }
       localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
       SUPA_USER=d.user;
-      PROFILE.email=d.user.email||email;
-      if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}
-      try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+      PROFILE.email=d.user.email||email;if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
       authSuccess();
     }).catch(function(err){
-      console.error('[Scout] signin error:', err);
-      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network and try again';
-      authShowErr(msg);
-      var b2=document.getElementById('auth-btn');if(b2){b2.disabled=false;b2.textContent='Sign in';}
+      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network';
+      var e2=document.getElementById('auth-error');if(e2)e2.textContent=msg;else alert(msg);
+      if(btn){btn.disabled=false;btn.textContent='Sign in';}
     });
   }
 }
@@ -2882,9 +2794,7 @@ function initApp(){
   load(function(){
     setPage('dashboard');
     document.body.classList.add('app-ready');
-    var _obDone=localStorage.getItem('scout_ob_done');
-    var _isNew=!PROFILE.name&&DB.length===0&&INBOX.length===0;
-    if(!_obDone&&_isNew){
+    if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
     }
   });
@@ -3005,10 +2915,7 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'Proposal Generator',action:function(){
-        if(!window._currentLead){showInfoToast('Open a lead first, then generate a proposal');return;}
-        openProposalModal(window._currentLead);
-      }},
+      {label:'Proposal Generator',action:function(){openProposalModal(window._currentLead);}},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -3079,7 +2986,6 @@ function exportToNotion(r){
 }
 
 
-function triggerLogoUpload(){var f=document.getElementById('pm-logo-file');if(f)f.click();}
 function closeProposalModal(){var m=document.getElementById('proposal-modal');if(m)m.remove();}
 
 function openProposalModal(r){
@@ -3112,17 +3018,7 @@ function openProposalModal(r){
       // SECTION: Branding
       '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Branding</div>'+
       '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px">'+
-        '<div style="display:flex;align-items:center;gap:8px;flex:1">'+
-          '<div id="pm-logo-preview" style="width:40px;height:40px;border:1px solid var(--bor2);border-radius:6px;background:var(--sur2);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">'+
-            (PROFILE.wl_logo?'<img src="'+PROFILE.wl_logo+'" style="max-width:36px;max-height:36px;object-fit:contain">':'<span style="font-size:18px;color:var(--tx3)">&#128444;</span>')+
-          '</div>'+
-          '<div style="flex:1">'+
-            '<label style="display:block;font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Your logo</label>'+
-            '<input id="pm-logo-file" type="file" accept="image/*" style="display:none">'+
-            '<button onclick="triggerLogoUpload()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer">Upload logo</button>'+
-            '<span id="pm-logo-name" style="font-size:11px;color:var(--tx3);margin-left:8px">'+(PROFILE.wl_logo?'Saved logo':'No file chosen')+'</span>'+
-          '</div>'+
-        '</div>'+
+        '<input id="pm-logo" class="modal-input" placeholder="Your logo URL" value="'+(PROFILE.wl_logo||'')+'" style="font-size:13px;padding:10px 13px">'+
         '<div style="display:flex;align-items:center;gap:8px">'+
           '<input type="color" id="pm-color" value="'+co+'" style="width:36px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px;flex-shrink:0">'+
           '<span id="pm-color-hex" style="font-size:12px;color:var(--tx3);white-space:nowrap">'+co+'</span>'+
@@ -3157,23 +3053,6 @@ function openProposalModal(r){
     var col=document.getElementById('pm-color');
     var hex=document.getElementById('pm-color-hex');
     if(col&&hex)col.oninput=function(){hex.textContent=col.value;};
-    // Logo file upload
-    var logoFile=document.getElementById('pm-logo-file');
-    if(logoFile){
-      logoFile.onchange=function(){
-        var f=logoFile.files[0];if(!f)return;
-        var nm=document.getElementById('pm-logo-name');
-        if(nm)nm.textContent=f.name;
-        var reader=new FileReader();
-        reader.onload=function(ev){
-          var b64=ev.target.result;
-          overlay._logoData=b64;
-          var prev=document.getElementById('pm-logo-preview');
-          if(prev)prev.innerHTML='<img src="'+b64+'" style="max-width:36px;max-height:36px;object-fit:contain">';
-        };
-        reader.readAsDataURL(f);
-      };
-    }
   },50);
 }
 
@@ -3181,8 +3060,6 @@ function submitProposalModal(){
   var g=function(id){return(document.getElementById(id)||{value:''}).value.trim();};
   var ta=function(id){return(document.getElementById(id)||{value:''}).value.trim();};
   profileLoad();
-  var overlay=document.getElementById('proposal-modal');
-  var logoData=(overlay&&overlay._logoData)||PROFILE.wl_logo||'';
   var consultant={
     name:g('pm-name')||PROFILE.name||'',
     agency:g('pm-agency')||PROFILE.agency||'',
@@ -3192,7 +3069,7 @@ function submitProposalModal(){
     email:g('pm-email')||PROFILE.email||'',
     phone:g('pm-phone')||PROFILE.phone||'',
     calendly:g('pm-calendly')||PROFILE.calendly||'',
-    logo:logoData,
+    logo:g('pm-logo')||PROFILE.wl_logo||'',
     color:g('pm-color')||PROFILE.wl_color||PROFILE.color||'#2d9de8',
     deal_size:g('pm-deal')||PROFILE.deal_size||'',
     client_size:g('pm-engagement')||PROFILE.client_size||'',
@@ -3560,6 +3437,8 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<style>" + CSS + "</style>\n"
   "</head>\n<body>\n"
 
+  
+
   "<div id='ob-splash' style='display:none;opacity:0;position:fixed;inset:0;background:#020408;z-index:99990;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto'>"
     "<div id='ob-step1' style='text-align:center;width:100%;max-width:420px'>"
       "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:32px'><div style='width:8px;height:8px;border-radius:50%;background:#2d9de8;box-shadow:0 0 16px #2d9de8'></div><span style='font-size:13px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
@@ -3645,7 +3524,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
-      "<input id='fetch-niche' class='modal-input' placeholder='Niche / industry focus (e.g. B2B SaaS, climate tech, fintech, crypto) — leave blank for broad search' style='margin:12px 0 10px;font-size:13px;padding:10px 14px;display:block;width:100%'>"
+      "<input id='fetch-niche' class='modal-input' placeholder='Niche / industry focus (e.g. B2B SaaS, climate tech, fintech) — leave blank for broad search' style='margin:12px 0 10px;font-size:13px;padding:10px 14px;display:block;width:100%'>"
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
@@ -5268,26 +5147,13 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                 else: break
             self.respond({'text': final_text})
         elif mode == 'research':
-            # Web-search-backed company research for accuracy
-            messages = [{'role': 'user', 'content': (
-                'Research this company using web search and return ONLY the JSON profile. '
-                'Search for: their website, LinkedIn, Crunchbase, recent funding news, team page. '
-                'Verify the data — do not invent anything. Company: "' + company + '"'
-            )}]
+            messages = [{'role': 'user', 'content': 'Research this company using web search. Verify all data. Company: "' + company + '"'}]
             final_text = ''
             for _ in range(12):
-                payload = json.dumps({
-                    'model': 'claude-sonnet-4-20250514',
-                    'max_tokens': 1500,
-                    'system': system,
-                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}],
-                    'messages': messages
-                }).encode('utf-8')
-                req = urllib.request.Request(
-                    'https://api.anthropic.com/v1/messages', data=payload,
-                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'},
-                    method='POST'
-                )
+                payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1500, 'system': system,
+                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
+                req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
+                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
                 try:
                     with urllib.request.urlopen(req, timeout=90) as resp:
                         data = json.loads(resp.read())
@@ -5298,22 +5164,14 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                 content = data.get('content', [])
                 stop_reason = data.get('stop_reason', '')
                 for block in content:
-                    if block.get('type') == 'text':
-                        final_text = block.get('text', '')
-                if stop_reason == 'end_turn':
-                    break
+                    if block.get('type') == 'text': final_text = block.get('text', '')
+                if stop_reason == 'end_turn': break
                 elif stop_reason == 'tool_use':
                     messages.append({'role': 'assistant', 'content': content})
-                    messages.append({'role': 'user', 'content': [
-                        {'type': 'tool_result', 'tool_use_id': b['id'],
-                         'content': [{'type': 'text', 'text': 'ok'}]}
-                        for b in content if b.get('type') == 'tool_use'
-                    ]})
-                else:
-                    break
+                    messages.append({'role': 'user', 'content': [{'type': 'tool_result', 'tool_use_id': b['id'], 'content': [{'type': 'text', 'text': 'ok'}]} for b in content if b.get('type') == 'tool_use']})
+                else: break
             self.respond({'text': final_text})
         else:
-            # Fallback: Haiku no-search (kept for backward compat)
             payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1000, 'system': system,
                 'messages': [{'role': 'user', 'content': 'Research this company and return the JSON profile: "' + company + '"'}]}).encode('utf-8')
             req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
