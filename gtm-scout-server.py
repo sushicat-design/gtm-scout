@@ -796,14 +796,8 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .kanban-card-score{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
 .kanban-empty{font-size:12px;color:var(--tx3);text-align:center;padding:24px 0;opacity:.5}
 /* App loading state - hide content until ready */
-body:not(.app-ready) .page,
-body:not(.app-ready) .sidebar,
-body:not(.app-ready) .topbar {
-  visibility: hidden;
-}
-body:not(.app-ready) #app-loading {
-  display: flex !important;
-}
+
+
 #app-loading {
   display: none;
   position: fixed;
@@ -850,7 +844,7 @@ var DB = [];
 var INBOX = [];
 var busy = false;
 var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedinjobs'];
-var currentPage = 'search';
+var currentPage = 'dashboard';
 var fil = 'all';
 
 var SYS = "You are a B2B lead research assistant for fractional CMO services. Use web search to find REAL, VERIFIED information about the company. NEVER invent data - use null if not found. SCORING RULES: Score 75-100 ONLY if recently funded (last 6 months) AND no CMO/VP Marketing on team. Score 50-74 if funded but marketing is thin. Score below 30 if: has a full-time CMO, large public company, Fortune 500, or well-known brand. HARD EXCLUSIONS - return score 0 and gtm_label Not a fit for: companies with 5000+ employees, well-known conglomerates and mega-brands like OpenAI/Anthropic/Google/Meta/Apple/Microsoft/Amazon/Salesforce/Oracle/IBM, and companies with a confirmed full-time CMO or VP Marketing with 2+ years tenure. Return ONLY valid JSON: company, tagline, sector, hq, stage, funding_amount, founded, employee_count, has_cmo (bool), is_public (bool), is_fortune500 (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead/Not a fit), why_fit, pitch_opener, decision_maker, best_contact_title, best_contact_name, outreach_status (not_contacted), gtm_signals: {recently_funded, no_cmo, marketing_gap_visible}."
@@ -2823,8 +2817,8 @@ function obFinish(){
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   load(function(){
-    setPage('dashboard');
     document.body.classList.add('app-ready');
+    setPage('dashboard');
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
     }
