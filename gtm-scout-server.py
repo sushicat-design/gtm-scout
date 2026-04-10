@@ -1144,9 +1144,6 @@ function runToInbox(company, callback){
     res._id='id'+Date.now()+Math.floor(Math.random()*9999);
     res._inbox=true;
     res._open=false;
-    // Skip only very cold leads
-    var rti_score=res.gtm_readiness_score||0;
-    if(rti_score<35){ if(callback){setTimeout(function(){callback(false);},4000);}  return; }
     // Dedup: skip if already in DB or INBOX
     var alreadyInDb=DB.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     var alreadyInInbox=INBOX.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
