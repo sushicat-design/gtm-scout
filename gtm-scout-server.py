@@ -848,7 +848,7 @@ var currentPage = 'dashboard';
 var fil = 'all';
 
 var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100 integer; only score above 30 - a score below 30 means the company is not a good lead), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
-var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
+var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Return BETWEEN 8 AND 15 items. NEVER include mega-brands or well-known companies like OpenAI, Anthropic, Google, Meta, Apple, Microsoft, Amazon, Salesforce, Stripe, Ramp, Notion, Figma - only return genuine startups that recently raised funding. Start your response with [ immediately.";
 
 function load(onDone) {
   var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
@@ -1039,7 +1039,7 @@ function fetchLeads() {
   var extraInstructions = '';
   if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
-  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
+  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days. Focus on AI, SaaS, fintech, web3. Return AT LEAST 8 genuine startups that recently raised funding. EXCLUDE well-known mega-brands like OpenAI, Anthropic, Google, Stripe, Ramp, Notion - only real emerging startups.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -2748,8 +2748,10 @@ function obFinish(){
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   document.body.classList.add('app-ready');
+  document.body.style.visibility='hidden';
   load(function(){
     setPage('dashboard');
+    document.body.style.visibility='';
     updateCreditsBar();
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
