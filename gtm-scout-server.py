@@ -1111,13 +1111,13 @@ function researchSelected(){
   // Show persistent progress bar at top of inbox
   var prog=document.createElement('div');
   prog.id='inbox-progress';
-  prog.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,.3)';
+  prog.style.cssText='position:fixed;top:52px;left:0;right:0;z-index:9000;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,.3)';
   prog.innerHTML='<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div><span id="inbox-progress-txt">Researching leads... (0/'+names.length+')</span>';
   document.body.appendChild(prog);
   var i=0;var added=0;
   function next(){
     if(i>=names.length){
-      updateBadges();renderInbox();
+      save();updateBadges();renderInbox();
       var p=document.getElementById('inbox-progress');if(p)p.remove();
       showInfoToast('Done! '+added+' lead'+(added!==1?'s':'')+' added to Inbox ✓');
       return;
@@ -1155,7 +1155,7 @@ function runToInbox(company, callback){
     var alreadyInInbox=INBOX.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     if(alreadyInDb||alreadyInInbox){ if(callback){setTimeout(function(){callback(false);},1500);} return; }
     INBOX.unshift(res);
-    save();updateBadges();renderInbox();
+    updateBadges();renderInbox();
     if(ind){ind.textContent='Added '+res.company+' ✓';ind.style.color='var(--pip)';}
     setTimeout(function(){if(ind)ind.textContent='';},2000);
     _wasAdded=true;
@@ -2000,7 +2000,7 @@ function renderTeams(){
   html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:12px;color:var(--tx3)">Owner</div></div><div style="font-size:11px;font-weight:700;color:var(--pip2);padding:3px 10px;background:var(--pip-dim);border-radius:4px">OWNER</div></div>';
   members.forEach(function(m,i){html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--tx2)">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:12px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;gap:8px">'+(m.status==='pending'?'<div style="font-size:11px;font-weight:700;color:var(--amb);padding:3px 8px;background:rgba(245,158,11,0.1);border-radius:4px">PENDING</div>':'<div style="font-size:11px;font-weight:700;color:var(--grn);padding:3px 8px;background:rgba(16,185,129,0.1);border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';});
   html+='</div>';
-  if(usedSeats<maxSeats-1){html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px"><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Invite a team member</div><div style="background:rgba(45,157,232,0.07);border:1px solid var(--bor2);border-radius:8px;padding:14px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Included in Agency plan</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Your $179/mo Agency plan includes 5 seats. Extra seats <strong style="color:var(--tx)">$20/seat/mo</strong>. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700;text-decoration:none">Buy extra seat</a></div></div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:14px;padding:12px 16px"><button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 22px;border-radius:8px;cursor:pointer">Send invite</button></div></div>';}
+  if(usedSeats<maxSeats-1){html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px"><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Add a team member</div><div style="font-size:13px;color:var(--tx3);line-height:1.7;margin-bottom:18px">Each additional seat is <strong style="color:var(--tx)">$20/seat/mo</strong>. Purchase first, then enter their email to send an invite.</div><div style="display:flex;flex-direction:column;gap:12px"><a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:13px 24px;border-radius:8px;text-decoration:none;text-align:center">+ Add seat — $20/mo</a><div style="border-top:1px solid var(--bor);padding-top:14px"><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">Once payment is confirmed, enter their email:</div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:14px;padding:12px 16px"><button onclick="teamsInvite()" style="background:var(--sur2);color:var(--tx2);border:1px solid var(--bor2);font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 22px;border-radius:8px;cursor:pointer">Send invite</button></div></div></div></div>';}
   else{html+='<div style="padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700">Buy extra seat</a></div>';}
   root.innerHTML=html;
 }
@@ -2149,7 +2149,6 @@ function profileEditInfo(){
   m.style.display='flex';
 }
 
-  PROFILE.phone = (document.getElementById('pm-phone')||{value:''}).value.trim();
 function profileSaveInfo(){
   var fields=["name","email","tagline","bio","agency","role","location","experience",
     "client_size","availability","industries","funding_stage","company_size","deal_size",
