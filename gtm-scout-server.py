@@ -1117,7 +1117,7 @@ function researchSelected(){
   // Show persistent progress bar at top of inbox
   var prog=document.createElement('div');
   prog.id='inbox-progress';
-  prog.style.cssText='position:fixed;top:52px;left:0;right:0;z-index:9000;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,.3)';
+  prog.style.position='fixed';prog.style.top='52px';prog.style.left='0';prog.style.right='0';prog.style.zIndex='150';prog.style.background='var(--pip)';prog.style.color='#fff';prog.style.fontFamily='Outfit,sans-serif';prog.style.fontSize='13px';prog.style.fontWeight='600';prog.style.padding='10px 20px';prog.style.display='flex';prog.style.alignItems='center';prog.style.gap='12px';prog.style.boxShadow='0 2px 12px rgba(0,0,0,.3)';
   prog.innerHTML='<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div><span id="inbox-progress-txt">Researching leads... (0/'+names.length+')</span>';
   document.body.appendChild(prog);
   var i=0;var added=0;
