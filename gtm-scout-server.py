@@ -1,3 +1,4 @@
+# Scout v2.1 - build Fri Apr 10 09:17:47 UTC 2026
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
