@@ -2579,7 +2579,7 @@ function supaPost(path, body) {
   var h = {'apikey':SUPA_KEY,'Content-Type':'application/json','Accept':'application/json'};
   if(token) h['Authorization'] = 'Bearer '+token;
   var controller = typeof AbortController!=='undefined' ? new AbortController() : null;
-  var timer = controller ? setTimeout(function(){controller.abort();}, 15000) : null;
+  var timer = controller ? setTimeout(function(){controller.abort();}, 30000) : null;
   var opts = {method:'POST', headers:h, body:JSON.stringify(body), mode:'cors', credentials:'omit'};
   if(controller) opts.signal = controller.signal;
   return fetch(SUPA_URL+path, opts).then(function(r){
@@ -3918,7 +3918,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="#waitlist" class="nlink" id="t-nav3">Early access</a>
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-left:24px">
-    <a href="/app" id="nav-cta" class="ncta">Start free</a>
+    <a href="/app" id="nav-cta" class="ncta">Sign up</a>
 <button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(45,157,232,0.3);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;margin-left:8px">ES</button>
 <script>try{
   var _t=localStorage.getItem('sb_token');
@@ -4022,7 +4022,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
   <div style="text-align:center;margin-bottom:40px">
     <div class="slbl" id="t-price-eyebrow" style="text-align:center">Pricing</div>
     <h2 id="t-price-h2" style="font-size:48px;max-width:100%;text-align:center;margin:0 auto 12px">Pay for what you use</h2>
-    <p style="font-size:16px;color:var(--tx2)">Start free. Upgrade when Scout starts paying for itself.</p>
+    <p style="font-size:16px;color:var(--tx2)">Sign up free. Upgrade when Scout starts paying for itself.</p>
   </div>
 
   <!-- Free tier - full width banner above paid plans -->
