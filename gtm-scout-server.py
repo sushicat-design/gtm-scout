@@ -2747,9 +2747,9 @@ function obFinish(){
 }
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
+  document.body.classList.add('app-ready');
+  setPage('dashboard');
   load(function(){
-    document.body.classList.add('app-ready');
-    setPage('dashboard');
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
     }
