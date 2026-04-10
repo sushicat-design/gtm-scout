@@ -1105,21 +1105,23 @@ function researchSelected(){
     try{var co=JSON.parse(decodeURIComponent(cb.getAttribute('data-co')));if(co.company)names.push(co.company);}catch(e){}
   });
   if(!names.length)return;
-  document.getElementById('fetch-results').style.display='none';
+  // Go to inbox immediately so user can watch leads appear
+  setPage('inbox');
+  renderInbox();
   var i=0;
+  var added=0;
   function next(){
     if(i>=names.length){
       updateBadges();
       renderInbox();
-      setPage('inbox');
-      var _added=INBOX.length;showUpsellToast('Done! '+_added+' lead'+(_added!==1?'s':'')+' added to Inbox ✓');
+      showInfoToast('Done! '+added+' lead'+(added!==1?'s':'')+' added to Inbox ✓');
       return;
     }
     var name=names[i++];
-    runToInbox(name,next);
+    showInfoToast('Researching '+name+'... ('+i+'/'+names.length+')');
+    runToInbox(name,function(){added++;next();});
   }
-  // Stagger calls to avoid rate limit
-  setTimeout(next, 0);
+  setTimeout(next,0);
 }
 
 function runToInbox(company, callback){
@@ -1141,9 +1143,9 @@ function runToInbox(company, callback){
     res._id='id'+Date.now()+Math.floor(Math.random()*9999);
     res._inbox=true;
     res._open=false;
-    // Skip cold leads for inbox (score < 40)
+    // Skip only very cold leads
     var rti_score=res.gtm_readiness_score||0;
-    if(rti_score<40){ if(callback){setTimeout(callback,1500);}  return; }
+    if(rti_score<35){ if(callback){setTimeout(callback,4000);}  return; }
     // Dedup: skip if already in DB or INBOX
     var alreadyInDb=DB.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     var alreadyInInbox=INBOX.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
@@ -5110,7 +5112,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         elif mode == 'research':
             messages = [{'role': 'user', 'content': 'Research this company and return ONLY a JSON object with the profile. Company: "' + company + '"'}]
             final_text = ''
-            for _ in range(8):
+            for _ in range(3):
                 payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
