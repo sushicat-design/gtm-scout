@@ -1441,12 +1441,10 @@ function renderLeadDetail(r){
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.934zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/></svg>'+
         'Notion'+
       '</button>'+
-      '<button onclick="generateWhitelabelLink(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:var(--pip);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">'+
-        '&#9889; White-label'+
-      '</button>'+
+      '<button onclick="openProposalModal(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:var(--pip);color:#fff;font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Proposal</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0;padding-top:8px;border-top:1px solid var(--bor)">'+
-      '<div style="display:flex;align-items:center;gap:8px"><input id="prospect-logo-url" placeholder="Prospect logo URL (optional)" style="font-size:11px;padding:7px 12px;border-radius:6px;border:1px solid var(--bor2);background:var(--sur2);color:var(--tx2);font-family:Outfit,sans-serif;width:200px" oninput="if(window._currentLead)window._currentLead.prospect_logo=this.value"><button onclick="generateProposal(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Proposal</button></div>'+'<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
+      '<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0">'+
       '<div class="ld-section-title">Notes</div>'+
@@ -1967,7 +1965,7 @@ var PROFILE = {
   avatar: null,
   services: [],
   cases: [],
-  wl_name: '', wl_tagline: '', wl_color: '#2d9de8', wl_logo: null, wl_cta: ''
+  wl_logo: null
 };
 
 function profileLoad(){
@@ -2526,9 +2524,20 @@ var SUPA_USER = null;
 
 function supaPost(path, body) {
   var token = localStorage.getItem('sb_token');
-  var h = {'apikey':SUPA_KEY,'Content-Type':'application/json'};
+  var h = {'apikey':SUPA_KEY,'Content-Type':'application/json','Accept':'application/json'};
   if(token) h['Authorization'] = 'Bearer '+token;
-  return fetch(SUPA_URL+path,{method:'POST',headers:h,body:JSON.stringify(body)}).then(function(r){return r.json();});
+  var controller = typeof AbortController!=='undefined' ? new AbortController() : null;
+  var timer = controller ? setTimeout(function(){controller.abort();}, 15000) : null;
+  var opts = {method:'POST', headers:h, body:JSON.stringify(body), mode:'cors', credentials:'omit'};
+  if(controller) opts.signal = controller.signal;
+  return fetch(SUPA_URL+path, opts).then(function(r){
+    if(timer) clearTimeout(timer);
+    return r.json();
+  }).catch(function(err){
+    if(timer) clearTimeout(timer);
+    var msg = (err && err.name==='AbortError') ? 'Request timed out' : 'Network error';
+    throw {error:{message: msg}};
+  });
 }
 function authGetUser(){var u=localStorage.getItem('sb_user');if(u){try{return JSON.parse(u);}catch(e){}}return null;}
 function authSignOut(){
@@ -2596,15 +2605,28 @@ function authSubmit(mode){
         var sc=document.getElementById('auth-screen');
         if(sc)sc.innerHTML='<div style="text-align:center;color:#eef4ff;font-family:Outfit,sans-serif;padding:40px 24px;max-width:400px"><div style="font-size:48px;margin-bottom:16px">&#9993;</div><div style="font-size:20px;font-weight:700;margin-bottom:10px">Check your email</div><div style="font-size:14px;color:#7da8c8;line-height:1.6">Confirmation sent to <b>'+email+'</b>. Click it then sign in.</div><button data-auth="login" style="margin-top:24px;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;cursor:pointer">Sign in</button></div>';
       }
-    }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Create my account';}});
+    }).catch(function(err){
+      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network';
+      var e2=document.getElementById('auth-error');if(e2)e2.textContent=msg;else alert(msg);
+      if(btn){btn.disabled=false;btn.textContent='Create my account';}
+    });
   } else {
     supaPost('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(d){
-      if(d.error){if(errEl)errEl.textContent=d.error.message||'Invalid credentials';if(btn){btn.disabled=false;btn.textContent='Sign in';}return;}
+      if(d.error){
+        var e2=document.getElementById('auth-error');
+        var msg=d.error.message||'Invalid credentials';
+        if(e2)e2.textContent=msg;else alert(msg);
+        if(btn){btn.disabled=false;btn.textContent='Sign in';}return;
+      }
       localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
       SUPA_USER=d.user;
       PROFILE.email=d.user.email||email;if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
       authSuccess();
-    }).catch(function(){if(errEl)errEl.textContent='Connection error';if(btn){btn.disabled=false;btn.textContent='Sign in';}});
+    }).catch(function(err){
+      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network';
+      var e2=document.getElementById('auth-error');if(e2)e2.textContent=msg;else alert(msg);
+      if(btn){btn.disabled=false;btn.textContent='Sign in';}
+    });
   }
 }
 function authSuccess(){
@@ -2850,7 +2872,7 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'White-label Pitches',action:function(){setPage('dashboard');}},
+      {label:'Proposal Generator',action:function(){openProposalModal(window._currentLead);}},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -2920,74 +2942,117 @@ function exportToNotion(r){
   });
 }
 
-function generateWhitelabelLink(r){
-  if(!r){showUpsellToast('No lead selected');return;}
-  profileLoad();
-  var data = {
-    lead: {
-      company: r.company||'',
-      sector: r.sector||'',
-      stage: r.stage||'',
-      hq: r.hq||'',
-      funding_amount: r.funding_amount||'',
-      gtm_readiness_score: r.gtm_readiness_score||0,
-      gtm_label: r.gtm_label||'',
-      why_fit: r.why_fit||'',
-      pitch_opener: r.pitch_opener||'',
-      best_contact_title: r.best_contact_title||r.decision_maker||'',
-      best_contact_name: r.best_contact_name||''
-    },
-    brand: {
-      name: PROFILE.wl_name||PROFILE.name||'Scout',
-      tagline: PROFILE.wl_tagline||PROFILE.tagline||'',
-      color: PROFILE.wl_color||'#2d9de8',
-      logo: PROFILE.wl_logo||null,
-      cta: PROFILE.wl_cta||PROFILE.website||''
-    }
-  };
-  var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-  var url = window.location.origin + '/p/' + encoded;
-  navigator.clipboard.writeText(url).then(function(){
-    showInfoToast('Pitch link copied ✓');
-  }).catch(function(){
-    // fallback - show in prompt
-    window.prompt('Copy this public link:', url);
-  });
-}
 
-function renderWlConfig(){
-  var wrap = document.getElementById('wl-config-wrap');
-  if(!wrap) return;
-  wrap.innerHTML =
-    '<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:16px">White-label Settings</div>'+
-    '<div style="display:flex;flex-direction:column;gap:10px">'+
-      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Agency / Your Name</label>'+
-      '<input id="wl-name" class="modal-input" placeholder="e.g. Sushicat Ventures" value="'+(PROFILE.wl_name||PROFILE.name||'')+'" style="font-size:14px;padding:10px 14px">'+
-      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Tagline</label>'+
-      '<input id="wl-tagline" class="modal-input" placeholder="Fractional CMO for funded startups" value="'+(PROFILE.wl_tagline||PROFILE.tagline||'')+'" style="font-size:14px;padding:10px 14px">'+
-      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Brand Colour</label>'+
-      '<div style="display:flex;align-items:center;gap:10px">'+
-        '<input type="color" id="wl-color" value="'+(PROFILE.wl_color||'#2d9de8')+'" style="width:44px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px">'+
-        '<span id="wl-color-hex" style="font-size:13px;color:var(--tx3)">'+(PROFILE.wl_color||'#2d9de8')+'</span>'+
+function closeProposalModal(){var m=document.getElementById('proposal-modal');if(m)m.remove();}
+
+function openProposalModal(r){
+  closeProposalModal();
+  profileLoad();
+  var overlay=document.createElement('div');
+  overlay.id='proposal-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px;backdrop-filter:blur(4px)';
+  var co=PROFILE.wl_color||PROFILE.color||'#2d9de8';
+  overlay.innerHTML=
+    '<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:28px;width:100%;max-width:560px;margin:auto;display:flex;flex-direction:column;gap:0">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'+
+        '<div style="font-size:16px;font-weight:700;color:var(--tx)">Custom Proposal Generator</div>'+
+        '<button onclick="closeProposalModal()" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">&#215;</button>'+
       '</div>'+
-      '<label style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em">Call-to-action URL</label>'+
-      '<input id="wl-cta" class="modal-input" placeholder="https://youragency.com/contact" value="'+(PROFILE.wl_cta||PROFILE.website||'')+'" style="font-size:14px;padding:10px 14px">'+
-      '<button onclick="saveWlConfig()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;margin-top:4px">Save White-label Settings</button>'+
+      // SECTION: Your brand
+      '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Your brand</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'+
+        '<input id="pm-name" class="modal-input" placeholder="Your name" value="'+(PROFILE.name||'')+'" style="font-size:13px;padding:10px 13px">'+
+        '<input id="pm-agency" class="modal-input" placeholder="Agency name (optional)" value="'+(PROFILE.agency||'')+'" style="font-size:13px;padding:10px 13px">'+
+      '</div>'+
+      '<input id="pm-role" class="modal-input" placeholder="Your role (e.g. Fractional CMO)" value="'+(PROFILE.role||'Fractional CMO')+'" style="font-size:13px;padding:10px 13px;margin-bottom:10px;display:block;width:100%">'+
+      '<input id="pm-tagline" class="modal-input" placeholder="Tagline (1 line)" value="'+(PROFILE.tagline||'')+'" style="font-size:13px;padding:10px 13px;margin-bottom:10px;display:block;width:100%">'+
+      '<textarea id="pm-bio" class="modal-input" placeholder="Short bio (2–3 sentences)" rows="2" style="font-size:13px;padding:10px 13px;margin-bottom:10px;resize:vertical;width:100%;line-height:1.5">'+(PROFILE.bio||'')+'</textarea>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">'+
+        '<input id="pm-email" class="modal-input" placeholder="Email" value="'+(PROFILE.email||'')+'" style="font-size:12px;padding:9px 12px">'+
+        '<input id="pm-phone" class="modal-input" placeholder="Phone" value="'+(PROFILE.phone||'')+'" style="font-size:12px;padding:9px 12px">'+
+        '<input id="pm-calendly" class="modal-input" placeholder="Calendly / booking URL" value="'+(PROFILE.calendly||'')+'" style="font-size:12px;padding:9px 12px">'+
+      '</div>'+
+      // SECTION: Branding
+      '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Branding</div>'+
+      '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px">'+
+        '<input id="pm-logo" class="modal-input" placeholder="Your logo URL" value="'+(PROFILE.wl_logo||'')+'" style="font-size:13px;padding:10px 13px">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<input type="color" id="pm-color" value="'+co+'" style="width:36px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px;flex-shrink:0">'+
+          '<span id="pm-color-hex" style="font-size:12px;color:var(--tx3);white-space:nowrap">'+co+'</span>'+
+        '</div>'+
+      '</div>'+
+      // SECTION: Prospect
+      '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px;margin-top:6px">Prospect</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+        '<input id="pm-prospect-co" class="modal-input" placeholder="Company name" value="'+(r?r.company||'':'')+'" style="font-size:13px;padding:10px 13px">'+
+        '<input id="pm-prospect-logo" class="modal-input" placeholder="Prospect logo URL (optional)" value="'+(r?r.prospect_logo||'':'')+'" style="font-size:13px;padding:10px 13px">'+
+      '</div>'+
+      // SECTION: Proposal content
+      '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Proposal content</div>'+
+      '<textarea id="pm-why" class="modal-input" placeholder="Why this company needs you now (pulled from lead data — edit freely)" rows="3" style="font-size:13px;padding:10px 13px;margin-bottom:10px;resize:vertical;width:100%;line-height:1.5">'+(r?r.why_fit||r.pitch_opener||'':'')+'</textarea>'+
+      '<textarea id="pm-approach" class="modal-input" placeholder="Your approach / what you would do first" rows="2" style="font-size:13px;padding:10px 13px;margin-bottom:16px;resize:vertical;width:100%;line-height:1.5">'+(r?r.pitch_opener||'':'')+'</textarea>'+
+      // SECTION: Terms
+      '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Engagement terms</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">'+
+        '<input id="pm-deal" class="modal-input" placeholder="Investment (e.g. $5k/mo)" value="'+(PROFILE.deal_size||'')+'" style="font-size:12px;padding:9px 12px">'+
+        '<input id="pm-engagement" class="modal-input" placeholder="Engagement type" value="'+(PROFILE.client_size||'')+'" style="font-size:12px;padding:9px 12px">'+
+        '<input id="pm-avail" class="modal-input" placeholder="Availability" value="'+(PROFILE.availability||'')+'" style="font-size:12px;padding:9px 12px">'+
+      '</div>'+
+      // Submit
+      '<div style="display:flex;gap:10px">'+
+        '<button onclick="submitProposalModal()" style="flex:1;background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:13px;border-radius:8px;cursor:pointer;box-shadow:0 0 20px rgba(45,157,232,0.25)">Generate proposal &#8594;</button>'+
+        '<button onclick="closeProposalModal()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-family:Outfit,sans-serif;font-size:13px;padding:13px 20px;border-radius:8px;cursor:pointer">Cancel</button>'+
+      '</div>'+
     '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closeProposalModal();});
   setTimeout(function(){
-    var col = document.getElementById('wl-color');
-    var hex = document.getElementById('wl-color-hex');
-    if(col&&hex) col.oninput=function(){ hex.textContent=col.value; };
+    var col=document.getElementById('pm-color');
+    var hex=document.getElementById('pm-color-hex');
+    if(col&&hex)col.oninput=function(){hex.textContent=col.value;};
   },50);
 }
 
-function saveWlConfig(){
-  PROFILE.wl_name    = (document.getElementById('wl-name')||{value:''}).value.trim();
-  PROFILE.wl_tagline = (document.getElementById('wl-tagline')||{value:''}).value.trim();
-  PROFILE.wl_color   = (document.getElementById('wl-color')||{value:'#2d9de8'}).value;
-  PROFILE.wl_cta     = (document.getElementById('wl-cta')||{value:''}).value.trim();
-  try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
-  showInfoToast('White-label settings saved ✓');
+function submitProposalModal(){
+  var g=function(id){return(document.getElementById(id)||{value:''}).value.trim();};
+  var ta=function(id){return(document.getElementById(id)||{value:''}).value.trim();};
+  profileLoad();
+  var consultant={
+    name:g('pm-name')||PROFILE.name||'',
+    agency:g('pm-agency')||PROFILE.agency||'',
+    role:g('pm-role')||'Fractional CMO',
+    tagline:g('pm-tagline')||PROFILE.tagline||'',
+    bio:ta('pm-bio')||PROFILE.bio||'',
+    email:g('pm-email')||PROFILE.email||'',
+    phone:g('pm-phone')||PROFILE.phone||'',
+    calendly:g('pm-calendly')||PROFILE.calendly||'',
+    logo:g('pm-logo')||PROFILE.wl_logo||'',
+    color:g('pm-color')||PROFILE.wl_color||PROFILE.color||'#2d9de8',
+    deal_size:g('pm-deal')||PROFILE.deal_size||'',
+    client_size:g('pm-engagement')||PROFILE.client_size||'',
+    availability:g('pm-avail')||PROFILE.availability||''
+  };
+  var lead=window._currentLead||{};
+  var data={
+    consultant:consultant,
+    lead:{
+      company:g('pm-prospect-co')||lead.company||'',
+      prospect_logo:g('pm-prospect-logo')||lead.prospect_logo||'',
+      sector:lead.sector||'',stage:lead.stage||'',hq:lead.hq||'',
+      funding_amount:lead.funding_amount||'',
+      score:lead.gtm_readiness_score||0,
+      label:lead.gtm_label||'',
+      why_fit:ta('pm-why')||lead.why_fit||'',
+      pitch_opener:ta('pm-approach')||lead.pitch_opener||'',
+      gtm_signals:lead.gtm_signals||{}
+    },
+    services:PROFILE.services||[],
+    cases:PROFILE.case_studies||[]
+  };
+  var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  closeProposalModal();
+  window.open(window.location.origin+'/proposal/'+encoded,'_blank');
+  showInfoToast('Proposal opening\u2026');
 }
 
 function findOnLinkedIn(){
@@ -3257,7 +3322,7 @@ function generateProposal(r){
       email:PROFILE.show_email===false?'':(PROFILE.email||(user&&user.email)||''),
       phone:PROFILE.phone||'',linkedin:PROFILE.linkedin||'',
       website:PROFILE.website||'',calendly:PROFILE.calendly||'',
-      logo:PROFILE.wl_logo||null,color:PROFILE.wl_color||'#2d9de8',
+      logo:PROFILE.wl_logo||null,color:PROFILE.wl_color||PROFILE.color||'#2d9de8',
       deal_size:PROFILE.deal_size||'',client_size:PROFILE.client_size||'',availability:PROFILE.availability||''
     },
     lead:{
@@ -3273,6 +3338,15 @@ function generateProposal(r){
   window.open(window.location.origin+'/proposal/'+encoded,'_blank');
   showInfoToast('Proposal opening\u2026');
 }
+window.addEventListener('pagehide',function(e){
+  if(!e.persisted){
+    try{
+      localStorage.removeItem('sb_token');
+      localStorage.removeItem('sb_user');
+      localStorage.removeItem('sb_refresh');
+    }catch(x){}
+  }
+});
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
@@ -3319,6 +3393,37 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<link rel='icon' type='image/png' href='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAP80lEQVR42u1aaXQVVbb+9jlVd8ocEhKGMBpAJoGAgogJo2grDpioTUvb+FQQu/WJU2u3IY7t6laaBiccHg7PIXmKiDjShsgkkGgACcpomIkhuRnvvVV1zu4fdRPR9d5rQEKv98yXVatWUpU65+yzh2/vfYB2tKMd7WjHzxf0f23C+fn5YiVyBAB0HPAdF+XlqZ/9Jubns/h/v8r8/HwBAHcXbRh6xcub/nbNK+X3PLdqZ5ZftDw/OSGcpOT49JoOM1VggAEAzbaTvTvIv/3yqHx0wVcozX6qdPU7a8qHFhSQzuc21gR3F6KLLyyUp1sLcgsLJTPLd9dvHb+0dEfenMIv/9rzkTX26Kc32a+t3jb8ZDSBTvBdNgDYzJKITpvz+eij8phqCnaeNilnxx1vfH5bcV3yvIbaaj28a+yLvx0aeHv6J+HnO3ssXjkrZTAho5YBEBGfMhOISpVf+/uXAyYtKiseteCLihmvlj3KzAbz/2AOzMQ/8couLjYA4J1aNfvZb1O/XPjxpvF94qz3z+3svbdHetrjG4K+f7u/pOau2/pG5h/SsV1ufqN6Bog4Z+5Kecp8ADNTwVwwM/sXV4SK1tXG5Gyt0X1WBxPumfX6l9OIiLPz3Ym2qCnABCKmn3iVjH2KubBQbjvcdGFpFcW8UmEt69LvHO++S7ovoucvPXxh/OH5O8KxOaYpu6fomuAXR5zLTAAlyNHHKwDj+JSf+PChnXH7mnGG1Ry0feTo75ps2uJEBvzgvcJCWZSXp3wAQlzox5p6A3aYYfq+15JQvNgVkF7DG5ABBMA+zV59MJJQH3LgixdH7GSfMptVfGIH0bHP6CrKK0Lmg596/dLibXXsL1hesdYaPyEcPLAnZbr89spikXDr8t0Rf6zXWHOgXmVbzERE2vVV/9wMjH++dmLks0hPR3Va4EhxtZkyKdTUaHcJkDkgSZatAZADAPnFRkneWOexZRsvKgkm/H7IM+hOWnmZhAZDQADk7osgyR6DYLAGSBAr7hLRgANmYRL7tGJlGALnv7Rjx8XpjXe+8lWostr2jPLYIfubo4hNHHZD7PlDvi741bTpb02Y/9kWj/R97nGsdOHXfQBIgNXxujc6vijERER4b/36tLkfHHjz0Hd15+WNGTD/iatG3A3AobkrJQrGOnOKymZ+WJ3w9P6vt8Kp+Ds40ggS0h2GqHU0ZgCs3TsAEgIEAlhDaw3BDBgmPIMmIK3PAJ2V0LT/k2+dbsphJmJW0s8DUn3BGZmhKTPHD1vrAFDMHmCrh2hgY4vDPqVRIDs72ygpKXHOGtRzdkjJP2+v2BkAgKwbnzXLF91kzylcf9/SmvSHDn1apK237mVLWYKjs6D/ZWA+5k4/eu4hYt/F94qEcdNg1VWhWXkBQTAE2w5M2b+DUTOph39qwcV9Vx3vgn8SEWJmcmJSY2xhIP8/in1gFl8susm+s7A0f1lt54cOvLfIaS66gyLaljBMImmQMEwi00NwDZIIIMPwkelPIMMTQ1FDJQBEpofIMAnSIBgmRYhE3bKHuX75U2z5OiIpwEj2gaU/wfR5PaIy4k/ZurfqZWb25eezaGGLJwLjhEgDEZ85fIjWykFyfYiJSM96dd2cJcHOcw998LwTeu9hqUm42qwcd7mawczwJneFd+ilMHsOg4hPBXljAGWBg4dh71qPcPlyhI/uc7VASLBWIGZIbyzVrViIJMPQNOVWcU7M0ZLmxuCbEaKUnsnW4az0xDUAIgUFYKCA21QAACCEgJTSuPXWiyKPLt3wq/88mPqXg+8tVOHlj0otJREA1hpEAlorSCERN2EWvGOuhWg+DL1zNdQ3y8B2M1h6ITtkIGZoDmLG3wBr/duoff8JOHYIRITE8TfBP/oa1L/3OIIf/lU4kYgqnXLLmLxu1t8emTrqmZY53fATSNYJq4wpBUgamjlfrKjyzz5Qvoablz/CjiCiqIcjIcCsYfoTkHLTYvhHXQH1/h+AN2Yi8btS9OrZFZlDhqNnr+5IC+2GXPZ72EvvhLf/aHSc9RK8sSkAMzyZ58LuPhS+Lv2hQGgofhp1m1bJTw7H55fe+KyZ9Wyp+VP5/wlrgIYAK62wrt5bZflS7a3FpAAhpAEoBwCBAQhhIOW6JyGTkqBen4GkjAFIvflFxPceCh8pCG3D4/EC0oPqygrsXzoPwVd/DTN3HlJnvYTDC65GcMmDCGz5GA2bPgIJgmaIUPn7aBw6rsu2MRn+smuHN/VaUUinUwDStiNkO5b9esWApIgVTtJ2CASQa+sACQBKIWnSbIjUTrAXX4uErMlIzX0QZsMR7F+2AM27NoLsJkhvLHu7DkTH8/Nwxk3P0OH3nsChd++GuPo5JF50O6rfLkD4yE7XQ0oDrB1yQg0s4aRU+vx9AJQWFeXBjf04qdzkuDlzjx49RGVlperavceoSKh+cvH60ilNGedlqMpyjuzfQiTdT7FW8CV2RcK0x8ArHoUvPglJUx+EtWMdqt68D01ffwrdXAM73IBw8BBZB76imi8+Jn9CGgJn56JpXwXCZW/DnDgHavs6OI1HQUK6MY41fJ36Qp8xBl+9cPtFvbvEd8y54JI9W8rLa062unW89iNKSkqcoaPPntHQWHeXjk01bXb6kbIBZVNL3Cbhfs6fdSlUzW4Yh8oRd8G/I9xQi6PvPoZw9W6Ijv2APheAu46O/Oa6W754csFzxYP7dv96V9GDOPptBfvH3gJfuBpUvR3ekdeAtPoBRyACQUWoOdLY9QjH3rOhbO2mkeefe68Qgk/Gp4njfEefd+GFfYK11S80DZ7WMTLxIQjDp4U0wccKnhUkAG//bKgdK4GkDDipmWje+BbQeADeXiPBw6/iGn8asoYMrr3/d9cv6pXRte6+u/7QyceRprp1b5BO6wuj2xA4FR9DZgyAEC6zjbpY18lCg4TB1th8p2HEzbHVdcGHR44bMxyAzs3NladUALm5uQQAzcHqng5Mdnpmq4j0E7EWwvCASLRyN1Ya0hsDSkwHaveCOg2G1dAAe/c6wBMDs984KE8AFGlCc0MwLhKxKjt1SPyscv+R9+ENCBzczE7wCMJpg6GrdkDGdYCMTQH09zrAYDAJEAlypNdQvcc6YXh03aEDnQCgqK2coAQcEBEiTURMUI4NrblV7VvprMcPhgDZIdixadDhMCgUBJuxUNIHxwqRLxBA2bbdvl/fP/+FwZk9qpYUrz2jydJ+n93A4dpq2DGpEGyBpQR8MeD6Yy1cACShtQLbYXC4gQAWWttOm0YBNyECSBCgKFoYc1neD1i9bbl2SwI6VA8FE17TD4o0QNkRwPCBQDC8Pln85fbOK0orOnsMgVhTgMggmzxAqN41LaUA22oZP+oDBACCYIDZJVxggiNlmzpBOOwQM2kWEpAShuGBEK5nbpkgEUGFG2CHGoHEDIgj38DxJsLp2B+I1EHvLYPQDtjwgALx8MUlcGxcAntVI8hqhJPcG1ZcZ8ije8AJXaBDTdANVaDWFNIdj6BBUriZpjDclD0SaVsmaJDPEnCEJK0oJpE1Aay5VQAgAgkJDYazdwtE5hiYNd+AGr+D1Ws8FAtgz1p4KkvhMb0w4lJAcckEq46Mpv1QtgOrZw4QaYBxoBQycyx01W5oxwKkPCbV09EfBvxJLASUJIdi4pPaRgBFRUUaAPUcNqwsxiO3eFc/bvq2vkXa0cplfj9mikBkQyEo9UzYRgByw/NQXbKgB+WCtAWx5zPILUtBO4sh966DJ/g1yGkG+k+BPmMCPBtehtMYBLqPRGTjf0EBILdaEC3IE0hpQGnlrXib/CvmegKC9w0ccV4pAII731NOhKhi40Zr8sSrCpsPVxDv23iGAxmnB10Gp3IzIvs2u+rIGpACTu1BeDtmQvTLhljzJCixG6yzroH2JoNqKiHq90M0HQFZjVD+ZNhDpsMacT3MvWshV80DZ98OVVeL4McLXFVvyS+0hi+9D4z+Y1lUvCviqzc1dhCRxYOHjfrNq88+e/BECiEnzAQB0ObNG5sPHaz65Mrp1y9WWh4N9508tmHbGrL2byEi6TqlaC7gVG6Gf9xsIKkzzFVPQCgNp/d4OL3GQXcZAdVzNOzMybAHXg3q0Bfere/AWP0XOCOuA/pMRv3Lt8EO14Egol8kMGsYKb118tmXUA9nz59zzp1w/ZKit14p37ix7mQWf1J9uKysLBMAYv1eDFyw7Ujg7GsYIC2k0VrNFVIyARzTLYvT5n7Ona+fx116deUu/Qdy2qW3ccrMlzj5tiWcPPs1Tpv6e+48aBh36p7O6dMe4E4PbOCYzNFMAB/7TZIGA2Bvvwl68MLtupy5JwBkZd1onnyH68STIS4rK7MBUMNdU8xBrI7KhLSOURfdGoZYa5CUaN5bBrUgD3FXFED+8mXw9k9A+zbCs/tTCGVDSw9UIBlOn7EQfSeB62pQ/+Qv0XxkJ4Q0wFr9sCsDsJGYRoJ108GVK223AjRXlZUt0ie9oyfZo5KiKE9NeK7s7dJtVZc3zL/Mcdg2iER00u50SUho5UAACAy9HN5zcmF06ArWEZAdgTa9gAyAaw/AKluCpg1FUNqBkBKsj1kTCYAAobSTOPtN2btv5oqyW4dOUlcWShT9C9rjudG+4NMfrpvY96k9HHvRH20PoAlgktJV3Za7YTJFTUIC7EtI40C3szgm81z298hib1Jnlq7tMkmDyTCYhPzh5f6vDuTcYvV6ch/f8dqqy4+dx7+oXe1WYq59pfSeHgsr2f+L+x1PbEdbAo4AFAFaABztprbe8d9cLc9b3on+rgWgJOB4Akl2YPzvnO7zd/HUFzfOEz+hHX5KT4hk5xcbqwvGOjPfKH1gbUPSH/cfDCJycDsQaoCQ5KquVtEM7vviN5MACze8cfR562RIAEKAoaGVBvnj4UnvjU6dUjEqpvrpxdPPvtl6s1AiL1cfT+enTQXgqgILUUB62frNw1/ZZUw86ngnsaCEvVs+79V09FACGEzMxNBu4tTSKHG9RNS18fc2H22geGOTmzKGZm8TioMJpr32krTGD2dOzFrnuC0vnKqQR6fIHgQKCjQAeACYAhiUk7Nof4N9vWRtk5Bmazp/zNKJyN19ciM9MwNaO1oYRppPLP/qs5IpDgP29wMJoECf0rh+ynwCsyiYu1LgUBxh0XAn/5O9FyzdHflgV62CgIq2wzhaNXY3kZldBYhWkwQEbGZ0S/Lh0ozIjD/94szFyC80s5Gq2+pAFLWNg8wXDz9QoOcs2Tpj5QFnVtiyUgW7/o1IIOyoJsVwfIaIIWKDSMJxtKUZHBcTsEem4+WFUwf+6b77WRQUkG5LZ97mZ328BIQ1e3/0Z8snicOKj2VxTnQ+Knq647RQ2zbmCyxPRsinM76fntNePz5GQ63lJPox12191o52tKMd7WhHO9rRjna0ox3taEcbJalM7VL4mYIAYMOGDRn/AE1W062rTF8gAAAAAElFTkSuQmCC'>\n"
   "<style>" + CSS + "</style>\n"
   "</head>\n<body>\n"
+
+  "<div id='app-loading' style='position:fixed;inset:0;background:#020408;z-index:9999;display:none;align-items:center;justify-content:center'><div style='width:28px;height:28px;border:2px solid rgba(45,157,232,0.15);border-top-color:#2d9de8;border-radius:50%;animation:spin .7s linear infinite'></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>"
+
+  "<div id='ob-splash' style='display:none;opacity:0;position:fixed;inset:0;background:#020408;z-index:99990;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto'>"
+    "<div id='ob-step1' style='text-align:center;width:100%;max-width:420px'>"
+      "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:32px'><div style='width:8px;height:8px;border-radius:50%;background:#2d9de8;box-shadow:0 0 16px #2d9de8'></div><span style='font-size:13px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
+      "<div style='font-size:28px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif'>Find your next client.</div>"
+      "<div style='font-size:14px;color:#7da8c8;max-width:340px;line-height:1.65;margin-bottom:32px'>AI lead generation for fractional CMOs and marketing agencies.</div>"
+      "<button onclick='scoutStep(2)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 48px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)'>Get started &#8594;</button>"
+      "<div style='margin-top:14px'><button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Skip for now</button></div>"
+    "</div>"
+    "<div id='ob-step2' style='display:none;width:100%;max-width:420px'>"
+      "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Set up your profile</div>"
+      "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Personalises your pitch openers.</div>"
+      "<div style='display:flex;flex-direction:column;gap:10px;width:100%'>"
+        "<input class='modal-input' id='ob-name' placeholder='Your name or agency' style='font-size:15px;padding:14px 18px'>"
+        "<input class='modal-input' id='ob-tagline' placeholder='What you specialise in' style='font-size:14px;padding:13px 18px'>"
+        "<button onclick='scoutStep(3)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-top:4px'>Continue &#8594;</button>"
+        "<button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline;padding:4px'>Skip for now</button>"
+      "</div>"
+    "</div>"
+    "<div id='ob-step3' style='display:none;width:100%;max-width:540px'>"
+      "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Choose your plan</div>"
+      "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;width:100%'>"
+        "<div onclick='obChoosePlan(\"free\")' class='ob-plan-card' id='opc-free'><div class='ob-plan-name'>Free</div><div class='ob-plan-price'>$0</div><div class='ob-plan-desc'>5 researches/mo</div></div>"
+        "<div onclick='obChoosePlan(\"pro\")' class='ob-plan-card ob-plan-hot selected' id='opc-pro'><div class='ob-plan-badge'>Popular</div><div class='ob-plan-name'>Pro</div><div class='ob-plan-price'>$29<span>/mo</span></div><div class='ob-plan-desc'>Unlimited research</div></div>"
+        "<div onclick='obChoosePlan(\"agency\")' class='ob-plan-card' id='opc-agency'><div class='ob-plan-name'>Agency</div><div class='ob-plan-price'>$99<span>/mo</span></div><div class='ob-plan-desc'>5 team members</div></div>"
+      "</div>"
+      "<button id='ob-enter-btn' onclick='obFinish()' style='width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)'>Enter Scout &#8594;</button>"
+    "</div>"
+  "</div>"
 
   "<div class='topbar'>"
     "<button class='logo-btn' onclick='goHome()'>"
@@ -3679,7 +3784,8 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 
 /* ── MOBILE / TABLET ───────────────────────────────────────────────── */
 @media(max-width:900px){
-  nav{padding:0 20px}
+  nav{padding:0 20px;overflow:visible}
+  .ncta{touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:44px;display:flex;align-items:center}
   .nlinks .nlink{display:none}
   .hero{grid-template-columns:1fr;padding:80px 24px 48px;gap:32px;min-height:auto}
   h1{font-size:52px}
@@ -3886,7 +3992,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
         <li>750 researches/month</li>
         <li>5 team members</li>
         <li>100 lead fetches</li>
-        <li>White-label pitches</li>
+        <li>Custom proposal generator</li>
         <li>Dedicated support</li>
       </ul>
     </div>
@@ -5092,4 +5198,3 @@ if __name__ == '__main__':
     "</div>"
     "<div id='sb-tier-items' style='font-size:12px;color:var(--tx2);line-height:1.8'></div>"
 
-    "<div id='wl-config-wrap' style='max-width:480px;margin:24px auto 0;background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:24px'></div>"
