@@ -1,4 +1,4 @@
-#!/usr/bin/env pyth<div class=\'modal-field\'><label class=\'modal-label\'>Phone</label><input class=\'modal-input\' id=\'pm-phone\' placeholder=\'+1 555 000 0000\' type=\'text\'></div>on3
+#!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
 def find_port():
@@ -1446,7 +1446,7 @@ function renderLeadDetail(r){
       '</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0;padding-top:8px;border-top:1px solid var(--bor)">'+
-      '<button onclick="generateProposal(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Proposal</button>'+'<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
+      '<div style="display:flex;align-items:center;gap:8px"><input id="prospect-logo-url" placeholder="Prospect logo URL (optional)" style="font-size:11px;padding:7px 12px;border-radius:6px;border:1px solid var(--bor2);background:var(--sur2);color:var(--tx2);font-family:Outfit,sans-serif;width:200px" oninput="if(window._currentLead)window._currentLead.prospect_logo=this.value"><button onclick="generateProposal(window._currentLead)" style="display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Proposal</button></div>'+'<button onclick="deleteCurrentLead()" style="background:none;border:1px solid rgba(239,68,68,0.4);color:rgba(239,68,68,0.8);font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif">Delete lead</button>'+
     '</div>'+
     '<div class="ld-section" style="margin:12px 0">'+
       '<div class="ld-section-title">Notes</div>'+
@@ -2126,14 +2126,35 @@ function profileSaveInfo(){
 
 
 function profileAddService(){
-  var name=window.prompt('Service name (e.g. GTM Strategy):');
-  if(!name||!name.trim())return;
-  var desc=window.prompt('Short description (1 sentence):');
-  var price=window.prompt('Price range (e.g. $3k–$8k/mo):');
+  // Remove any existing modal
+  var ex=document.getElementById('add-service-modal');if(ex)ex.remove();
+  var overlay=document.createElement('div');
+  overlay.id='add-service-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  overlay.innerHTML='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:28px;width:380px;max-width:95vw;display:flex;flex-direction:column;gap:14px">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">Add service</div>'
+    +'<input id="asvc-name" class="modal-input" placeholder="Service name (e.g. GTM Strategy)" style="font-size:13px;padding:11px 14px">'
+    +'<input id="asvc-desc" class="modal-input" placeholder="Short description (1 sentence)" style="font-size:13px;padding:11px 14px">'
+    +'<input id="asvc-price" class="modal-input" placeholder="Price range (e.g. $3k–$8k/mo)" style="font-size:13px;padding:11px 14px">'
+    +'<div style="display:flex;gap:10px;margin-top:4px">'
+    +'<button onclick="saveServiceModal()" style="flex:1;background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer">Save service</button>'
+    +'<button onclick="document.getElementById('add-service-modal').remove()" style="flex:1;background:none;border:1px solid var(--bor2);color:var(--tx2);font-family:Outfit,sans-serif;font-size:13px;padding:11px;border-radius:8px;cursor:pointer">Cancel</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  setTimeout(function(){var n=document.getElementById('asvc-name');if(n)n.focus();},50);
+}
+function saveServiceModal(){
+  var name=(document.getElementById('asvc-name')||{}).value||'';
+  var desc=(document.getElementById('asvc-desc')||{}).value||'';
+  var price=(document.getElementById('asvc-price')||{}).value||'';
+  if(!name.trim()){var n=document.getElementById('asvc-name');if(n)n.style.borderColor='var(--red)';return;}
   if(!PROFILE.services)PROFILE.services=[];
-  PROFILE.services.push({name:name.trim(),desc:desc||'',price:price||''});
+  PROFILE.services.push({name:name.trim(),desc:desc,price:price});
   try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  var m=document.getElementById('add-service-modal');if(m)m.remove();
   renderProfile();
+  showInfoToast('Service added ✓');
 }
 function profileRemoveService(idx){
   if(!PROFILE.services)return;
@@ -2654,9 +2675,63 @@ function closeProfileMenu(){
   var dd=document.getElementById('profile-dropdown');
   if(dd) dd.style.display='none';
 }
+function showSplash(){
+  var sp=document.getElementById('ob-splash');
+  if(!sp)return;
+  sp.style.display='flex';
+  setTimeout(function(){sp.style.opacity='1';},30);
+  scoutStep(1);
+}
+function scoutStep(n){
+  [1,2,3].forEach(function(i){
+    var el=document.getElementById('ob-step'+i);
+    if(el)el.style.display=(i===n?'block':'none');
+  });
+}
+function obChoosePlan(plan){
+  ['free','pro','agency'].forEach(function(p){
+    var el=document.getElementById('opc-'+p);
+    if(el)el.classList.toggle('selected',p===plan);
+  });
+  var btn=document.getElementById('ob-enter-btn');
+  if(btn)btn.setAttribute('data-ob-plan',plan);
+}
+function obSkip(){
+  try{localStorage.setItem('scout_ob_done','1');}catch(e){}
+  var sp=document.getElementById('ob-splash');
+  if(sp){sp.style.opacity='0';setTimeout(function(){sp.style.display='none';},500);}
+}
+function obFinish(){
+  var nm=(document.getElementById('ob-name')||{}).value||'';
+  var tg=(document.getElementById('ob-tagline')||{}).value||'';
+  var li=(document.getElementById('ob-linkedin')||{}).value||'';
+  if(nm.trim()){PROFILE.name=nm.trim();}
+  if(tg.trim()){PROFILE.tagline=tg.trim();}
+  if(li.trim()){PROFILE.linkedin=li.trim();}
+  if(nm.trim()||tg.trim()||li.trim()){
+    try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+  }
+  var btn=document.getElementById('ob-enter-btn');
+  var plan=btn?btn.getAttribute('data-ob-plan'):'free';
+  if(plan&&plan!=='free'){
+    var t=tierLoad();
+    t.plan=plan;
+    try{localStorage.setItem('scout_tier',JSON.stringify(t));}catch(e){}
+  }
+  try{localStorage.setItem('scout_ob_done','1');}catch(e){}
+  obSkip();
+  renderProfile();
+  updateCreditsBar();
+}
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
-  load(function(){ setPage('dashboard'); document.body.classList.add('app-ready'); });
+  load(function(){
+    setPage('dashboard');
+    document.body.classList.add('app-ready');
+    if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
+      setTimeout(showSplash,800);
+    }
+  });
   document.addEventListener('click',function(e){
     var t=e.target.closest('[data-action]')||e.target;
     var a=t?t.getAttribute('data-action'):null;if(!a)return;
@@ -2774,7 +2849,7 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'White-label Pitches',action:function(){setPage('profile'); setTimeout(function(){ var w=document.getElementById('wl-config-wrap'); if(w) w.scrollIntoView({behavior:'smooth'}); }, 200);;}},
+      {label:'White-label Pitches',action:function(){setPage('dashboard');}},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -3188,7 +3263,7 @@ function generateProposal(r){
       company:r.company||'',sector:r.sector||'',stage:r.stage||'',hq:r.hq||'',
       funding_amount:r.funding_amount||'',score:r.gtm_readiness_score||0,
       label:r.gtm_label||'',why_fit:r.why_fit||'',pitch_opener:r.pitch_opener||'',
-      gtm_signals:r.gtm_signals||{}
+      gtm_signals:r.gtm_signals||{},prospect_logo:r.prospect_logo||''
     },
     services:PROFILE.services||[],
     cases:PROFILE.case_studies||[]
@@ -3661,20 +3736,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
 <button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(45,157,232,0.3);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;margin-left:8px">ES</button>
 <script>try{var _t=localStorage.getItem('sb_token');var _u=localStorage.getItem('sb_user');var _nc=document.getElementById('nav-cta');if(_t&&_u&&_nc){_nc.textContent='Dashboard';_nc.style.background='var(--pip,#2d9de8)';}}catch(e){}</script>
   </div>
-  <script>
-    (function(){
-      try{
-        var token = localStorage.getItem('sb_token');
-        var btn = document.getElementById('nav-cta');
-        if(token && btn){
-          btn.textContent = 'Sign in';
-          btn.style.background = 'none';
-          btn.style.border = '1px solid rgba(45,157,232,0.3)';
-          btn.style.color = '#2d9de8';
-        }
-      }catch(e){}
-    })();
-  </script></nav>
+</nav>
 
 <section class="hero">
   <div>
@@ -4190,21 +4252,7 @@ footer{position:relative;z-index:1;padding:32px 48px;border-top:1px solid var(--
     <a href="/app" id="nav-cta" class="ncta">Start free</a>
 <button id="lang-toggle" onclick="toggleLang()" style="background:none;border:1px solid rgba(45,157,232,0.3);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;margin-left:8px">ES</button>
 <script>try{var _t=localStorage.getItem('sb_token');var _u=localStorage.getItem('sb_user');var _nc=document.getElementById('nav-cta');if(_t&&_u&&_nc){_nc.textContent='Dashboard';_nc.style.background='var(--pip,#2d9de8)';}}catch(e){}</script>
-  </div>
-  <script>
-    (function(){
-      try{
-        var token = localStorage.getItem('sb_token');
-        var btn = document.getElementById('nav-cta');
-        if(token && btn){
-          btn.textContent = 'Sign in';
-          btn.style.background = 'none';
-          btn.style.border = '1px solid rgba(45,157,232,0.3)';
-          btn.style.color = '#2d9de8';
-        }
-      }catch(e){}
-    })();
-  </script></nav>
+  </div></nav>
 
 <section class="hero">
   <div>
@@ -4914,41 +4962,6 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 
-"<div id='ob-splash' style='display:none;opacity:0;position:fixed;inset:0;background:#020408 !important;z-index:10000;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto;'>"
-  "<div id='ob-step1' style='text-align:center'>"
-    "<div style='display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:36px'>"
-      "<div class='ndot' style='width:10px;height:10px'></div>"
-      "<span style='font-size:14px;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span>"
-    "</div>"
-    "<img src='data:image/png;base64,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' style='width:80px;height:80px;object-fit:contain;margin-bottom:20px'>"
-    "<div style='font-size:30px;font-weight:800;letter-spacing:-.04em;color:#eef4ff;margin-bottom:10px;font-family:Outfit,sans-serif'>Find your next client.</div>"
-    "<div style='font-size:14px;color:#7da8c8;max-width:360px;line-height:1.65;margin-bottom:36px'>AI lead generation for fractional CMOs and marketing agencies.</div>"
-    "<button onclick='scoutStep(2)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px 48px;border-radius:8px;cursor:pointer;box-shadow:0 0 32px rgba(45,157,232,0.3)'>Get started &#8594;</button>"
-    "<div style='margin-top:14px'><button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline'>Skip for now</button></div>"
-  "</div>"
-  "<div id='ob-step2' style='display:none;width:100%;max-width:420px'>"
-    "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:24px'><div class='ndot'></div><span style='font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
-    "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Set up your profile</div>"
-    "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Personalises your pitch openers.</div>"
-    "<div style='display:flex;flex-direction:column;gap:10px'>"
-      "<input class='modal-input' id='ob-name' placeholder='Your name or agency' style='font-size:15px;padding:14px 18px'>"
-      "<input class='modal-input' id='ob-tagline' placeholder='What you specialise in' style='font-size:14px;padding:13px 18px'>"
-      "<input class='modal-input' id='ob-linkedin' placeholder='LinkedIn URL (optional)' style='font-size:14px;padding:13px 18px'>"
-      "<button onclick='scoutStep(3)' style='background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;margin-top:4px'>Continue &#8594;</button>"
-      "<button onclick='obSkip()' style='background:none;border:none;color:#2a4a6a;font-size:12px;cursor:pointer;font-family:Outfit,sans-serif;text-decoration:underline;padding:4px'>Skip for now</button>"
-    "</div>"
-  "</div>"
-  "<div id='ob-step3' style='display:none;width:100%;max-width:540px'>"
-    "<div style='display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:24px'><div class='ndot'></div><span style='font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#eef4ff;font-family:Outfit,sans-serif'>Scout</span></div>"
-    "<div style='font-size:22px;font-weight:800;letter-spacing:-.03em;color:#eef4ff;margin-bottom:6px;font-family:Outfit,sans-serif;text-align:center'>Choose your plan</div>"
-    "<div style='font-size:13px;color:#7da8c8;margin-bottom:20px;text-align:center'>Start free. Upgrade anytime.</div>"
-    "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px'>"
-      "<div onclick='obChoosePlan(\"free\")' class='ob-plan-card' id='opc-free'><div class='ob-plan-name'>Free</div><div class='ob-plan-price'>$0</div><div class='ob-plan-desc'>5 researches/mo</div></div>"
-      "<div onclick='obChoosePlan(\"pro\")' class='ob-plan-card ob-plan-hot selected' id='opc-pro'><div class='ob-plan-badge'>Popular</div><div class='ob-plan-name'>Pro</div><div class='ob-plan-price'>$29<span>/mo</span></div><div class='ob-plan-desc'>Unlimited research</div></div>"
-      "<div onclick='obChoosePlan(\"agency\")' class='ob-plan-card' id='opc-agency'><div class='ob-plan-name'>Agency</div><div class='ob-plan-price'>$99<span>/mo</span></div><div class='ob-plan-desc'>5 team members</div></div>"
-    "</div>"
-    "<button id='ob-enter-btn' onclick='obFinish()' style='width:100%;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;padding:14px;border-radius:8px;cursor:pointer;box-shadow:0 0 24px rgba(45,157,232,0.3)'>Enter Scout &#8594;</button>"
-  "</div>"
   </body>
 </html>'''
 
@@ -5086,6 +5099,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         logo = c.get('logo', '')
 
         company = esc(lead.get('company', ''))
+        prospect_logo_raw = lead.get('prospect_logo', '')
         sector = esc(lead.get('sector', ''))
         stage = esc(lead.get('stage', ''))
         hq = esc(lead.get('hq', ''))
@@ -5179,7 +5193,93 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         body_html = ''.join('<div style="margin-bottom:32px">' + s + '</div>' for s in sections)
 
-        return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proposal for ' + company + ' \u00b7 ' + name + '</title><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;font-family:Outfit,sans-serif;color:#1a2332;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{.no-print{display:none!important}}</style></head><body><div class="no-print" style="position:fixed;top:16px;right:16px;z-index:100"><button onclick="window.print()" style="background:' + color + ';color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.15)">\u2193 Download PDF</button></div><div style="max-width:760px;margin:0 auto"><div style="background:' + color + ';padding:44px 48px 40px;position:relative;overflow:hidden"><div style="position:absolute;top:-60px;right:-60px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.07)"></div>' + logo_html + '<div style="font-size:28px;font-weight:800;color:#fff;letter-spacing:-.03em;margin-bottom:4px">' + name + '</div><div style="font-size:14px;color:rgba(255,255,255,.8);margin-bottom:2px">' + role + agency_line + '</div>' + tagline_line + '</div><div style="background:#0f1923;padding:20px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:4px">Proposal for</div><div style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-.02em">' + company + '</div>' + ('<div style="font-size:12px;color:#64748b;margin-top:2px">' + meta + '</div>' if meta else '') + '</div><div style="text-align:right"><div style="font-size:44px;font-weight:900;color:' + score_color + ';font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.04em">' + str(score) + '</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-top:2px">GTM Score</div></div></div><div style="padding:40px 48px 48px">' + body_html + '</div><div style="padding:20px 48px;border-top:1px solid #f1f5f9;display:flex;justify-content:space-between"><div style="font-size:11px;color:#cbd5e1">' + name + ' &middot; Prepared for ' + company + '</div><div style="font-size:11px;color:#cbd5e1">Powered by Scout</div></div></div></body></html>'
+        prospect_logo = lead.get('prospect_logo', '')
+        prospect_logo_html = '<img src="' + prospect_logo + '" style="height:56px;object-fit:contain;display:block"/>' if prospect_logo else ''
+
+        # ── Title page (landscape, full-bleed dark) ─────────────────────
+        title_page = (
+            '<div class="page title-page" style="background:linear-gradient(135deg,#020408 0%,#0a1220 60%,#0f1a2e 100%);min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;page-break-after:always">'
+            # Background orb
+            '<div style="position:absolute;top:-15%;right:-10%;width:55%;height:75%;border-radius:50%;background:radial-gradient(ellipse,' + color + '18 0%,transparent 65%);pointer-events:none"></div>'
+            '<div style="position:absolute;bottom:-20%;left:-10%;width:45%;height:60%;border-radius:50%;background:radial-gradient(ellipse,' + color + '10 0%,transparent 65%);pointer-events:none"></div>'
+            # Top bar with logos
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:40px 64px 0;position:relative;z-index:1">'
+              + (('<img src="' + logo + '" style="height:44px;object-fit:contain;display:block"/>') if logo else '<div style="font-size:14px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#fff">' + name + '</div>')
+              + '<div style="display:flex;align-items:center;gap:12px">'
+              + ('<div style="width:1px;height:40px;background:rgba(255,255,255,.15)"></div>' if prospect_logo_html else '')
+              + prospect_logo_html
+              + '</div>'
+            '</div>'
+            # Center content
+            '<div style="flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:60px 64px;position:relative;z-index:1">'
+              '<div style="font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:' + color + ';margin-bottom:20px;display:flex;align-items:center;gap:10px">'
+              '<div style="width:28px;height:2px;background:' + color + '"></div>Marketing Proposal</div>'
+              '<div style="font-size:72px;font-weight:900;letter-spacing:-.05em;color:#fff;line-height:.92;margin-bottom:28px">' + company + '</div>'
+              + ('<div style="font-size:16px;color:rgba(255,255,255,.55);margin-bottom:48px">' + meta + '</div>' if meta else '<div style="margin-bottom:48px"></div>')
+              + '<div style="display:flex;align-items:center;gap:16px">'
+              '<div style="background:' + color + ';border-radius:6px;padding:6px 16px">'
+              '<div style="font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.1em">GTM Score</div>'
+              '<div style="font-size:40px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.04em">' + str(score) + '</div>'
+              '</div>'
+              + ('<div style="height:60px;width:1px;background:rgba(255,255,255,.15)"></div><div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.5"><div style="font-weight:700;color:rgba(255,255,255,.8);font-size:14px">' + label + '</div>' + meta + '</div>' if label else '')
+              + '</div>'
+            '</div>'
+            # Footer bar
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:24px 64px;border-top:1px solid rgba(255,255,255,.08);position:relative;z-index:1">'
+            '<div style="font-size:12px;color:rgba(255,255,255,.35)">'
+              + name + ((' &middot; ' + agency) if agency else '') + ((' &middot; ' + role) if role else '')
+            + '</div>'
+            '<div style="font-size:11px;color:rgba(255,255,255,.2)">Prepared with Scout</div>'
+            '</div>'
+            '</div>'
+        )
+
+        # ── Content pages ────────────────────────────────────────────────
+        content_page = (
+            '<div class="page content-page" style="background:#fff;min-height:100vh;display:flex;flex-direction:column">'
+            # Colored top strip
+            '<div style="background:' + color + ';height:6px;width:100%"></div>'
+            # Header
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:28px 64px 20px;border-bottom:1px solid #f1f5f9">'
+              + (('<img src="' + logo + '" style="height:32px;object-fit:contain;display:block"/>') if logo else '<div style="font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#0f1923">' + name + '</div>')
+              + '<div style="font-size:12px;color:#94a3b8">Proposal for ' + company + '</div>'
+            '</div>'
+            # Body
+            '<div style="flex:1;padding:48px 64px">' + body_html + '</div>'
+            # Footer
+            '<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 64px;border-top:1px solid #f1f5f9">'
+            '<div style="font-size:11px;color:#cbd5e1">' + name + ' &middot; Prepared for ' + company + '</div>'
+            '<div style="font-size:11px;color:#cbd5e1">Powered by Scout</div>'
+            '</div>'
+            '</div>'
+        )
+
+        return (
+            '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<title>Proposal for ' + company + ' \u00b7 ' + name + '</title>'
+            '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">'
+            '<style>'
+            '*{box-sizing:border-box;margin:0;padding:0}'
+            'body{background:#020408;font-family:Outfit,sans-serif;color:#1a2332;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+            '.page{break-inside:avoid}'
+            '@page{size:A4 landscape;margin:0}'
+            '@media print{'
+              '.no-print{display:none!important}'
+              'body{background:#020408}'
+              '.title-page{min-height:100vh!important}'
+              '.content-page{background:#fff!important;min-height:100vh!important}'
+            '}'
+            '.modal-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:12px}'
+            '</style>'
+            '</head><body>'
+            '<div class="no-print" style="position:fixed;top:16px;right:16px;z-index:100;display:flex;gap:8px">'
+            '<button onclick="window.print()" style="background:' + color + ';color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.3)">\u2193 Download PDF</button>'
+            '</div>'
+            + title_page
+            + content_page
+            + '</body></html>'
+        )
 
     def build_pitch_page(self, encoded):
         import base64, json as _json, html as _html
