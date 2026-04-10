@@ -1,4 +1,4 @@
-# Scout v2.2 | built 2026-04-10 09:29
+# Scout v2.3 | 2026-04-10 09:34
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
@@ -793,7 +793,32 @@ footer a:hover,footer button:hover{color:var(--pip2)}
 .kanban-card-score{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:-.04em;line-height:1}
 .kanban-empty{font-size:12px;color:var(--tx3);text-align:center;padding:24px 0;opacity:.5}
 /* App loading state - hide content until ready */
-
+body:not(.app-ready) .page,
+body:not(.app-ready) .sidebar,
+body:not(.app-ready) .topbar {
+  visibility: hidden;
+}
+body:not(.app-ready) #app-loading {
+  display: flex !important;
+}
+#app-loading {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: var(--bg);
+  z-index: 9998;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+#app-loading-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--pip);
+  box-shadow: 0 0 20px var(--pip);
+  animation: ndot 1.5s ease-in-out infinite;
+}
 """
 
 JS = """
@@ -825,7 +850,7 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "You are a B2B lead research assistant for fractional CMO services. Use web search to find REAL, VERIFIED information. NEVER invent data - use null if not found. SCORING: Score 75-100 ONLY if recently funded (last 6 months) AND no CMO/VP Marketing on team. Score 50-74 if funded but has some marketing. Score below 30 if: has a full-time CMO, is a large public company, Fortune 500, or well-known brand. HARD EXCLUSIONS - always return score 0 and gtm_label Not a fit for: companies with 1000+ employees, Fortune 500/S&P 500 companies, public companies (NYSE/NASDAQ), companies with a known CMO/Chief Marketing Officer, and well-known brands like OpenAI/Anthropic/Google/Meta/Apple/Microsoft/Amazon/Stripe/Ramp/Notion/Figma/Salesforce. Return ONLY valid JSON: company, tagline, sector, hq, stage, funding_amount, founded, employee_count (int or null), has_cmo (bool), is_public (bool), is_fortune500 (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead/Not a fit), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (not_contacted), gtm_signals: {recently_funded, no_cmo, marketing_gap_visible}."
+var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100 integer; only score above 30 - a score below 30 means the company is not a good lead), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load(onDone) {
@@ -973,20 +998,12 @@ function showPanel(id){
 
 
 function run(company,callback){
-  var normCo=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
-  var normInput=normCo(company);
-  var alreadyExists=DB.concat(INBOX).some(function(r){return normCo(r.company)===normInput;});
-  if(alreadyExists){
-    var ed=document.getElementById('err');
-    if(ed){ed.style.display='block';ed.textContent=company+' is already in your pipeline.';}
-    return;
-  }
   busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
   document.getElementById('err').style.display='none';document.getElementById('lname').textContent=company;
   document.getElementById('ldg').style.display='flex';
   var secs=0;document.getElementById('ltimer').textContent='0s';
   ti=setInterval(function(){document.getElementById('ltimer').textContent=(++secs)+'s';},1000);
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -1004,12 +1021,7 @@ function run(company,callback){
     var existing=DB.findIndex(function(x){return x.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     // Skip cold leads (score < 30) on auto-research
     var score=res.gtm_readiness_score||0;
-    var excluded=res.is_public||res.is_fortune500||(res.has_cmo===true&&score<60)||res.gtm_label==='Not a fit';
-    if(excluded||score<20){
-      var ed=document.getElementById('err');
-      if(ed){ed.style.display='block';ed.textContent=(res.has_cmo?res.company+' has a CMO — not a fit':res.is_public||res.is_fortune500?res.company+' is too large/public':res.company+' scored too low ('+score+')');}
-      if(callback)callback(); return;
-    }
+    if(score<30 && existing<0){ if(callback)callback(); return; }
     if(existing>=0){res._id=DB[existing]._id;DB[existing]=res;}else{res._id='id'+Date.now();DB.unshift(res);}
     save();renderAll();
   }).catch(function(e){var el=document.getElementById('err');el.textContent='Error: '+e.message;el.style.display='block';})
@@ -1032,10 +1044,7 @@ function fetchLeads() {
   var extraInstructions = '';
   if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
-  var niche=(document.getElementById('fetch-niche')||{value:''}).value.trim();
-  var nicheStr=niche?' Focus exclusively on '+niche+' companies.':' Focus on AI, SaaS, fintech, web3, climate tech.';
-  var existingNames=DB.concat(INBOX).map(function(r){var n=(r.company||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');return n;}).filter(Boolean);
-  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days.'+nicheStr+' Return only real verifiable companies with source URLs. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
+  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -1073,9 +1082,8 @@ function fetchLeads() {
     });
     if(!cos.length)throw new Error('No valid companies found in results');
     // Dedup against existing DB + INBOX
-    var normN=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
-    var exNorms=DB.concat(INBOX).map(function(x){return normN(x.company);}).filter(Boolean);
-    cos=cos.filter(function(co){var n=normN(co.company);return n&&exNorms.indexOf(n)<0;});
+    var existingNames=DB.concat(INBOX).map(function(x){return (x.company||'').toLowerCase();});
+    cos=cos.filter(function(co){return existingNames.indexOf(co.company.toLowerCase())<0;});
     if(!cos.length)throw new Error('All companies already in your pipeline - try a different source');
     var list=document.getElementById('fetch-list');list.innerHTML='';
     cos.forEach(function(co){
@@ -1122,7 +1130,7 @@ function researchSelected(){
 function runToInbox(company, callback){
   var ind=document.getElementById('save-ind');
   if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -1972,32 +1980,25 @@ function profileSave(){
   renderProfile();
 }
 
-// ── TEAMS ────────────────────────────────────────────────────────────────────
 function teamsLoad(){try{var t=localStorage.getItem('scout_team');return t?JSON.parse(t):{members:[]};}catch(e){return {members:[]};}}
 function teamsSave(t){try{localStorage.setItem('scout_team',JSON.stringify(t));}catch(e){}}
-
 function renderTeams(){
   var root=document.getElementById('teams-root');if(!root)return;
   var tier=tierLoad();var isAgency=tier.plan==='agency'||tier._master;
-  var maxSeats=5;var team=teamsLoad();var members=team.members||[];
+  var team=teamsLoad();var members=team.members||[];
   var user=authGetUser();var ownerEmail=user?user.email:'you';
   if(!isAgency){
-    root.innerHTML='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:32px;text-align:center;max-width:480px"><div style="font-size:32px;margin-bottom:12px">&#128101;</div><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teams is an Agency feature</div><div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:20px">Upgrade to Agency to add up to 5 team members who share your credit pool and lead database.</div><button onclick="showPricing()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px 28px;border-radius:8px;cursor:pointer">Upgrade to Agency</button></div>';
+    root.innerHTML='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:32px;text-align:center;max-width:480px"><div style="font-size:32px;margin-bottom:12px">&#128101;</div><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teams is an Agency feature</div><div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:20px">Upgrade to Agency to add up to 5 team members.</div><button onclick="showPricing()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px 28px;border-radius:8px;cursor:pointer">Upgrade to Agency</button></div>';
     return;
   }
-  var usedSeats=members.length;
-  var html='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:13px;font-weight:700;color:var(--tx)">Seats used</div><div style="font-size:12px;font-weight:700;color:var(--pip2);font-family:JetBrains Mono,monospace">'+(usedSeats+1)+' / '+maxSeats+'</div></div><div style="height:4px;background:var(--bor2);border-radius:2px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:2px;width:'+(((usedSeats+1)/maxSeats)*100)+'%"></div></div></div>';
+  var maxSeats=5;var usedSeats=members.length;
+  var html='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div style="font-size:13px;font-weight:700;color:var(--tx)">Seats used</div><div style="font-size:12px;font-weight:700;color:var(--pip2);font-family:JetBrains Mono,monospace">'+(usedSeats+1)+' / '+maxSeats+'</div></div><div style="height:4px;background:var(--bor2);border-radius:2px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:2px;width:'+(Math.round(((usedSeats+1)/maxSeats)*100))+'%"></div></div></div>';
   html+='<div style="margin-bottom:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3)">Members</div><div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);overflow:hidden;margin-bottom:16px">';
-  html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:11px;color:var(--tx3)">Owner</div></div><div style="font-size:10px;font-weight:700;background:var(--pip-dim);color:var(--pip2);padding:3px 8px;border-radius:4px;border:1px solid var(--pip-bor)">OWNER</div></div>';
-  members.forEach(function(m,i){
-    html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--tx2);flex-shrink:0">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:11px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;align-items:center;gap:8px">'+(m.status==='pending'?'<div style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.1);color:var(--amb);padding:3px 8px;border-radius:4px">PENDING</div>':'<div style="font-size:10px;font-weight:700;background:rgba(16,185,129,0.1);color:var(--grn);padding:3px 8px;border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';
-  });
+  html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:11px;color:var(--tx3)">Owner</div></div><div style="font-size:10px;font-weight:700;background:var(--pip-dim);color:var(--pip2);padding:3px 8px;border-radius:4px">OWNER</div></div>';
+  members.forEach(function(m,i){html+='<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--bor)"><div style="width:34px;height:34px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--tx2);flex-shrink:0">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:11px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;align-items:center;gap:8px">'+(m.status==='pending'?'<div style="font-size:10px;font-weight:700;background:rgba(245,158,11,0.1);color:var(--amb);padding:3px 8px;border-radius:4px">PENDING</div>':'<div style="font-size:10px;font-weight:700;background:rgba(16,185,129,0.1);color:var(--grn);padding:3px 8px;border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';});
   html+='</div>';
-  if(usedSeats<maxSeats-1){
-    html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:20px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Invite a team member</div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">They will share your credit pool and lead database.</div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:13px;padding:10px 14px"><button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer">Send invite</button></div></div>';
-  } else {
-    html+='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled.</div>';
-  }
+  if(usedSeats<maxSeats-1){html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:20px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Invite a team member</div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">They will share your credit pool and lead database.</div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:13px;padding:10px 14px"><button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer">Send invite</button></div></div>';}
+  else{html+='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled.</div>';}
   root.innerHTML=html;
 }
 function teamsInvite(){
@@ -2005,7 +2006,7 @@ function teamsInvite(){
   if(!email||email.indexOf('@')<0){showInfoToast('Enter a valid email');return;}
   var team=teamsLoad();var members=team.members||[];
   var user=authGetUser();
-  if(user&&email===user.email){showInfoToast('That\'s your own email');return;}
+  if(user&&email===user.email){showInfoToast('That is your own email');return;}
   if(members.some(function(m){return m.email===email;})){showInfoToast('Already in team');return;}
   members.push({email:email,status:'pending',invited:new Date().toISOString()});
   team.members=members;teamsSave(team);
@@ -2018,7 +2019,6 @@ function teamsRemoveMember(idx){
   members.splice(idx,1);team.members=members;teamsSave(team);
   showInfoToast(removed.email+' removed');renderTeams();
 }
-
 function renderProfile(){
   profileLoad();
   var cont = document.getElementById('profile-root');
@@ -2628,11 +2628,10 @@ function showAuthScreen(mode){
     if(authBtn) authBtn.onclick=function(){authSubmit(mode);};
   },50);
 }
-function authShowErr(msg){var e=document.getElementById('auth-error');if(e)e.textContent=msg;else alert(msg);}
 function authSubmit(mode){
   var email=(document.getElementById('auth-email')||{value:''}).value.trim();
   var pass=(document.getElementById('auth-pass')||{value:''}).value;
-  var btn=document.getElementById('auth-btn');
+  var errEl=document.getElementById('auth-error'),btn=document.getElementById('auth-btn');
   if(!email||!pass){if(errEl)errEl.textContent='Please fill in all fields';return;}
   if(btn){btn.disabled=true;btn.textContent=mode==='signup'?'Creating...':'Signing in...';}
   if(errEl)errEl.textContent='';
@@ -3438,7 +3437,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<style>" + CSS + "</style>\n"
   "</head>\n<body>\n"
 
-  
+  "<div id='app-loading' style='position:fixed;inset:0;background:#020408;z-index:9999;display:none;align-items:center;justify-content:center'><div style='width:28px;height:28px;border:2px solid rgba(45,157,232,0.15);border-top-color:#2d9de8;border-radius:50%;animation:spin .7s linear infinite'></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></div>"
 
   "<div id='ob-splash' style='display:none;opacity:0;position:fixed;inset:0;background:#020408;z-index:99990;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease;padding:24px;overflow-y:auto'>"
     "<div id='ob-step1' style='text-align:center;width:100%;max-width:420px'>"
@@ -3525,7 +3524,6 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
-      "<input id='fetch-niche' class='modal-input' placeholder='Niche / industry focus (e.g. B2B SaaS, climate tech, fintech) — leave blank for broad search' style='margin:12px 0 10px;font-size:13px;padding:10px 14px;display:block;width:100%'>"
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
@@ -5132,31 +5130,6 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
                 try:
                     with urllib.request.urlopen(req, timeout=120) as resp:
-                        data = json.loads(resp.read())
-                except urllib.error.HTTPError as e:
-                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
-                except Exception as e:
-                    self.respond({'error': str(e)}); return
-                content = data.get('content', [])
-                stop_reason = data.get('stop_reason', '')
-                for block in content:
-                    if block.get('type') == 'text': final_text = block.get('text', '')
-                if stop_reason == 'end_turn': break
-                elif stop_reason == 'tool_use':
-                    messages.append({'role': 'assistant', 'content': content})
-                    messages.append({'role': 'user', 'content': [{'type': 'tool_result', 'tool_use_id': b['id'], 'content': [{'type': 'text', 'text': 'ok'}]} for b in content if b.get('type') == 'tool_use']})
-                else: break
-            self.respond({'text': final_text})
-        elif mode == 'research':
-            messages = [{'role': 'user', 'content': 'Research this company using web search. Verify all data. Company: "' + company + '"'}]
-            final_text = ''
-            for _ in range(12):
-                payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1500, 'system': system,
-                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
-                req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
-                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
-                try:
-                    with urllib.request.urlopen(req, timeout=90) as resp:
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
