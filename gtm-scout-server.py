@@ -1105,20 +1105,25 @@ function researchSelected(){
     try{var co=JSON.parse(decodeURIComponent(cb.getAttribute('data-co')));if(co.company)names.push(co.company);}catch(e){}
   });
   if(!names.length)return;
-  // Go to inbox immediately so user can watch leads appear
   setPage('inbox');
   renderInbox();
-  var i=0;
-  var added=0;
+  // Show persistent progress bar at top of inbox
+  var prog=document.createElement('div');
+  prog.id='inbox-progress';
+  prog.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9000;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:13px;font-weight:600;padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,.3)';
+  prog.innerHTML='<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div><span id="inbox-progress-txt">Researching leads... (0/'+names.length+')</span>';
+  document.body.appendChild(prog);
+  var i=0;var added=0;
   function next(){
     if(i>=names.length){
-      updateBadges();
-      renderInbox();
+      updateBadges();renderInbox();
+      var p=document.getElementById('inbox-progress');if(p)p.remove();
       showInfoToast('Done! '+added+' lead'+(added!==1?'s':'')+' added to Inbox ✓');
       return;
     }
     var name=names[i++];
-    showInfoToast('Researching '+name+'... ('+i+'/'+names.length+')');
+    var txt=document.getElementById('inbox-progress-txt');
+    if(txt)txt.textContent='Researching '+name+'... ('+i+'/'+names.length+')';
     runToInbox(name,function(wasAdded){if(wasAdded)added++;next();});
   }
   setTimeout(next,0);
@@ -2571,7 +2576,6 @@ function showAuthScreen(mode){
            'No account? <button data-auth="signup" style="background:none;border:none;color:#2d9de8;cursor:pointer;font-family:Outfit,sans-serif;font-size:12px">Create one free</button>')+
     '</div></div>';
   document.body.appendChild(sc);
-  document.body.classList.add('app-ready');
   sc.addEventListener('click',function(e){
     var authMode=e.target.getAttribute('data-auth');
     if(authMode) showAuthScreen(authMode);
@@ -3384,7 +3388,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   var token=localStorage.getItem('sb_token'),user=authGetUser();
-  if(token&&user){SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
+  if(token&&user){document.body.style.visibility='hidden';SUPA_USER=user;if(user.email)PROFILE.email=user.email;if(user.user_metadata&&user.user_metadata.name)PROFILE.name=user.user_metadata.name;initApp();}
   else{showAuthScreen('signup');}
 });
 """
