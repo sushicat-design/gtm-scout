@@ -2106,7 +2106,7 @@ function renderProfile(){
           '<div class="prof-section-title">Case Studies</div>'+
           '<button onclick="profileAddCase()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">+ Add</button>'+
         '</div>'+
-        '<div class="case-studies-grid">'+casesHtml+'</div>'+
+        ((PROFILE.cases&&PROFILE.cases.length)?'<div class="case-studies-grid">'+casesHtml+'</div>':casesHtml)+
       '</div>'+
       '<div class="prof-section">'+
         '<div class="prof-section-title" style="margin-bottom:12px">Business Details</div>'+
@@ -5090,7 +5090,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         if mode == 'fetch':
             messages = [{'role': 'user', 'content': 'Search the web and complete this task: ' + company}]
             final_text = ''
-            for _ in range(5):
+            for _ in range(10):
                 payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
@@ -5100,7 +5100,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
-                        import time; time.sleep(15); continue
+                        import time; time.sleep(30); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
@@ -5152,7 +5152,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         elif mode == 'research':
             messages = [{'role': 'user', 'content': 'Research this company and return ONLY a JSON object with the profile. Company: "' + company + '"'}]
             final_text = ''
-            for _ in range(3):
+            for _ in range(6):
                 payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
@@ -5162,7 +5162,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
-                        import time; time.sleep(10); continue
+                        import time; time.sleep(20); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:200]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
