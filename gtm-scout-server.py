@@ -2008,7 +2008,7 @@ function renderTeams(){
   html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:12px;color:var(--tx3)">Owner</div></div><div style="font-size:11px;font-weight:700;color:var(--pip2);padding:3px 10px;background:var(--pip-dim);border-radius:4px">OWNER</div></div>';
   members.forEach(function(m,i){html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--tx2)">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:12px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;gap:8px">'+(m.status==='pending'?'<div style="font-size:11px;font-weight:700;color:var(--amb);padding:3px 8px;background:rgba(245,158,11,0.1);border-radius:4px">PENDING</div>':'<div style="font-size:11px;font-weight:700;color:var(--grn);padding:3px 8px;background:rgba(16,185,129,0.1);border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';});
   html+='</div>';
-  if(usedSeats<maxSeats-1){html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px"><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Add a team member</div><div style="font-size:13px;color:var(--tx3);line-height:1.7;margin-bottom:18px">Each additional seat is <strong style="color:var(--tx)">$20/seat/mo</strong>. Purchase first, then enter their email to send an invite.</div><div style="display:flex;flex-direction:column;gap:12px"><a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:13px 24px;border-radius:8px;text-decoration:none;text-align:center">+ Add seat — $20/mo</a><div style="border-top:1px solid var(--bor);padding-top:14px"><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">Once payment is confirmed, enter their email:</div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:14px;padding:12px 16px"><button onclick="teamsInvite()" style="background:var(--sur2);color:var(--tx2);border:1px solid var(--bor2);font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 22px;border-radius:8px;cursor:pointer">Send invite</button></div></div></div></div>';}
+  if(usedSeats<maxSeats-1){html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px"><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Add a team member</div><div style="font-size:13px;color:var(--tx3);line-height:1.7;margin-bottom:18px">Each additional seat is <strong style="color:var(--tx)">$20/seat/mo</strong>.</div><a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" onclick="localStorage.setItem(\'pendingSeat\',\'1\')" style="display:flex;align-items:center;justify-content:center;background:var(--pip);color:#fff;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:13px 24px;border-radius:8px;text-decoration:none;text-align:center">+ Add seat — $20/mo</a></div>';}
   else{html+='<div style="padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700">Buy extra seat</a></div>';}
   root.innerHTML=html;
 }
@@ -2798,12 +2798,30 @@ function obFinish(){
   renderProfile();
   updateCreditsBar();
 }
+function showSeatInviteToast(){
+  var toast=document.createElement('div');
+  toast.id='seat-invite-toast';
+  toast.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--sur);border:1px solid var(--pip);border-radius:12px;padding:20px 24px;z-index:99000;min-width:320px;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.4)';
+  toast.innerHTML='<div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:4px">🎉 Seat added! Invite your teammate</div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Enter their email to send an invite</div><div style="display:flex;gap:8px"><input id="seat-invite-email" type="email" placeholder="colleague@company.com" style="flex:1;background:var(--bg);border:1px solid var(--bor2);border-radius:8px;padding:10px 14px;font-family:Outfit,sans-serif;font-size:13px;color:var(--tx)"><button onclick="sendSeatInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:10px 18px;border-radius:8px;cursor:pointer">Invite</button></div><button onclick="document.getElementById(\'seat-invite-toast\').remove();history.replaceState(null,\'\',\'/app\')" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;line-height:1">×</button>';
+  document.body.appendChild(toast);
+  // Clear the URL param
+  history.replaceState(null,'','/app');
+}
+function sendSeatInvite(){
+  var email=(document.getElementById('seat-invite-email')||{value:''}).value.trim();
+  if(!email)return;
+  teamsInvite(email);
+  document.getElementById('seat-invite-toast').remove();
+}
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   document.body.classList.add('app-ready');
   load(function(){
     setPage('dashboard');
     updateCreditsBar();
+    if(window.location.search.indexOf('seat=paid')>-1){
+      setTimeout(showSeatInviteToast,800);
+    }
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
     }
@@ -5168,7 +5186,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         elif mode == 'research':
             messages = [{'role': 'user', 'content': 'Research this company and return ONLY a JSON object with the profile. Company: "' + company + '"'}]
             final_text = ''
-            for _ in range(3):
+            for _ in range(6):
                 payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
@@ -5178,7 +5196,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
-                        import time; time.sleep(10); continue
+                        import time; time.sleep(20); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:200]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
