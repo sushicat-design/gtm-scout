@@ -3382,15 +3382,7 @@ function generateProposal(r){
   window.open(safeOrigin()+'/proposal/'+encoded,'_blank');
   showInfoToast('Proposal opening\u2026');
 }
-window.addEventListener('pagehide',function(e){
-  if(!e.persisted){
-    try{
-      localStorage.removeItem('sb_token');
-      localStorage.removeItem('sb_user');
-      localStorage.removeItem('sb_refresh');
-    }catch(x){}
-  }
-});
+
 document.addEventListener('DOMContentLoaded',function(){
   console.log('SCOUT v6 loaded');
 
