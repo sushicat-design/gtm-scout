@@ -849,8 +849,8 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'search';
 var fil = 'all';
 
-var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100 integer; only score above 30 - a score below 30 means the company is not a good lead), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
-var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
+var SYS = "You are a B2B lead research assistant. Use web search to find REAL, VERIFIED information about the company. NEVER invent data - if you cannot find it, use null. Return ONLY a valid JSON object with these exact fields: company (official name as found online), tagline (from their website), sector, hq (city/country), stage (Pre-seed/Seed/Series A/B/C/D+/Public), funding_amount (most recent round, e.g. '$12M Series A'), founded (year), has_cmo (true if CMO/VP Marketing/Head of Marketing found on LinkedIn or website, false if not found), gtm_readiness_score (0-100 integer: 75+ if recently funded + no CMO; 50-74 if funded but has marketing; 30-49 if no clear signals; below 30 = not a good lead), gtm_label ('Hot Lead' if score>=75, 'Warm Lead' if 50-74, 'Cold Lead' if <50), why_fit (1 sentence explaining why they need fractional CMO help right now, based on REAL signals found), pitch_opener (2-3 sentences personalized pitch, referencing REAL recent news or company details), decision_maker (CEO name if found, else null), best_contact_title, best_contact_name, outreach_status ('not_contacted'), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Cross-reference LinkedIn, Crunchbase, company website, and recent news. If company cannot be found or verified, return {\"company\":\"[name]\",\"gtm_readiness_score\":0,\"error\":\"Company not found\"}.";
+var FETCH_SYS = "You are a B2B lead generation API with web search. Search for REAL startup funding announcements from the last 14 days. Verify each company exists and has actually raised funding. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown. Each element must be a real, verifiable company: {company (exact legal name), sector, funding (amount), stage, hq (city), source (URL of announcement)}. Max 10 items. Only include companies you can verify with a source URL. Start with [ immediately.";
 
 function load(onDone) {
   var userEmail = SUPA_USER && SUPA_USER.email ? SUPA_USER.email : (authGetUser() && authGetUser().email ? authGetUser().email : '');
@@ -995,12 +995,21 @@ function showPanel(id){
 
 
 function run(company,callback){
+  // Dedup: check if already in pipeline before researching
+  var normCo=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
+  var normInput=normCo(company);
+  var alreadyExists=DB.concat(INBOX).some(function(r){return normCo(r.company)===normInput;});
+  if(alreadyExists){
+    var errEl=document.getElementById('err');
+    if(errEl){errEl.style.display='block';errEl.textContent=company+' is already in your pipeline.';}
+    return;
+  }
   busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
   document.getElementById('err').style.display='none';document.getElementById('lname').textContent=company;
   document.getElementById('ldg').style.display='flex';
   var secs=0;document.getElementById('ltimer').textContent='0s';
   ti=setInterval(function(){document.getElementById('ltimer').textContent=(++secs)+'s';},1000);
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -1041,7 +1050,11 @@ function fetchLeads() {
   var extraInstructions = '';
   if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
-  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
+  var niche=(document.getElementById('fetch-niche')||{value:''}).value.trim();
+  var nicheStr=niche?' Focus exclusively on '+niche+' companies.':' Focus on AI, SaaS, fintech, web3, climate tech.';
+  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days.'+nicheStr+' Return a JSON array of real, verifiable companies with source URLs.'+extraInstructions;
+  // Build full dedup list from DB + INBOX
+  var existingNames=(DB.concat(INBOX)).map(function(r){return (r.company||'').toLowerCase().trim();}).filter(Boolean);
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -1078,9 +1091,13 @@ function fetchLeads() {
       return !badWords.some(function(w){return lower.indexOf(w)>=0;});
     });
     if(!cos.length)throw new Error('No valid companies found in results');
-    // Dedup against existing DB + INBOX
-    var existingNames=DB.concat(INBOX).map(function(x){return (x.company||'').toLowerCase();});
-    cos=cos.filter(function(co){return existingNames.indexOf(co.company.toLowerCase())<0;});
+    // Dedup against existing DB + INBOX — normalize: lowercase, strip punctuation, strip common suffixes
+    var normCo=function(n){return (n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
+    var existingNorms=DB.concat(INBOX).map(function(x){return normCo(x.company);}).filter(Boolean);
+    cos=cos.filter(function(co){
+      var n=normCo(co.company);
+      return n && existingNorms.indexOf(n)<0;
+    });
     if(!cos.length)throw new Error('All companies already in your pipeline - try a different source');
     var list=document.getElementById('fetch-list');list.innerHTML='';
     cos.forEach(function(co){
@@ -1127,7 +1144,7 @@ function researchSelected(){
 function runToInbox(company, callback){
   var ind=document.getElementById('save-ind');
   if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -2585,17 +2602,25 @@ function showAuthScreen(mode){
     if(authBtn) authBtn.onclick=function(){authSubmit(mode);};
   },50);
 }
+function authShowErr(msg){
+  var e=document.getElementById('auth-error');
+  if(e){e.textContent=msg;}else{alert(msg);}
+}
 function authSubmit(mode){
   var email=(document.getElementById('auth-email')||{value:''}).value.trim();
   var pass=(document.getElementById('auth-pass')||{value:''}).value;
-  var errEl=document.getElementById('auth-error'),btn=document.getElementById('auth-btn');
-  if(!email||!pass){if(errEl)errEl.textContent='Please fill in all fields';return;}
+  var btn=document.getElementById('auth-btn');
+  if(!email||!pass){authShowErr('Please fill in all fields');return;}
   if(btn){btn.disabled=true;btn.textContent=mode==='signup'?'Creating...':'Signing in...';}
+  var errEl=document.getElementById('auth-error');
   if(errEl)errEl.textContent='';
+  console.log('[Scout] authSubmit mode='+mode+' email='+email);
   if(mode==='signup'){
     var name=(document.getElementById('auth-name')||{value:''}).value.trim()||email.split('@')[0];
     supaPost('/auth/v1/signup',{email:email,password:pass,data:{name:name}}).then(function(d){
-      if(d.error){if(errEl)errEl.textContent=d.error.message;if(btn){btn.disabled=false;btn.textContent='Create my account';}return;}
+      console.log('[Scout] signup response:', JSON.stringify(d).slice(0,200));
+      var b2=document.getElementById('auth-btn');
+      if(d.error){authShowErr(d.error.message||'Sign up failed');if(b2){b2.disabled=false;b2.textContent='Create my account';}return;}
       if(d.access_token){
         localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
         SUPA_USER=d.user;PROFILE.name=name;PROFILE.email=email;
@@ -2606,26 +2631,30 @@ function authSubmit(mode){
         if(sc)sc.innerHTML='<div style="text-align:center;color:#eef4ff;font-family:Outfit,sans-serif;padding:40px 24px;max-width:400px"><div style="font-size:48px;margin-bottom:16px">&#9993;</div><div style="font-size:20px;font-weight:700;margin-bottom:10px">Check your email</div><div style="font-size:14px;color:#7da8c8;line-height:1.6">Confirmation sent to <b>'+email+'</b>. Click it then sign in.</div><button data-auth="login" style="margin-top:24px;background:#2d9de8;color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 32px;border-radius:8px;cursor:pointer">Sign in</button></div>';
       }
     }).catch(function(err){
-      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network';
-      var e2=document.getElementById('auth-error');if(e2)e2.textContent=msg;else alert(msg);
-      if(btn){btn.disabled=false;btn.textContent='Create my account';}
+      console.error('[Scout] signup error:', err);
+      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network and try again';
+      authShowErr(msg);
+      var b2=document.getElementById('auth-btn');if(b2){b2.disabled=false;b2.textContent='Create my account';}
     });
   } else {
     supaPost('/auth/v1/token?grant_type=password',{email:email,password:pass}).then(function(d){
+      console.log('[Scout] signin response:', JSON.stringify(d).slice(0,200));
+      var b2=document.getElementById('auth-btn');
       if(d.error){
-        var e2=document.getElementById('auth-error');
-        var msg=d.error.message||'Invalid credentials';
-        if(e2)e2.textContent=msg;else alert(msg);
-        if(btn){btn.disabled=false;btn.textContent='Sign in';}return;
+        authShowErr(d.error.message||'Invalid credentials');
+        if(b2){b2.disabled=false;b2.textContent='Sign in';}return;
       }
       localStorage.setItem('sb_token',d.access_token);localStorage.setItem('sb_user',JSON.stringify(d.user));
       SUPA_USER=d.user;
-      PROFILE.email=d.user.email||email;if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
+      PROFILE.email=d.user.email||email;
+      if(d.user&&d.user.user_metadata&&d.user.user_metadata.name){PROFILE.name=d.user.user_metadata.name;}
+      try{localStorage.setItem('scout_profile',JSON.stringify(PROFILE));}catch(e){}
       authSuccess();
     }).catch(function(err){
-      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network';
-      var e2=document.getElementById('auth-error');if(e2)e2.textContent=msg;else alert(msg);
-      if(btn){btn.disabled=false;btn.textContent='Sign in';}
+      console.error('[Scout] signin error:', err);
+      var msg=(err&&err.error&&err.error.message)||'Connection error — check your network and try again';
+      authShowErr(msg);
+      var b2=document.getElementById('auth-btn');if(b2){b2.disabled=false;b2.textContent='Sign in';}
     });
   }
 }
@@ -2751,7 +2780,9 @@ function initApp(){
   load(function(){
     setPage('dashboard');
     document.body.classList.add('app-ready');
-    if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
+    var _obDone=localStorage.getItem('scout_ob_done');
+    var _isNew=!PROFILE.name&&DB.length===0&&INBOX.length===0;
+    if(!_obDone&&_isNew){
       setTimeout(showSplash,800);
     }
   });
@@ -2872,7 +2903,10 @@ function renderSidebarTier(){
       {label:'Priority Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ],
     agency:[
-      {label:'Proposal Generator',action:function(){openProposalModal(window._currentLead);}},
+      {label:'Proposal Generator',action:function(){
+        if(!window._currentLead){showInfoToast('Open a lead first, then generate a proposal');return;}
+        openProposalModal(window._currentLead);
+      }},
       {label:'Dedicated Support',action:function(){window.open('mailto:support@scout-ai.io','_blank');}}
     ]
   };
@@ -2943,6 +2977,7 @@ function exportToNotion(r){
 }
 
 
+function triggerLogoUpload(){var f=document.getElementById('pm-logo-file');if(f)f.click();}
 function closeProposalModal(){var m=document.getElementById('proposal-modal');if(m)m.remove();}
 
 function openProposalModal(r){
@@ -2975,7 +3010,17 @@ function openProposalModal(r){
       // SECTION: Branding
       '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Branding</div>'+
       '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px">'+
-        '<input id="pm-logo" class="modal-input" placeholder="Your logo URL" value="'+(PROFILE.wl_logo||'')+'" style="font-size:13px;padding:10px 13px">'+
+        '<div style="display:flex;align-items:center;gap:8px;flex:1">'+
+          '<div id="pm-logo-preview" style="width:40px;height:40px;border:1px solid var(--bor2);border-radius:6px;background:var(--sur2);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">'+
+            (PROFILE.wl_logo?'<img src="'+PROFILE.wl_logo+'" style="max-width:36px;max-height:36px;object-fit:contain">':'<span style="font-size:18px;color:var(--tx3)">&#128444;</span>')+
+          '</div>'+
+          '<div style="flex:1">'+
+            '<label style="display:block;font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Your logo</label>'+
+            '<input id="pm-logo-file" type="file" accept="image/*" style="display:none">'+
+            '<button onclick="triggerLogoUpload()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer">Upload logo</button>'+
+            '<span id="pm-logo-name" style="font-size:11px;color:var(--tx3);margin-left:8px">'+(PROFILE.wl_logo?'Saved logo':'No file chosen')+'</span>'+
+          '</div>'+
+        '</div>'+
         '<div style="display:flex;align-items:center;gap:8px">'+
           '<input type="color" id="pm-color" value="'+co+'" style="width:36px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px;flex-shrink:0">'+
           '<span id="pm-color-hex" style="font-size:12px;color:var(--tx3);white-space:nowrap">'+co+'</span>'+
@@ -3010,6 +3055,23 @@ function openProposalModal(r){
     var col=document.getElementById('pm-color');
     var hex=document.getElementById('pm-color-hex');
     if(col&&hex)col.oninput=function(){hex.textContent=col.value;};
+    // Logo file upload
+    var logoFile=document.getElementById('pm-logo-file');
+    if(logoFile){
+      logoFile.onchange=function(){
+        var f=logoFile.files[0];if(!f)return;
+        var nm=document.getElementById('pm-logo-name');
+        if(nm)nm.textContent=f.name;
+        var reader=new FileReader();
+        reader.onload=function(ev){
+          var b64=ev.target.result;
+          overlay._logoData=b64;
+          var prev=document.getElementById('pm-logo-preview');
+          if(prev)prev.innerHTML='<img src="'+b64+'" style="max-width:36px;max-height:36px;object-fit:contain">';
+        };
+        reader.readAsDataURL(f);
+      };
+    }
   },50);
 }
 
@@ -3017,6 +3079,8 @@ function submitProposalModal(){
   var g=function(id){return(document.getElementById(id)||{value:''}).value.trim();};
   var ta=function(id){return(document.getElementById(id)||{value:''}).value.trim();};
   profileLoad();
+  var overlay=document.getElementById('proposal-modal');
+  var logoData=(overlay&&overlay._logoData)||PROFILE.wl_logo||'';
   var consultant={
     name:g('pm-name')||PROFILE.name||'',
     agency:g('pm-agency')||PROFILE.agency||'',
@@ -3026,7 +3090,7 @@ function submitProposalModal(){
     email:g('pm-email')||PROFILE.email||'',
     phone:g('pm-phone')||PROFILE.phone||'',
     calendly:g('pm-calendly')||PROFILE.calendly||'',
-    logo:g('pm-logo')||PROFILE.wl_logo||'',
+    logo:logoData,
     color:g('pm-color')||PROFILE.wl_color||PROFILE.color||'#2d9de8',
     deal_size:g('pm-deal')||PROFILE.deal_size||'',
     client_size:g('pm-engagement')||PROFILE.client_size||'',
@@ -3480,6 +3544,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
+      "<input id='fetch-niche' class='modal-input' placeholder='Niche / industry focus (e.g. B2B SaaS, climate tech, fintech, crypto) — leave blank for broad search' style='margin:12px 0 10px;font-size:13px;padding:10px 14px;display:block;width:100%'>"
       "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
@@ -5093,7 +5158,53 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                     messages.append({'role': 'user', 'content': [{'type': 'tool_result', 'tool_use_id': b['id'], 'content': [{'type': 'text', 'text': 'ok'}]} for b in content if b.get('type') == 'tool_use']})
                 else: break
             self.respond({'text': final_text})
+        elif mode == 'research':
+            # Web-search-backed company research for accuracy
+            messages = [{'role': 'user', 'content': (
+                'Research this company using web search and return ONLY the JSON profile. '
+                'Search for: their website, LinkedIn, Crunchbase, recent funding news, team page. '
+                'Verify the data — do not invent anything. Company: "' + company + '"'
+            )}]
+            final_text = ''
+            for _ in range(12):
+                payload = json.dumps({
+                    'model': 'claude-sonnet-4-20250514',
+                    'max_tokens': 1500,
+                    'system': system,
+                    'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}],
+                    'messages': messages
+                }).encode('utf-8')
+                req = urllib.request.Request(
+                    'https://api.anthropic.com/v1/messages', data=payload,
+                    headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'},
+                    method='POST'
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=90) as resp:
+                        data = json.loads(resp.read())
+                except urllib.error.HTTPError as e:
+                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
+                except Exception as e:
+                    self.respond({'error': str(e)}); return
+                content = data.get('content', [])
+                stop_reason = data.get('stop_reason', '')
+                for block in content:
+                    if block.get('type') == 'text':
+                        final_text = block.get('text', '')
+                if stop_reason == 'end_turn':
+                    break
+                elif stop_reason == 'tool_use':
+                    messages.append({'role': 'assistant', 'content': content})
+                    messages.append({'role': 'user', 'content': [
+                        {'type': 'tool_result', 'tool_use_id': b['id'],
+                         'content': [{'type': 'text', 'text': 'ok'}]}
+                        for b in content if b.get('type') == 'tool_use'
+                    ]})
+                else:
+                    break
+            self.respond({'text': final_text})
         else:
+            # Fallback: Haiku no-search (kept for backward compat)
             payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1000, 'system': system,
                 'messages': [{'role': 'user', 'content': 'Research this company and return the JSON profile: "' + company + '"'}]}).encode('utf-8')
             req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
