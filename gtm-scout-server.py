@@ -1125,7 +1125,7 @@ function researchSelected(){
 function runToInbox(company, callback){
   var ind=document.getElementById('save-ind');
   if(ind){ind.textContent='Researching '+company+'...';ind.style.color='var(--tx3)';}
-  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS})})
+  fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:company,system:SYS,mode:'research'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
     var t=(d.text||'').replace(/```json/g,'').replace(/```/g,'').trim();
@@ -2748,8 +2748,9 @@ function obFinish(){
 function initApp(){
   profileLoad();phLoad();updateCreditsBar();renderTopbar();initIdleTimer();
   document.body.classList.add('app-ready');
-  setPage('dashboard');
   load(function(){
+    setPage('dashboard');
+    updateCreditsBar();
     if(!PROFILE.name&&!localStorage.getItem('scout_ob_done')){
       setTimeout(showSplash,800);
     }
