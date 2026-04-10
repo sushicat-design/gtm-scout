@@ -2080,7 +2080,7 @@ function renderProfile(){
         '<div class="prof-stats">'+
           '<div class="prof-stat"><div class="prof-stat-n">'+DB.length+'</div><div class="prof-stat-l">Leads</div></div>'+
           '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.cases||[]).length+'</div><div class="prof-stat-l">Cases</div></div>'+
-          '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.services_list||[]).length+'</div><div class="prof-stat-l">Services</div></div>'+
+          '<div class="prof-stat"><div class="prof-stat-n">'+(PROFILE.services||[]).length+'</div><div class="prof-stat-l">Services</div></div>'+
         '</div>'+
         '<button class="prof-edit-btn" data-action="edit-profile">Edit Profile</button>'+
         '<button class="prof-edit-btn" onclick="profileCopyShare()" style="margin-top:8px;background:none;border:1px solid var(--bor2);color:var(--tx2)">Copy Share Link</button>'+
@@ -2104,9 +2104,9 @@ function renderProfile(){
       '<div class="prof-section">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
           '<div class="prof-section-title">Case Studies</div>'+
-          '<button onclick="profileAddCase()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-size:11px;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">+ Add</button>'+
+          ''+
         '</div>'+
-        ((PROFILE.cases&&PROFILE.cases.length)?'<div class="case-studies-grid">'+casesHtml+'</div>':casesHtml)+
+        '<div class="case-studies-grid">'+casesHtml+'</div>'+
       '</div>'+
       '<div class="prof-section">'+
         '<div class="prof-section-title" style="margin-bottom:12px">Business Details</div>'+
@@ -2263,9 +2263,11 @@ function profileDeleteCase(){
 
 function profileCopyShare(){
   var url=safeOrigin()+'?profile='+encodeURIComponent(PROFILE.name||'me');
-  navigator.clipboard.writeText(url);
-  var btn=document.querySelector('.profile-share-btn');
-  if(btn){btn.textContent='Copied!';setTimeout(function(){btn.textContent='Share Profile';},2000);}
+  navigator.clipboard.writeText(url).then(function(){
+    showInfoToast('Share link copied ✓');
+  }).catch(function(){
+    prompt('Copy this link:',url);
+  });
 }
 
 
@@ -5090,7 +5092,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         if mode == 'fetch':
             messages = [{'role': 'user', 'content': 'Search the web and complete this task: ' + company}]
             final_text = ''
-            for _ in range(10):
+            for _ in range(5):
                 payload = json.dumps({'model': 'claude-sonnet-4-20250514', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
@@ -5100,7 +5102,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
-                        import time; time.sleep(30); continue
+                        import time; time.sleep(15); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
@@ -5152,7 +5154,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
         elif mode == 'research':
             messages = [{'role': 'user', 'content': 'Research this company and return ONLY a JSON object with the profile. Company: "' + company + '"'}]
             final_text = ''
-            for _ in range(6):
+            for _ in range(3):
                 payload = json.dumps({'model': 'claude-haiku-4-5-20251001', 'max_tokens': 1500, 'system': system,
                     'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}], 'messages': messages}).encode('utf-8')
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
@@ -5162,7 +5164,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
-                        import time; time.sleep(20); continue
+                        import time; time.sleep(10); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:200]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
