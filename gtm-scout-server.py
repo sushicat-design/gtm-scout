@@ -1,4 +1,4 @@
-# Scout v3.1 | 2026-04-10 12:25
+# Scout v3.2 | 2026-04-10 12:37
 # Scout v3.0 | 2026-04-10 10:58
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
@@ -923,6 +923,7 @@ function navTo(page){
   var t=tierLoad();
   if(page==='inbox'&&t.plan!=='agency'&&!t._master){showUpsellToast('Inbox is an Agency feature');return;}
   if(page==='piphunt'&&!tierCanPipHunt()){showUpsellToast('Upgrade to use Pip Hunt');return;}
+  if(page==='teams'&&t.plan!=='agency'&&!t._master){showUpsellToast('Teams is an Agency feature');return;}
   setPage(page);
 }
 function setPage(page, addToHistory) {
@@ -942,13 +943,13 @@ function setPage(page, addToHistory) {
     if(inboxSi) inboxSi.style.display=(t.plan==='agency'||t._master)?'':'none';
   })();
   var bb=document.getElementById('page-back-btn');
-  if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
+  if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile','teams'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
   // Show inbox sidebar item only for agency
   var _inboxSi=document.getElementById('si-inbox');
   if(_inboxSi){ var _t=tierLoad(); _inboxSi.style.display=(_t.plan==='agency'||_t._master)?'':'none'; }
   var _inboxBadgeSi=document.getElementById('inbox-badge-si');
   if(_inboxBadgeSi&&INBOX.length){ _inboxBadgeSi.textContent=INBOX.length; _inboxBadgeSi.style.display=''; }
-  ['dashboard','search','piphunt','profile','leads','inbox','pipeline'].forEach(function(p){
+  ['dashboard','search','piphunt','profile','leads','inbox','pipeline','teams'].forEach(function(p){
     var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
   });
@@ -968,6 +969,7 @@ function setPage(page, addToHistory) {
   }
   if(page==='inbox') renderInbox();
   if(page==='profile'){profileLoad();renderProfile();}
+  if(page==='teams'){renderTeams();}
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -1982,6 +1984,45 @@ function profileSave(){
   renderProfile();
 }
 
+function teamsLoad(){try{var t=localStorage.getItem('scout_team');return t?JSON.parse(t):{members:[]};}catch(e){return{members:[]};}}
+function teamsSave(t){try{localStorage.setItem('scout_team',JSON.stringify(t));}catch(e){}}
+function renderTeams(){
+  var root=document.getElementById('teams-root');if(!root)return;
+  var tier=tierLoad();var isAgency=tier.plan==='agency'||tier._master;
+  var team=teamsLoad();var members=team.members||[];
+  var user=authGetUser();var ownerEmail=user?user.email:'you';
+  if(!isAgency){
+    root.innerHTML='<div style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:12px">&#128101;</div><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teams is an Agency feature</div><div style="font-size:13px;color:var(--tx3);margin-bottom:20px">Upgrade to Agency ($179/mo) for 5 seats. Extra seats $20/seat/mo.</div><button onclick="showPricing()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px 28px;border-radius:8px;cursor:pointer">Upgrade to Agency</button></div>';
+    return;
+  }
+  var maxSeats=5;var usedSeats=members.length;var pct=Math.round(((usedSeats+1)/maxSeats)*100);
+  var html='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:var(--tx)">Seats used</div><div style="font-size:13px;font-weight:700;color:var(--pip2)">'+(usedSeats+1)+' / '+maxSeats+'</div></div><div style="height:6px;background:var(--bor2);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--pip);border-radius:3px;width:'+pct+'%"></div></div></div>';
+  html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Members</div>';
+  html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);overflow:hidden;margin-bottom:16px">';
+  html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:12px;color:var(--tx3)">Owner</div></div><div style="font-size:11px;font-weight:700;color:var(--pip2);padding:3px 10px;background:var(--pip-dim);border-radius:4px">OWNER</div></div>';
+  members.forEach(function(m,i){html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--tx2)">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:12px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;gap:8px">'+(m.status==='pending'?'<div style="font-size:11px;font-weight:700;color:var(--amb);padding:3px 8px;background:rgba(245,158,11,0.1);border-radius:4px">PENDING</div>':'<div style="font-size:11px;font-weight:700;color:var(--grn);padding:3px 8px;background:rgba(16,185,129,0.1);border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';});
+  html+='</div>';
+  if(usedSeats<maxSeats-1){html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px"><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Invite a team member</div><div style="background:rgba(45,157,232,0.07);border:1px solid var(--bor2);border-radius:8px;padding:14px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Included in Agency plan</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Your $179/mo Agency plan includes 5 seats. Extra seats <strong style="color:var(--tx)">$20/seat/mo</strong>. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700;text-decoration:none">Buy extra seat</a></div></div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:14px;padding:12px 16px"><button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 22px;border-radius:8px;cursor:pointer">Send invite</button></div></div>';}
+  else{html+='<div style="padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700">Buy extra seat</a></div>';}
+  root.innerHTML=html;
+}
+function teamsInvite(){
+  var email=(document.getElementById('teams-invite-email')||{value:''}).value.trim().toLowerCase();
+  if(!email||email.indexOf('@')<0){showInfoToast('Enter a valid email');return;}
+  var team=teamsLoad();var members=team.members||[];var user=authGetUser();
+  if(user&&email===user.email){showInfoToast('That is your own email');return;}
+  if(members.some(function(m){return m.email===email;})){showInfoToast('Already in team');return;}
+  var cost=members.length>=4?'This will cost $20/mo extra.':'Included in your plan.';
+  if(!confirm('Invite '+email+'? '+cost))return;
+  members.push({email:email,status:'pending',invited:new Date().toISOString()});
+  team.members=members;teamsSave(team);showInfoToast('Invite sent to '+email+' checked');renderTeams();
+}
+function teamsRemoveMember(idx){
+  var team=teamsLoad();var members=team.members||[];var removed=members[idx];
+  if(!removed)return;
+  if(!confirm('Remove '+removed.email+'?'))return;
+  members.splice(idx,1);team.members=members;teamsSave(team);showInfoToast(removed.email+' removed');renderTeams();
+}
 function renderProfile(){
   profileLoad();
   var cont = document.getElementById('profile-root');
@@ -3457,7 +3498,8 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<button class='sidebar-item' id='si-search' onclick='navTo(\"search\")'>Research</button>"
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
 
-  "<button class='sidebar-item' id='si-profile' onclick='navTo(\"profile\")'>Profile</button>"
+  "<button class='sidebar-item' id='si-profile' onclick='navTo(\"profile\")' style='display:none'>Profile</button>"
+  "<button class='sidebar-item' id='si-teams' onclick='navTo(\"teams\")'>Team</button>"
 "</div>"
     "<div class='sidebar-pip'>"
       "<div class='sidebar-pip-row'>"
@@ -3558,6 +3600,22 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
 
   "<div class='page' id='page-profile'>"
     "<div id='profile-root' style='padding:4px 0'></div>"
+  "</div>\n"
+
+  "<div class='page' id='page-teams'>"
+    "<div style='padding:28px 24px 0;max-width:760px;margin:0 auto'>"
+      "<div style='font-size:24px;font-weight:700;color:var(--tx);margin-bottom:6px'>Team</div>"
+      "<div style='font-size:14px;color:var(--tx3);margin-bottom:28px'>Manage team members. Everyone shares your lead database and credit pool.</div>"
+      "<div id='teams-root'></div>"
+    "</div>"
+  "</div>\n"
+
+  "<div class='page' id='page-teams'>"
+    "<div style='padding:28px 24px 0;max-width:760px;margin:0 auto'>"
+      "<div style='font-size:24px;font-weight:700;color:var(--tx);margin-bottom:6px'>Team</div>"
+      "<div style='font-size:14px;color:var(--tx3);margin-bottom:28px'>Manage team members. Everyone shares your lead database and credit pool.</div>"
+      "<div id='teams-root'></div>"
+    "</div>"
   "</div>\n"
 
   "<div class='page' id='page-piphunt'>"
