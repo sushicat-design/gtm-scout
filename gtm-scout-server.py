@@ -3623,14 +3623,6 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
     "</div>"
   "</div>\n"
 
-  "<div class='page' id='page-teams'>"
-    "<div style='padding:28px 24px 0;max-width:760px;margin:0 auto'>"
-      "<div style='font-size:24px;font-weight:700;color:var(--tx);margin-bottom:6px'>Team</div>"
-      "<div style='font-size:14px;color:var(--tx3);margin-bottom:28px'>Manage team members. Everyone shares your lead database and credit pool.</div>"
-      "<div id='teams-root'></div>"
-    "</div>"
-  "</div>\n"
-
   "<div class='page' id='page-piphunt'>"
   "<div style='padding:20px 24px 0'>"
   "<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px'>"
@@ -5133,11 +5125,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
                         import time; time.sleep(30); continue
-<<<<<<< HEAD
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
-=======
-self.respond({'error': 'API error ' + str(e.code) + ' - servers busy, try again in 2 min'}); return
->>>>>>> 2ca7e67ab60af6b59e258112ffe6ea7eded9a4f2
                 except Exception as e:
                     self.respond({'error': str(e)}); return
                 content = data.get('content', [])
