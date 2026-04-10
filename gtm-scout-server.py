@@ -5132,7 +5132,7 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                         data = json.loads(resp.read())
                 except urllib.error.HTTPError as e:
                     if e.code in (429, 529):
-                        import time; time.sleep(15); continue
+                        import time; time.sleep(30); continue
                     self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]}); return
                 except Exception as e:
                     self.respond({'error': str(e)}); return
