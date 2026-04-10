@@ -190,7 +190,7 @@ body::after{
 .topbar{
   display:flex;align-items:center;padding:0 24px;height:52px;
   border-bottom:1px solid var(--bor);
-  position:sticky;top:0;z-index:100;
+  position:sticky;top:0;z-index:9999;
   background:rgba(2,4,8,0.9);
   backdrop-filter:blur(20px) saturate(160%);
   -webkit-backdrop-filter:blur(20px) saturate(160%);
