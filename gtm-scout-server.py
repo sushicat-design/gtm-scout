@@ -1,5 +1,3 @@
-# Scout v3.3 | 2026-04-10 12:41
-# Scout v3.0 | 2026-04-10 10:58
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
