@@ -1,4 +1,4 @@
-# Scout v2.8 | 2026-04-10 10:42
+# Scout v3.0 | 2026-04-10 10:58
 #!/usr/bin/env python3
 import http.server, json, urllib.request, urllib.error, time, sys, os, socket
 
@@ -364,9 +364,6 @@ body::after{
 }
 .fetch-hero-title{font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px;color:var(--tx)}
 .fetch-hero-sub{font-size:14px;color:var(--tx2);margin-bottom:36px;line-height:1.7}
-.niche-btn{background:var(--sur2);border:1px solid var(--bor2);color:var(--tx2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;transition:all .15s}
-.niche-btn:hover{border-color:var(--pip);color:var(--pip2)}
-.niche-btn.active{background:var(--pip);border-color:var(--pip);color:#fff}
 .fetch-hero-btn{
   background:var(--pip);color:#fff;border:none;
   font-weight:700;font-size:14px;padding:13px 40px;
@@ -847,7 +844,7 @@ var activeSources = ['techcrunch','blockworks','theblock','producthunt','linkedi
 var currentPage = 'dashboard';
 var fil = 'all';
 
-var SYS = "You are a B2B lead research assistant for fractional CMO services. Use web search to find REAL, VERIFIED information. NEVER invent data - use null if not found. SCORING: Score 75-100 ONLY if recently funded (last 6 months) AND no CMO/VP Marketing on team. Score 50-74 if funded but marketing is thin. Score below 30 if has a full-time CMO, or is a large conglomerate. EXCLUSIONS - return score 0 and gtm_label Not a fit for: mega-brands like OpenAI/Anthropic/Google/Meta/Apple/Microsoft/Amazon/Salesforce/Oracle, and companies with a confirmed full-time CMO with 2+ years tenure. Return ONLY valid JSON: company, tagline, sector, hq, stage, funding_amount, founded, employee_count, has_cmo (bool), is_fortune500 (bool), gtm_readiness_score (0-100), gtm_label (Hot Lead/Warm Lead/Cold Lead/Not a fit), why_fit, pitch_opener, decision_maker, best_contact_title, best_contact_name, outreach_status (not_contacted), gtm_signals: {recently_funded, no_cmo, marketing_gap_visible}."
+var SYS = "Return ONLY a valid JSON object. No markdown, no extra text. Fields: company, tagline, sector, hq, stage, funding_amount, founded, has_cmo (bool), gtm_readiness_score (0-100 integer; only score above 30 - a score below 30 means the company is not a good lead), gtm_label (Hot Lead/Warm Lead/Cold Lead), why_fit (1 sentence), pitch_opener (2-3 sentences), decision_maker, best_contact_title, best_contact_name, outreach_status (always: not_contacted), gtm_signals (object: recently_funded bool, no_cmo bool, marketing_gap_visible bool). Use null for unknown.";
 var FETCH_SYS = "You are a funding news API. Search for startup funding news from the last 14 days. YOU MUST respond with ONLY a raw JSON array starting with [ and ending with ]. No text before, no text after, no markdown, no explanation. Each element: {company,sector,funding,stage,source}. Max 10 items. Start your response with [ immediately.";
 
 function load(onDone) {
@@ -922,7 +919,6 @@ function navTo(page){
   var t=tierLoad();
   if(page==='inbox'&&t.plan!=='agency'&&!t._master){showUpsellToast('Inbox is an Agency feature');return;}
   if(page==='piphunt'&&!tierCanPipHunt()){showUpsellToast('Upgrade to use Pip Hunt');return;}
-  if(page==='teams'&&t.plan!=='agency'&&!t._master){showUpsellToast('Teams is an Agency feature');return;}
   setPage(page);
 }
 function setPage(page, addToHistory) {
@@ -942,13 +938,13 @@ function setPage(page, addToHistory) {
     if(inboxSi) inboxSi.style.display=(t.plan==='agency'||t._master)?'':'none';
   })();
   var bb=document.getElementById('page-back-btn');
-  if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile','teams'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
+  if(bb){ var showBack=['search','inbox','leads','pipeline','piphunt','profile'].indexOf(page)>=0; bb.style.display=showBack?'flex':'none'; }
   // Show inbox sidebar item only for agency
   var _inboxSi=document.getElementById('si-inbox');
   if(_inboxSi){ var _t=tierLoad(); _inboxSi.style.display=(_t.plan==='agency'||_t._master)?'':'none'; }
   var _inboxBadgeSi=document.getElementById('inbox-badge-si');
   if(_inboxBadgeSi&&INBOX.length){ _inboxBadgeSi.textContent=INBOX.length; _inboxBadgeSi.style.display=''; }
-  ['dashboard','search','piphunt','profile','leads','inbox','pipeline','teams'].forEach(function(p){
+  ['dashboard','search','piphunt','profile','leads','inbox','pipeline'].forEach(function(p){
     var el = document.getElementById('si-'+p);
     if(el) el.classList.toggle('active', p===page);
   });
@@ -968,7 +964,6 @@ function setPage(page, addToHistory) {
   }
   if(page==='inbox') renderInbox();
   if(page==='profile'){profileLoad();renderProfile();}
-  if(page==='teams'){renderTeams();}
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -995,12 +990,6 @@ function showPanel(id){
 
 
 function run(company,callback){
-  var _nc=function(n){return(n||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/(inc|llc|ltd|corp|co|ai)$/,'');};
-  if(DB.concat(INBOX).some(function(r){return _nc(r.company)===_nc(company);})){
-    var _ed=document.getElementById('err');
-    if(_ed){_ed.style.display='block';_ed.textContent=company+' is already in your pipeline.';}
-    return;
-  }
   busy=true;document.getElementById('rb').disabled=true;document.getElementById('ci').disabled=true;
   document.getElementById('err').style.display='none';document.getElementById('lname').textContent=company;
   document.getElementById('ldg').style.display='flex';
@@ -1034,14 +1023,6 @@ function run(company,callback){
 
 // ── FETCH / INBOX FLOW ───────────────────────────────────────────────────────
 
-function selectNiche(btn){
-  document.querySelectorAll('.niche-btn').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
-}
-function getSelectedNiche(){
-  var a=document.querySelector('.niche-btn.active');
-  return a?a.getAttribute('data-niche'):'';
-}
 function fetchLeads() {
   var btn=document.getElementById('fetch-btn');
   var ldg=document.getElementById('fetch-ldg');
@@ -1055,9 +1036,7 @@ function fetchLeads() {
   var extraInstructions = '';
   if(activeSources.indexOf('producthunt')>=0) extraInstructions += ' Also search Product Hunt for recently launched startups (last 30 days) that appear to have no CMO or marketing team yet.';
   if(activeSources.indexOf('linkedinjobs')>=0) extraInstructions += ' Also search LinkedIn job postings for companies actively hiring a CMO, VP Marketing, Head of Marketing, or Head of Growth - these are prime fractional CMO prospects.';
-  var _n=getSelectedNiche();
-  var _ns=_n?' Focus exclusively on '+_n+' companies.':' Focus on AI, SaaS, fintech, web3, climate tech.';
-  var prompt='Search '+srcNames+' for startup funding announcements from the last 14 days.'+_ns+' Return only real verifiable companies.'+extraInstructions;
+  var prompt='Search '+srcNames+' for startup funding announcements and leads from the last 14 days. Focus on AI, SaaS, fintech, web3. Return a JSON array of companies.'+extraInstructions;
   fetch('/api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'',company:prompt,system:FETCH_SYS,mode:'fetch'})})
   .then(function(r){return r.json();}).then(function(d){
     if(d.error)throw new Error(d.error);
@@ -1159,9 +1138,9 @@ function runToInbox(company, callback){
     res._id='id'+Date.now()+Math.floor(Math.random()*9999);
     res._inbox=true;
     res._open=false;
-    // Skip only very cold leads for inbox
+    // Skip cold leads for inbox (score < 40)
     var rti_score=res.gtm_readiness_score||0;
-    if(rti_score<20){ if(callback){setTimeout(callback,1500);}  return; }
+    if(rti_score<40){ if(callback){setTimeout(callback,1500);}  return; }
     // Dedup: skip if already in DB or INBOX
     var alreadyInDb=DB.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
     var alreadyInInbox=INBOX.some(function(x){return x.company&&res.company&&x.company.toLowerCase()===res.company.toLowerCase();});
@@ -1993,52 +1972,6 @@ function profileSave(){
   renderProfile();
 }
 
-function teamsLoad(){try{var t=localStorage.getItem('scout_team');return t?JSON.parse(t):{members:[]};}catch(e){return {members:[]};}}
-function teamsSave(t){try{localStorage.setItem('scout_team',JSON.stringify(t));}catch(e){}}
-function renderTeams(){
-  var root=document.getElementById('teams-root');if(!root)return;
-  var tier=tierLoad();var isAgency=tier.plan==='agency'||tier._master;
-  var team=teamsLoad();var members=team.members||[];
-  var user=authGetUser();var ownerEmail=user?user.email:'you';
-  if(!isAgency){
-    root.innerHTML='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:32px;text-align:center;max-width:480px"><div style="font-size:32px;margin-bottom:12px">&#128101;</div><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teams is an Agency feature</div><div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:20px">Upgrade to Agency (79/mo) for up to 5 seats. Extra seats at 0/seat/mo.</div><button onclick="showPricing()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:13px;font-weight:700;padding:11px 28px;border-radius:8px;cursor:pointer">Upgrade to Agency</button></div>';
-    return;
-  }
-  var maxSeats=5;var usedSeats=members.length;
-  var pct=Math.round(((usedSeats+1)/maxSeats)*100);
-  var html='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:20px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:var(--tx)">Seats used</div><div style="font-size:13px;font-weight:700;color:var(--pip2);font-family:JetBrains Mono,monospace">'+(usedSeats+1)+' / '+maxSeats+'</div></div><div style="height:6px;background:var(--bor2);border-radius:3px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,var(--pip),var(--pip2));border-radius:3px;width:'+pct+'%"></div></div></div>';
-  html+='<div style="margin-bottom:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3)">Members</div>';
-  html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);overflow:hidden;margin-bottom:16px">';
-  html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--pip);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">'+(ownerEmail[0]||'?').toUpperCase()+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+ownerEmail+'</div><div style="font-size:12px;color:var(--tx3)">Owner</div></div><div style="font-size:11px;font-weight:700;background:var(--pip-dim);color:var(--pip2);padding:3px 10px;border-radius:4px">OWNER</div></div>';
-  members.forEach(function(m,i){html+='<div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--bor)"><div style="width:40px;height:40px;border-radius:50%;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--tx2);flex-shrink:0">'+(m.email?m.email[0].toUpperCase():'?')+'</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+m.email+'</div><div style="font-size:12px;color:var(--tx3)">'+(m.status==='pending'?'Invite pending':'Member')+'</div></div><div style="display:flex;align-items:center;gap:8px">'+(m.status==='pending'?'<div style="font-size:11px;font-weight:700;background:rgba(245,158,11,0.1);color:var(--amb);padding:3px 8px;border-radius:4px">PENDING</div>':'<div style="font-size:11px;font-weight:700;background:rgba(16,185,129,0.1);color:var(--grn);padding:3px 8px;border-radius:4px">ACTIVE</div>')+'<button onclick="teamsRemoveMember('+i+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:rgba(239,68,68,0.7);font-size:12px;font-weight:600;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:Outfit,sans-serif">Remove</button></div></div>';});
-  html+='</div>';
-  if(usedSeats<maxSeats-1){
-    html+='<div style="background:var(--sur);border:1px solid var(--bor2);border-radius:var(--r);padding:24px"><div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Invite a team member</div><div style="background:rgba(45,157,232,0.07);border:1px solid var(--bor2);border-radius:8px;padding:14px 16px;margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">&#128176; Included in Agency plan</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Your Agency plan (79/mo) includes 5 seats. Extra seats are <strong style="color:var(--tx)">0/seat/mo</strong>. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);text-decoration:none;font-weight:700">Buy extra seat &#8594;</a></div></div><div style="display:flex;gap:10px"><input id="teams-invite-email" class="modal-input" type="email" placeholder="colleague@company.com" style="flex:1;font-size:14px;padding:12px 16px"><button onclick="teamsInvite()" style="background:var(--pip);color:#fff;border:none;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;padding:12px 22px;border-radius:8px;cursor:pointer">Send invite</button></div></div>';
-  } else {
-    html+='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--r);padding:16px;text-align:center;font-size:13px;color:var(--tx3)">All '+maxSeats+' seats filled. <a href="https://buy.stripe.com/3cIdR9djs9Wufda5TYbjW06" target="_blank" style="color:var(--pip2);font-weight:700">Buy extra seat &#8594;</a></div>';
-  }
-  root.innerHTML=html;
-}
-function teamsInvite(){
-  var email=(document.getElementById('teams-invite-email')||{value:''}).value.trim().toLowerCase();
-  if(!email||email.indexOf('@')<0){showInfoToast('Enter a valid email');return;}
-  var team=teamsLoad();var members=team.members||[];
-  var user=authGetUser();
-  if(user&&email===user.email){showInfoToast('That is your own email');return;}
-  if(members.some(function(m){return m.email===email;})){showInfoToast('Already in team');return;}
-  var cost=members.length>=4?'This will cost 0/mo extra.':'Included in your plan.';
-  if(!confirm('Invite '+email+'? '+cost))return;
-  members.push({email:email,status:'pending',invited:new Date().toISOString()});
-  team.members=members;teamsSave(team);
-  showInfoToast('Invite sent to '+email+' ✓');renderTeams();
-}
-function teamsRemoveMember(idx){
-  var team=teamsLoad();var members=team.members||[];var removed=members[idx];
-  if(!removed)return;
-  if(!confirm('Remove '+removed.email+' from your team?'))return;
-  members.splice(idx,1);team.members=members;teamsSave(team);
-  showInfoToast(removed.email+' removed');renderTeams();
-}
 function renderProfile(){
   profileLoad();
   var cont = document.getElementById('profile-root');
@@ -2066,9 +1999,7 @@ function renderProfile(){
       '<button onclick="profileRemoveService('+i+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;line-height:1;padding:0">&times;</button>'+
       '</div></div>';
   }).join('') + '<button class="prof-tag-add" onclick="profileAddService()">+ Add service</button>';
-  var casesHtml = (PROFILE.cases||[]).length===0
-    ? '<button class="case-card-add" onclick="profileAddCase()">+ Add Case Study</button>'
-    : (PROFILE.cases||[]).map(function(c,i){
+  var casesHtml = (PROFILE.cases||[]).map(function(c,i){
     var metrics = (c.metrics||[]).map(function(m){return '<span class="case-metric">'+m+'</span>';}).join('');
     return '<div class="case-card" onclick="profileEditCase('+i+')">'
       +'<div class="case-card-client">'+(c.client||'Client')+'</div>'
@@ -2076,7 +2007,7 @@ function renderProfile(){
       +'<div class="case-card-result">'+(c.result||'')+'</div>'
       +(metrics?'<div class="case-metrics">'+metrics+'</div>':'')
       +'</div>';
-  }).join('');
+  }).join('') + '<button class="case-card-add" onclick="profileAddCase()">+ Add Case Study</button>';
   cont.innerHTML =
     '<div class="prof-wrap">'+
     '<div class="prof-left">'+
@@ -3008,7 +2939,6 @@ function exportToNotion(r){
 }
 
 
-function triggerLogoUpload(){var f=document.getElementById('pm-logo-file');if(f)f.click();}
 function closeProposalModal(){var m=document.getElementById('proposal-modal');if(m)m.remove();}
 
 function openProposalModal(r){
@@ -3041,7 +2971,7 @@ function openProposalModal(r){
       // SECTION: Branding
       '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:10px">Branding</div>'+
       '<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px">'+
-        '<div style="display:flex;align-items:center;gap:10px">'+'<div id="pm-logo-preview" style="width:40px;height:40px;border-radius:6px;background:var(--sur2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">'+(PROFILE.wl_logo?'<img src="'+PROFILE.wl_logo+'" style="max-width:36px;max-height:36px;object-fit:contain">':"<span style=\"font-size:18px\">&#128444;</span>")+'</div>'+'<div><input id="pm-logo-file" type="file" accept="image/*" style="display:none"><button onclick="triggerLogoUpload()" style="background:none;border:1px solid var(--bor2);color:var(--tx2);font-family:Outfit,sans-serif;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer">Upload logo</button><span id="pm-logo-name" style="font-size:11px;color:var(--tx3);margin-left:8px">'+(PROFILE.wl_logo?'Saved':'No file')+'</span></div>'+'</div>'+
+        '<input id="pm-logo" class="modal-input" placeholder="Your logo URL" value="'+(PROFILE.wl_logo||'')+'" style="font-size:13px;padding:10px 13px">'+
         '<div style="display:flex;align-items:center;gap:8px">'+
           '<input type="color" id="pm-color" value="'+co+'" style="width:36px;height:36px;border:1px solid var(--bor);border-radius:6px;background:var(--sur2);cursor:pointer;padding:2px;flex-shrink:0">'+
           '<span id="pm-color-hex" style="font-size:12px;color:var(--tx3);white-space:nowrap">'+co+'</span>'+
@@ -3076,18 +3006,6 @@ function openProposalModal(r){
     var col=document.getElementById('pm-color');
     var hex=document.getElementById('pm-color-hex');
     if(col&&hex)col.oninput=function(){hex.textContent=col.value;};
-    var lf=document.getElementById('pm-logo-file');
-    if(lf)lf.onchange=function(){
-      var file=lf.files[0];if(!file)return;
-      var nm=document.getElementById('pm-logo-name');if(nm)nm.textContent=file.name;
-      var reader=new FileReader();
-      reader.onload=function(e){
-        lf._b64=e.target.result;
-        var prev=document.getElementById('pm-logo-preview');
-        if(prev)prev.innerHTML='<img src="'+e.target.result+'" style="max-width:36px;max-height:36px;object-fit:contain">';
-      };
-      reader.readAsDataURL(file);
-    };
   },50);
 }
 
@@ -3104,7 +3022,7 @@ function submitProposalModal(){
     email:g('pm-email')||PROFILE.email||'',
     phone:g('pm-phone')||PROFILE.phone||'',
     calendly:g('pm-calendly')||PROFILE.calendly||'',
-    logo:(function(){var lf=document.getElementById('pm-logo-file');return(lf&&lf._b64)||PROFILE.wl_logo||'';}()),
+    logo:g('pm-logo')||PROFILE.wl_logo||'',
     color:g('pm-color')||PROFILE.wl_color||PROFILE.color||'#2d9de8',
     deal_size:g('pm-deal')||PROFILE.deal_size||'',
     client_size:g('pm-engagement')||PROFILE.client_size||'',
@@ -3129,8 +3047,7 @@ function submitProposalModal(){
   };
   var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
   closeProposalModal();
-  var _base=(window.location.origin&&window.location.origin.indexOf('http')===0)?window.location.origin:'https://scout-ai.io';
-  window.open(_base+'/proposal/'+encoded,'_blank');
+  window.open(window.location.origin+'/proposal/'+encoded,'_blank');
   showInfoToast('Proposal opening\u2026');
 }
 
@@ -3530,8 +3447,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
   "<button class='sidebar-item' id='si-search' onclick='navTo(\"search\")'>Research</button>"
     "<button class='sidebar-item' id='si-inbox' onclick='navTo(\"inbox\")' style='display:none'>Inbox<span id='inbox-badge-si' style='display:none;margin-left:auto;background:var(--pip2);color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:999px'>0</span></button>"
 
-  "<button class='sidebar-item' id='si-profile' onclick='navTo(\"profile\")' style='display:none'>Profile</button>"
-  "<button class='sidebar-item' id='si-teams' onclick='navTo(\"teams\")'>Team</button>"
+  "<button class='sidebar-item' id='si-profile' onclick='navTo(\"profile\")'>Profile</button>"
 "</div>"
     "<div class='sidebar-pip'>"
       "<div class='sidebar-pip-row'>"
@@ -3560,17 +3476,7 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
         "<div class='fetch-hero'>"
       "<div class='fetch-hero-title'> Fetch New Leads</div>"
       "<div class='fetch-hero-sub'>Pull recently funded companies from the web - they land in your Inbox for review</div>"
-      "<div id='fetch-niche-wrap' style='display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px'>"
-  "<button class='niche-btn active' data-niche=''  onclick='selectNiche(this)'>All</button>"
-  "<button class='niche-btn' data-niche='B2B SaaS' onclick='selectNiche(this)'>B2B SaaS</button>"
-  "<button class='niche-btn' data-niche='AI startup' onclick='selectNiche(this)'>AI</button>"
-  "<button class='niche-btn' data-niche='fintech' onclick='selectNiche(this)'>Fintech</button>"
-  "<button class='niche-btn' data-niche='climate tech' onclick='selectNiche(this)'>Climate</button>"
-  "<button class='niche-btn' data-niche='health tech' onclick='selectNiche(this)'>Health</button>"
-  "<button class='niche-btn' data-niche='crypto web3' onclick='selectNiche(this)'>Web3</button>"
-  "<button class='niche-btn' data-niche='developer tools' onclick='selectNiche(this)'>Dev Tools</button>"
-"</div>"
-"<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
+      "<button id='fetch-btn' class='fetch-hero-btn'>Fetch Leads</button>"
       "<div id='fetch-ldg' style='display:none;align-items:center;justify-content:center;gap:10px;margin-top:16px;font-size:13px;color:var(--tx3)'><div class='spinner'></div><span>Searching funding news...</span></div>"
       "<div id='fetch-err'></div>"
       "<div id='fetch-results'>"
@@ -3642,14 +3548,6 @@ HTML = ("<!DOCTYPE html>\n<html>\n<head>\n"
 
   "<div class='page' id='page-profile'>"
     "<div id='profile-root' style='padding:4px 0'></div>"
-  "</div>\n"
-
-  "<div class='page' id='page-teams'>"
-    "<div style='padding:28px 24px 0;max-width:760px;margin:0 auto'>"
-      "<div style='font-size:24px;font-weight:700;letter-spacing:-.03em;color:var(--tx);margin-bottom:6px'>Team</div>"
-      "<div style='font-size:14px;color:var(--tx3);margin-bottom:28px'>Manage your team members. Each person gets full access to your shared leads and credit pool.</div>"
-      "<div id='teams-root'></div>"
-    "</div>"
   "</div>\n"
 
   "<div class='page' id='page-piphunt'>"
@@ -5196,22 +5094,15 @@ body{{background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI'
                 'messages': [{'role': 'user', 'content': 'Research this company and return the JSON profile: "' + company + '"'}]}).encode('utf-8')
             req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=payload,
                 headers={'Content-Type': 'application/json', 'x-api-key': actual_key, 'anthropic-version': '2023-06-01'}, method='POST')
-            for _att in range(3):
-                try:
-                    with urllib.request.urlopen(req, timeout=60) as resp:
-                        data = json.loads(resp.read())
-                    text = ''.join(b.get('text','') for b in data.get('content',[]) if b.get('type')=='text')
-                    self.respond({'text': text})
-                    break
-                except urllib.error.HTTPError as e:
-                    if e.code == 429 and _att < 2:
-                        time.sleep(5 * (_att + 1))
-                        continue
-                    self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]})
-                    break
-                except Exception as e:
-                    self.respond({'error': str(e)})
-                    break
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.loads(resp.read())
+                text = ''.join(b.get('text','') for b in data.get('content',[]) if b.get('type')=='text')
+                self.respond({'text': text})
+            except urllib.error.HTTPError as e:
+                self.respond({'error': 'API error ' + str(e.code) + ': ' + e.read().decode()[:300]})
+            except Exception as e:
+                self.respond({'error': str(e)})
 
     def respond(self, obj):
         data = json.dumps(obj).encode('utf-8')
